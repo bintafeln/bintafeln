@@ -23,6 +23,10 @@ class Vorlage(models.Model):
         help_text="Steht unten auf jeder Seite des Briefs und unter jeder E-Mail, z. B. "
         "Bankverbindung, Vereinsregister, Vorstand. Leer = keine Fußzeile.",
     )  # fmt: skip
+    freie_grafiken = models.JSONField(
+        "Frei gesetzte Grafiken", default=list, blank=True,
+        help_text="Grafiken an fester Stelle der Seite, z. B. Unterschriften (ADR 0166).",
+    )  # fmt: skip
     geaendert_am = models.DateTimeField("Geändert am", auto_now=True)
 
     class Meta:

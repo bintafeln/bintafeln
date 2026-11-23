@@ -50,7 +50,7 @@ def test_speichern_behaelt_transparenz_als_png():
 
 
 def test_speichern_lehnt_anderes_ab(settings):
-    with pytest.raises(grafiken.GrafikFehler, match="PNG oder JPG"):
+    with pytest.raises(grafiken.GrafikFehler, match="PNG, JPG oder PDF"):
         grafiken.speichern(SimpleUploadedFile("text.png", b"kein Bild"))
     gross = _datei()
     gross.size = (grafiken.MAX_MB + 1) * 1024 * 1024
@@ -69,7 +69,7 @@ def test_hochladen_liste_ausliefern_und_loeschen(admin_client):
     bild = admin_client.get(daten["adresse"])
     assert bild.status_code == 200 and b"".join(bild.streaming_content)[:4] == b"\x89PNG"
     fehler = admin_client.post(adresse, {"datei": SimpleUploadedFile("x.png", b"nein")})
-    assert fehler.status_code == 400 and "PNG oder JPG" in fehler.json()["fehler"]
+    assert fehler.status_code == 400 and "PNG, JPG oder PDF" in fehler.json()["fehler"]
     assert admin_client.post(adresse, {}).status_code == 400
     assert admin_client.post(daten["loeschen"]).json() == {"geloescht": daten["id"]}
     assert not Grafik.objects.exists() and PapierkorbEintrag.objects.count() == 1

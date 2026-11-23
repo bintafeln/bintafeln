@@ -3,6 +3,7 @@
 {% block inhalt %}
 <script src="{% static 'js/html_editor.js' %}" defer></script>
 <script src="{% static 'js/brief_vorschau.js' %}" defer></script>
+<script src="{% static 'js/brief_frei.js' %}" defer></script>
 <div class="vorlage-raster">
 <section class="karte">
   <p><a href="{% url 'serienbriefe:vorlagen' %}">← Vorlagen</a></p>
@@ -32,6 +33,34 @@
       {% include "includes/feld.html" with feld=form.briefkopf %}
       {% include "includes/feld.html" with feld=form.fusszeile %}
     </fieldset>
+    <fieldset class="vorlage-seite frei-grafiken" data-brief-frei="{% url 'serienbriefe:grafiken' %}"
+              data-feld="{{ form.freie_grafiken.id_for_label }}">
+      <legend>Grafiken frei auf der Seite</legend>
+      {{ form.freie_grafiken }}
+      <p class="hinweis">Zum Beispiel Unterschriften: Sie liegen an einer festen Stelle über dem Text und dürfen sich
+        überlappen. In der Vorschau mit der Maus an ihren Platz ziehen, an der Ecke unten rechts größer oder kleiner
+        ziehen – oder unten die Maße in Millimetern eintragen. In einer E-Mail stehen sie nebeneinander unter dem Text.</p>
+      <div class="tabelle-rahmen frei-tabelle" hidden>
+        <table class="tabelle">
+          <thead><tr><th>Grafik</th><th>Seite</th><th>Links (mm)</th><th>Oben (mm)</th><th>Breite (mm)</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="filter frei-neu">
+        <label for="frei-wahl">Grafik</label>
+        <select id="frei-wahl"><option value="">– wählen –</option></select>
+        <button type="button" class="knopf knopf-zweitrangig" data-frei-setzen>Auf die Seite setzen</button>
+      </div>
+      <div class="frei-hochladen">
+        <label class="knopf knopf-zweitrangig">Neue Grafik hochladen …
+          <input type="file" accept="image/png,image/jpeg,application/pdf" hidden data-frei-datei></label>
+        <label><input type="checkbox" data-frei-freistellen checked> Hintergrund durchsichtig machen (Unterschrift,
+          Stempel)</label>
+      </div>
+      <p class="hinweis">PNG, JPG oder PDF (davon die erste Seite). Für Unterschriften am besten eine Datei je
+        Unterschrift auf weißem Papier; das Weiße wird durchsichtig, der leere Rand abgeschnitten.</p>
+      <p class="fehler" role="alert" data-frei-fehler hidden></p>
+    </fieldset>
     <div class="aktionsleiste">
       <button type="submit" class="knopf" data-autosave-knopf>{% if v.pk %}Speichern{% else %}Anlegen{% endif %}</button>
       <button type="submit" class="knopf knopf-zweitrangig" formaction="{% url 'serienbriefe:vorlage_vorschau' %}"
@@ -47,12 +76,15 @@
 </section>
 <section class="karte brief-vorschau" aria-labelledby="vorschau-titel">
   <h2 id="vorschau-titel">Vorschau</h2>
+  <div class="brief-blatt">
   <button type="submit" form="vorlage-formular" class="brief-vorschau-knopf"
           formaction="{% url 'serienbriefe:vorlage_vorschau' %}" formtarget="_blank"
           title="Antippen öffnet die Vorschau als PDF">
     <img data-brief-vorschau="{% url 'serienbriefe:vorlage_bild' %}" data-formular="vorlage-formular"
          alt="Vorschau der ersten Seite mit einem erfundenen Empfänger" width="595" height="842">
   </button>
+  <div class="brief-frei-ebene" data-brief-frei-ebene></div>
+  </div>
   <p class="hinweis" data-brief-vorschau-stand aria-live="polite">Erste Seite mit einem erfundenen Empfänger;
     aktualisiert sich beim Schreiben.</p>
 </section>

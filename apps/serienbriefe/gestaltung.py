@@ -409,9 +409,10 @@ def brief(vorlage, empfaenger, allgemein: dict) -> tuple[str, str]:
 def mail(vorlage, empfaenger, allgemein: dict) -> tuple[str, str, str, list]:
     """(Betreff, Klartext, HTML, Bilder) für ``apps.core.mail.senden(betreff, text, an, html=…,
     bilder=…)``; Grafiken stehen im HTML an ihrer Stelle im Text (eingebettet, kein Anhang)."""
-    from apps.serienbriefe import grafiken
+    from apps.serienbriefe import frei, grafiken
 
     betreff, html = brief(vorlage, empfaenger, allgemein)
-    ganz, bilder = grafiken.fuer_mail(mail_html(html, vorlage.fusszeile))
+    # Frei gesetzte Grafiken (ADR 0166) haben in einer Mail keine Seite: unter den Text
+    ganz, bilder = grafiken.fuer_mail(mail_html(html + frei.fuer_mail(vorlage), vorlage.fusszeile))
     fuss = mail_text(str(bereinigen(als_html(vorlage.fusszeile or ""))))
     return betreff, mail_text(html) + (f"\n\n-- \n{fuss}" if fuss else ""), ganz, bilder

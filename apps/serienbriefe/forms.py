@@ -8,7 +8,7 @@ from apps.adressen.models import AdressKategorie
 from apps.core.auswahl import MITGLIEDSARTEN
 from apps.core.forms import Mehrfachauswahl
 from apps.konten import rollen
-from apps.serienbriefe import gestaltung
+from apps.serienbriefe import frei, gestaltung
 from apps.serienbriefe.empfaenger import QUELLEN, karten
 from apps.serienbriefe.models import Versand, Vorlage
 
@@ -16,9 +16,12 @@ from apps.serienbriefe.models import Versand, Vorlage
 class VorlageForm(forms.ModelForm):
     """Text und Fußzeile im Editor (static/js/html_editor.js), gespeichert als bereinigtes HTML."""
 
+    # Liste als JSON-Text; static/js/brief_frei.js pflegt sie (Ziehen in der Vorschau, Maße)
+    freie_grafiken = forms.CharField(required=False, widget=forms.HiddenInput)
+
     class Meta:
         model = Vorlage
-        fields = ["name", "betreff", "text", "briefkopf", "fusszeile"]
+        fields = ["name", "betreff", "text", "briefkopf", "fusszeile", "freie_grafiken"]
         widgets = {
             "betreff": forms.TextInput(attrs={"data-platzhalter-ziel": ""}),
             "text": forms.Textarea(attrs={"rows": 16, "class": "html-eingabe",
@@ -33,6 +36,8 @@ class VorlageForm(forms.ModelForm):
         self.fields["text"].widget.attrs["data-platzhalter"] = json.dumps(namen)
         # Knopf „Grafik“ im Editor (ADR 0138): Liste und Hochladen über diese Adresse
         self.fields["text"].widget.attrs["data-editor-grafiken"] = reverse("serienbriefe:grafiken")
+        if not self.is_bound:
+            self.initial["freie_grafiken"] = json.dumps(frei.lesen(self.instance.freie_grafiken))
         for feld in ("text", "fusszeile"):  # ältere Vorlagen aus reinem Text als Absätze
             if self.instance.pk and not self.is_bound:
                 self.initial[feld] = gestaltung.als_html(getattr(self.instance, feld))
@@ -42,6 +47,9 @@ class VorlageForm(forms.ModelForm):
         if not gestaltung.mail_text(text).strip():
             raise forms.ValidationError("Bitte einen Text schreiben.")
         return text
+
+    def clean_freie_grafiken(self):
+        return frei.lesen(self.cleaned_data["freie_grafiken"])
 
     def clean_fusszeile(self):
         fuss = gestaltung.speichern(self.cleaned_data["fusszeile"])

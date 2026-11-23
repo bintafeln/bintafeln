@@ -1814,6 +1814,21 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
   background: #fff; cursor: zoom-in; overflow: hidden; box-shadow: 0 1px 4px rgb(0 0 0 / .15); }
 .brief-vorschau-knopf img { display: block; width: 100%; height: auto; aspect-ratio: 595 / 842; transition: opacity .2s; }
 .brief-vorschau.laedt img { opacity: .55; }
+/* Grafiken frei auf der Seite (ADR 0166): liegen verschiebbar über dem Vorschaubild */
+.brief-blatt { position: relative; }
+.brief-frei-ebene { position: absolute; inset: 1px; pointer-events: none; overflow: hidden; }
+.frei-stueck { position: absolute; pointer-events: auto; cursor: move; touch-action: none;
+  outline: 1px dashed rgba(0, 0, 0, .35); outline-offset: 0; }
+.frei-stueck:hover, .frei-stueck:focus, .frei-stueck.frei-aktiv { outline: 2px solid var(--akzent); }
+.frei-stueck img { display: block; width: 100%; height: auto; pointer-events: none; user-select: none; }
+.brief-vorschau.laedt .frei-stueck img { opacity: 1; }
+.frei-griff { position: absolute; right: -5px; bottom: -5px; width: 12px; height: 12px; cursor: nwse-resize;
+  background: var(--akzent); border: 2px solid #fff; border-radius: 2px; }
+.frei-grafiken { min-inline-size: 0; }  /* sonst so breit wie die Tabelle, über die Vorschau hinaus */
+.frei-tabelle input[type="number"] { width: 5.5rem; }
+.frei-neu, .frei-hochladen { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; margin: .5rem 0; }
+.frei-grafiken.laedt { opacity: .7; }
+.grafik-freistellen { display: block; margin-top: .5rem; }
 .platzhalter-spalte { margin: .5rem 0 0; padding: .5rem .6rem; border: 1px solid var(--rand); border-radius: var(--radius);
   background: var(--flaeche); }
 .platzhalter-spalte h2 { font-size: 1rem; margin: 0 0 .35rem; }

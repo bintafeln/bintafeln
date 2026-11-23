@@ -511,3 +511,79 @@ def test_hilfe_bild_statistik(angemeldet, admin, muster):
     aufnehmen(seite, "statistik-abschnitt", abschnitt,
               Marke(abschnitt.locator(".liste-kopf > span"), "rahmen", 1),
               Marke(abschnitt.locator("summary").first, "rahmen", 2))  # fmt: skip
+
+
+def test_hilfe_bild_serienbrief_frei(angemeldet, admin, muster):
+    """Unterschriften frei auf der Seite (ADR 0166): ziehen in der Vorschau speichert sofort."""
+    import io
+    import json
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from PIL import Image, ImageDraw
+
+    from apps.serienbriefe import grafiken
+    from apps.serienbriefe.models import Vorlage
+
+    eintraege = []
+    for nummer, name in enumerate(("Erika Beispiel", "Max Muster", "Clara Beispiel")):
+        bild = Image.new("RGB", (700, 260), "white")
+        zeichnen = ImageDraw.Draw(bild)
+        zeichnen.text((40, 70), name, fill=(25, 35, 110), font_size=78)
+        zeichnen.line([(40, 190), (620, 170)], fill=(25, 35, 110), width=5)
+        puffer = io.BytesIO()
+        bild.save(puffer, "PNG")
+        g = grafiken.speichern(SimpleUploadedFile(f"Unterschrift {name}.png", puffer.getvalue()),
+                               freistellen=True)  # fmt: skip
+        eintraege.append({"grafik": g.pk, "x": 25 + nummer * 52, "y": 205 + (nummer % 2) * 6,
+                          "breite": 55, "seite": "letzte"})  # fmt: skip
+    v = Vorlage.objects.get(name="Dank für Spenden")
+    v.text = ("<p>{anrede}</p><p>im Jahr {jahr} haben Sie die {tafel} unterstützt. Dafür danken "
+              "wir Ihnen von Herzen.</p><p>Mit freundlichen Grüßen</p>")  # fmt: skip
+    v.freie_grafiken = eintraege
+    v.save()
+    seite = oeffnen(angemeldet, admin, reverse("serienbriefe:vorlage", args=[v.pk]), breite=1400,
+                    hoehe=1300)  # fmt: skip
+    _ohne_menue(seite)
+    stuecke = seite.locator(".frei-stueck")
+    expect(stuecke).to_have_count(3)
+    expect(seite.locator(".frei-tabelle tbody tr")).to_have_count(3)
+    expect(seite.locator("img[data-brief-vorschau]")).to_have_attribute("src", re.compile("^blob:"))
+    # Die erste Unterschrift ein Stück nach rechts unten ziehen
+    erste = stuecke.first
+    box = erste.bounding_box()
+    seite.mouse.move(box["x"] + box["width"] / 3, box["y"] + box["height"] / 2)
+    seite.mouse.down()
+    seite.mouse.move(box["x"] + box["width"] / 3 + 30, box["y"] + box["height"] / 2 + 20, steps=5)
+    seite.mouse.up()
+    expect(seite.locator(".autosave-ok")).to_be_visible()
+    v.refresh_from_db()
+    assert v.freie_grafiken[0]["x"] > 25 and v.freie_grafiken[0]["y"] > 205
+    links = seite.locator(".frei-tabelle tbody tr").first.locator("input").nth(0)
+    assert float(links.input_value()) == v.freie_grafiken[0]["x"]
+    # Größe an der Ecke ändern
+    griff = stuecke.nth(2).locator(".frei-griff")
+    g = griff.bounding_box()
+    seite.mouse.move(g["x"] + g["width"] / 2, g["y"] + g["height"] / 2)
+    seite.mouse.down()
+    seite.mouse.move(g["x"] - 25, g["y"] + 2, steps=5)
+    seite.mouse.up()
+    seite.wait_for_function(
+        "n => JSON.parse(document.getElementById('id_freie_grafiken').value)[2].breite < n", arg=55
+    )
+    # Maß in der Tabelle eintragen
+    zeile = seite.locator(".frei-tabelle tbody tr").nth(1)
+    zeile.locator("input").nth(1).fill("240")
+    zeile.locator("input").nth(1).press("Tab")
+    seite.wait_for_function(
+        "() => JSON.parse(document.getElementById('id_freie_grafiken').value)[1].y === 240"
+    )
+    seite.wait_for_timeout(800)
+    v.refresh_from_db()
+    assert v.freie_grafiken[1]["y"] == 240
+    assert json.loads(seite.locator("#id_freie_grafiken").input_value())[2]["breite"] < 55
+    aufnehmen(seite, "serienbriefe-frei",
+              [seite.locator(".frei-grafiken"), seite.locator(".brief-vorschau")],
+              Marke(erste, "rahmen", 1),
+              Marke(stuecke.nth(2).locator(".frei-griff"), nummer=2, von="rechts", laenge=50),
+              Marke(seite.locator(".frei-tabelle"), "rahmen", 3),
+              Marke(seite.locator(".frei-hochladen"), "rahmen", 4))  # fmt: skip

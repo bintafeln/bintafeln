@@ -17,7 +17,7 @@ from apps.core.pdf import im_fenster, pdf_antwort
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
 from apps.serienbriefe import empfaenger as emp
-from apps.serienbriefe import gestaltung, grafiken
+from apps.serienbriefe import frei, gestaltung, grafiken
 from apps.serienbriefe.brief import briefe_pdf
 from apps.serienbriefe.forms import AuswahlForm, VorlageForm
 from apps.serienbriefe.models import Grafik, Versand, Vorlage
@@ -46,12 +46,16 @@ def vorlage(request, pk=None):
     })  # fmt: skip
 
 
-def _vorschau_pdf(request) -> bytes:
-    """Der Brief aus dem (noch nicht gespeicherten) Formular mit einem erfundenen Empfänger."""
+def _vorschau_pdf(request, frei_zeichnen=True) -> bytes:
+    """Der Brief aus dem (noch nicht gespeicherten) Formular mit einem erfundenen Empfänger.
+    ``frei_zeichnen=False``: ohne frei gesetzte Grafiken – die Live-Vorschau legt sie selbst zum
+    Verschieben darüber (static/js/brief_frei.js)."""
     d = request.POST
     v = Vorlage(name=d.get("name", ""), betreff=d.get("betreff", ""),
                 text=gestaltung.speichern(d.get("text", "")), briefkopf=bool(d.get("briefkopf")),
-                fusszeile=gestaltung.speichern(d.get("fusszeile", "")))  # fmt: skip
+                fusszeile=gestaltung.speichern(d.get("fusszeile", "")),
+                freie_grafiken=frei.lesen(d.get("freie_grafiken", "")) if frei_zeichnen else [],
+                )  # fmt: skip
     beispiel = emp.Empfaenger("vorschau", "Erika Beispiel", emp.BEISPIEL_ANSCHRIFT,
                               "erika@example.org", emp.BEISPIEL)  # fmt: skip
     betreff, html = gestaltung.brief(v, beispiel, _allgemein(timezone.localdate().year))
@@ -71,10 +75,11 @@ def vorlage_vorschau(request):
 @rollen.recht_erforderlich("serienbriefe.erstellen")
 def vorlage_bild(request):
     """Live-Vorschau neben dem Editor: die erste Seite des Vorschau-PDFs als PNG; die Zahl der
-    Seiten steht im Kopf ``X-Seiten``."""
+    Seiten steht im Kopf ``X-Seiten``. Frei gesetzte Grafiken fehlen im Bild, die Seite zeigt sie
+    verschiebbar darüber."""
     import pypdfium2 as pdfium
 
-    pdf = pdfium.PdfDocument(_vorschau_pdf(request))
+    pdf = pdfium.PdfDocument(_vorschau_pdf(request, frei_zeichnen=False))
     try:
         seiten = len(pdf)
         bild = pdf[0].render(scale=VORSCHAU_SKALA).to_pil().convert("RGB")
@@ -102,7 +107,8 @@ def grafiken_liste(request):
         if not datei:
             return JsonResponse({"fehler": "Bitte eine Bilddatei wählen."}, status=400)
         try:
-            g = grafiken.speichern(datei, von=request.user.get_username())
+            g = grafiken.speichern(datei, von=request.user.get_username(),
+                                   freistellen=bool(request.POST.get("freistellen")))  # fmt: skip
         except grafiken.GrafikFehler as fehler:
             return JsonResponse({"fehler": str(fehler)}, status=400)
         return JsonResponse(_grafik_daten(g), status=201)
