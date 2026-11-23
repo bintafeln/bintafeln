@@ -17,6 +17,7 @@ app_name = "kunden"
 
 urlpatterns = [
     path("", views.uebersicht, name="uebersicht"),
+    path("ausgabestelle/", views.stellenliste, name="stellenliste"),
     path("zuletzt-aufgenommen/", views.zuletzt_aufgenommen, name="zuletzt_aufgenommen"),
     path("haushalt/neu/", views_bearbeiten.haushalt_neu, name="haushalt_neu"),
     path(

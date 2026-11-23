@@ -29,6 +29,11 @@
         <option value="">alle</option>
         {% for g in gruppen %}<option value="{{ g.pk }}"{% if filter.gruppe == g.pk|stringformat:"d" %} selected{% endif %}>{{ g.name }}</option>{% endfor %}
       </select></div>
+    {% if gewaehlte_stelle %}<div class="filter-feld"><label for="stelle">Ausgabestelle</label>
+      <select name="stelle" id="stelle">
+        <option value="">alle</option>
+        <option value="gewaehlt"{% if filter.stelle %} selected{% endif %}>nur {{ gewaehlte_stelle.name }}</option>
+      </select></div>{% endif %}
     {% if tage %}<div class="filter-feld"><label for="tag">Ausgabetag</label>
       <select name="tag" id="tag">
         <option value="">alle Tage</option>

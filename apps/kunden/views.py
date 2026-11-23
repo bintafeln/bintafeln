@@ -141,6 +141,19 @@ def _nach_status(haushalte, status: str):
     return haushalte.filter(status=status, sperre_laeuft=False)
 
 
+STELLE_GEWAEHLT = "gewaehlt"  # ?stelle=gewaehlt: nur Kunden der im Menü gewählten Ausgabestelle
+
+
+def _gewaehlte_stelle(request):
+    """Die oben im Menü gewählte Ausgabestelle – nur für Konten, die alle Ausgabestellen sehen
+    (wer ohnehin nur seine eigenen sieht, braucht den Filter nicht)."""
+    from apps.ausgabe import stelle as stelle_wahl
+
+    if zugang.stellen(request.user) is not None:
+        return None
+    return stelle_wahl.aktuelle(request.user)
+
+
 def _haushalte_suchen(request):
     """Haushalte nach Suchtext, Status und Kundengruppe; mit Name der Hauptperson."""
     hauptperson = Person.objects.filter(haushalt=OuterRef("pk"), ist_hauptperson=True)
@@ -167,6 +180,12 @@ def _haushalte_suchen(request):
     gruppe = request.GET.get("gruppe", "")
     if gruppe.isdigit():
         haushalte = haushalte.filter(kundengruppe_id=int(gruppe))
+    # „Nur die oben im Menü gewählte Ausgabestelle“: die Kundenliste, wie die Ausgabestelle sie
+    # sieht. Folgt der Auswahl im Menü, deshalb steht hier kein fester Schlüssel.
+    nur_stelle = ""
+    if request.GET.get("stelle") == STELLE_GEWAEHLT and (gewaehlt := _gewaehlte_stelle(request)):
+        haushalte = haushalte.filter(kundengruppe__ausgabestelle=gewaehlt)
+        nur_stelle = STELLE_GEWAEHLT
     merkmal = request.GET.get("merkmal", "")
     feld = next((z for z in merkmale.waehlbar(request.user) if z.schluessel == merkmal), None)
     if feld is not None:
@@ -183,7 +202,7 @@ def _haushalte_suchen(request):
     haushalte = haushalte.order_by(*_reihenfolge(sortierung or "kundennummer"))
     anzahl = listen.zeilenzahl(request, "anzahl")  # je Person gemerkt, Vorgabe 25
     return haushalte, {"q": suche, "status": status, "gruppe": gruppe, "tag": tag,
-                       "merkmal": merkmal,
+                       "merkmal": merkmal, "stelle": nur_stelle,
                        "sort": sortierung, "anzahl": anzahl}  # fmt: skip
 
 
@@ -337,6 +356,23 @@ FILTER_MERKEN = ("status", "gruppe", "tag", "merkmal", "sort")
 
 
 @rollen.recht_erforderlich("kunden.liste")
+def stellenliste(request):
+    """Menü „Ausgabestelle → Kundenliste“ für alle, die sonst alle Ausgabestellen sehen: die
+    Kundenliste nur mit den Kunden der oben im Menü gewählten Ausgabestelle. Die übrigen gemerkten
+    Filter gelten weiter; die Kundengruppe nicht (sie könnte zu einer anderen Stelle gehören)."""
+    ziel = reverse("kunden:uebersicht")
+    if _gewaehlte_stelle(request) is None:
+        if zugang.stellen(request.user) is None:
+            messages.info(request, "Bitte oben im Menü eine Ausgabestelle wählen – dann zeigt "
+                                   "„Kundenliste“ nur deren Kunden.")  # fmt: skip
+        return redirect(ziel)
+    gemerkt = QueryDict((request.user.listen_filter or {}).get("kunden", ""), mutable=True)
+    gemerkt.pop("gruppe", None)
+    gemerkt["stelle"] = STELLE_GEWAEHLT
+    return redirect(f"{ziel}?{gemerkt.urlencode()}")
+
+
+@rollen.recht_erforderlich("kunden.liste")
 def uebersicht(request):
     """Kundenliste mit Suche. Eine exakt passende Kundennummer (Scanner) öffnet den Haushalt."""
     ImportVorbereitung.abgelaufene_loeschen()
@@ -367,6 +403,7 @@ def uebersicht(request):
     )
     je_seite = listen.je_seite(filter_["anzahl"], haushalte.count(), KUNDENLISTE_JE_SEITE)
     seite = Paginator(haushalte, je_seite).get_page(request.GET.get("seite"))
+    stelle_oben = _gewaehlte_stelle(request)
     darf = rollen.rechte_von(request.user)
     keys = listen_spalten(request.user)
     aus = set(request.user.kundenliste_aus or [])
@@ -379,9 +416,14 @@ def uebersicht(request):
         "status_auswahl": STATUS_FILTER,
         "merkmale": merkmale.waehlbar(request.user),
         "anzahl_wahl": ANZAHL_WAHL,
-        "gruppen": Kundengruppe.objects.order_by("name")
+        "gruppen": (
+            Kundengruppe.objects.filter(ausgabestelle=stelle_oben)
+            if filter_["stelle"]
+            else Kundengruppe.objects.all()
+        ).order_by("name")
         if zugang.stellen(request.user) is None
         else Kundengruppe.objects.filter(ausgabestelle__in=zugang.stellen(request.user)),
+        "gewaehlte_stelle": stelle_oben,
         "eigene_stellen": zugang.stellen(request.user),
         "tage": export.waehlbare_tage(_eigene_gruppen(request.user)),
         "abfrage": urlencode({k: v for k, v in filter_.items() if v} | {"tag": filter_["tag"]}),
