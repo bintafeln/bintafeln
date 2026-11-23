@@ -5,6 +5,7 @@ import datetime as dt
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -76,9 +77,18 @@ def heute(request):
     return render(request, "touren/heute.html", {
         "tag": tag, "ist_heute": tag == heute_, "zeilen": zeilen,
         "davor": tag - dt.timedelta(days=1), "danach": tag + dt.timedelta(days=1),
-        "eco": TourenEinstellungen.laden().eco_link,
         "darf_planen": rollen.hat_recht(request.user, "touren.planen"),
     })  # fmt: skip
+
+
+@fahren_recht
+def eco(request):
+    """Der Menüpunkt „ECO-Plattform“: leitet zur eingestellten Adresse weiter (ADR 0153). Das Menü
+    kennt nur eigene Adressen; so bleibt die fremde Adresse an einer Stelle."""
+    ziel = TourenEinstellungen.laden().eco_link
+    if not ziel:
+        raise Http404("Die ECO-Plattform ist nicht eingeschaltet.")
+    return redirect(ziel)
 
 
 @never_cache
@@ -335,7 +345,7 @@ def touren(request):
         "regelmaessig": [t for t in alle if not t.datum],
         "kurzfristig": [t for t in alle if t.datum and t.datum >= heute_],
         "vergangen": [t for t in reversed(alle) if t.datum and t.datum < heute_][:20],
-        "heute": heute_, "eco": TourenEinstellungen.laden().eco_link,
+        "heute": heute_,
     })  # fmt: skip
 
 
