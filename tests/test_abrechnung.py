@@ -9,6 +9,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.abrechnung import ablauf
 from apps.abrechnung.models import AbrechnungEinstellungen, Monatsabrechnung, Posten
@@ -54,6 +55,13 @@ def stellen():
 def mitte_client(admin, stellen, benutzer_mit_rolle, anmelden):
     b = benutzer_mit_rolle("anton", rollen.AUSGABE)
     b.ausgabestellen.set([stellen[0]])
+    return anmelden(Client(), b)
+
+
+@pytest.fixture
+def nord_client(admin, stellen, benutzer_mit_rolle, anmelden):
+    b = benutzer_mit_rolle("nora", rollen.AUSGABE)
+    b.ausgabestellen.set([stellen[1]])
     return anmelden(Client(), b)
 
 
@@ -144,7 +152,19 @@ def test_einreichen_pruefen_zurueckgeben(mitte_client, stellen, admin_client):
     assert not Posten.objects.filter(betrag=D("99")).exists()
     p = Posten.objects.get()
     antwort = mitte_client.post(reverse("abrechnung:posten_loeschen", args=[p.pk]), follow=True)
-    assert "Änderungen erst nach Rückgabe" in antwort.content.decode()
+    assert "bereits abgeschickt" in antwort.content.decode()
+    # … auch nicht bearbeiten: Die Seite ist gesperrt, und ein direkter Aufruf ändert nichts
+    bearbeiten = reverse("abrechnung:posten_bearbeiten", args=[p.pk])
+    antwort = mitte_client.post(bearbeiten, {"datum": "20.09.2026", "betrag": "1,00",
+                                             "art": "Müll"}, follow=True)  # fmt: skip
+    assert "bereits abgeschickt" in antwort.content.decode()
+    p.refresh_from_db()
+    assert p.betrag == D("12.50")
+    assert mitte_client.get(bearbeiten).status_code == 302
+    with pytest.raises(ablauf.AbrechnungFehler, match="bereits abgeschickt"):
+        ablauf.posten_aendern(p, {"datum": p.datum, "betrag": D("1")}, None, None)
+    seite_ = mitte_client.get(seite(mitte)).content.decode()
+    assert "bereits abgeschickt" in seite_ and bearbeiten not in seite_
     antwort = mitte_client.post(reverse("abrechnung:aktion", args=[abr.pk, "einreichen"]),
                                 follow=True)  # fmt: skip
     assert "schon eingereicht" in antwort.content.decode()
@@ -231,7 +251,7 @@ def test_abrechnung_ueber_mehrere_monate(mitte_client, stellen, admin_client, pd
     for monat in ("2026-09", "2026-10", "2026-11"):
         zeile = admin_client.get(reverse("abrechnung:uebersicht"), {"monat": monat}
                                  ).context["zeilen"][0]  # fmt: skip
-        assert zeile["abr"] == abr and zeile["zeitraum"] == "September – November 2026"
+        assert zeile["abr"] == abr and zeile["zeitraum"] == "0926–1126"
     assert admin_client.get(reverse("abrechnung:uebersicht"), {"monat": "2026-12"}
                             ).context["zeilen"][0]["abr"].pk is None  # fmt: skip
     assert "September – November 2026" in pdf_text(
@@ -279,7 +299,7 @@ def test_pdf_und_zip(mitte_client, stellen, admin_client, pdf_text):
     assert mitte_client.get(zip_url).status_code == 403
     assert mitte_client.get(zip_url, {"stelle": nord.pk}).status_code == 403
     eigen = mitte_client.get(zip_url, {"stelle": mitte.pk})
-    assert eigen["Content-Disposition"] == 'attachment; filename="quittungen-Mitte-2026-09.zip"'
+    assert eigen["Content-Disposition"] == 'attachment; filename="quittungen-Mitte-0926.zip"'
     assert len(zipfile.ZipFile(io.BytesIO(eigen.content)).namelist()) == 1
     monat_seite = mitte_client.get(reverse("abrechnung:monat", args=[mitte.pk, "2026-09"]))
     assert "⬇ Die Quittung (ZIP)" in monat_seite.content.decode()
@@ -289,7 +309,7 @@ def test_pdf_und_zip(mitte_client, stellen, admin_client, pdf_text):
     antwort = admin_client.get(zip_url)
     assert antwort["Content-Type"] == "application/zip"
     namen = zipfile.ZipFile(io.BytesIO(antwort.content)).namelist()
-    assert len(namen) == 1 and namen[0].startswith("2026-09_Mitte/2026-09-10_Reinigung_12.50_")
+    assert len(namen) == 1 and namen[0].startswith("0926_Mitte/2026-09-10_Reinigung_12.50_")
     assert namen[0].endswith(".jpg")
     leer = admin_client.get(zip_url, {"stelle": nord.pk})
     assert leer.status_code == 302 and "monat=2026-09" in leer.url
@@ -348,3 +368,103 @@ def test_menue_und_modul_aus(admin_client, stellen):
     t.module = []
     t.save()
     assert admin_client.get(reverse("abrechnung:uebersicht")).status_code == 404
+
+
+def test_monat_als_mmjj():
+    """Die Tafel schreibt den Monat als MMJJ; in den Adressen bleibt 2026-11."""
+    lesen = ablauf.monat_aus_text
+    assert (
+        lesen("1126")
+        == lesen("11/26")
+        == lesen("11.26")
+        == lesen(" 2026-11 ")
+        == dt.date(2026, 11, 1)
+    )
+    assert lesen("0127") == dt.date(2027, 1, 1)
+    for unsinn in ("", "1326", "0026", "abc", "112", "11266", "1999-11", "2026-13"):
+        assert lesen(unsinn) is None, unsinn
+    assert ablauf.mmjj(dt.date(2026, 11, 1)) == "1126"
+    # Vor- und Folgemonat über den Jahreswechsel
+    januar = lesen("0127")
+    assert ablauf.mmjj(ablauf.verschieben(januar, -1)) == "1226"
+    assert ablauf.mmjj(ablauf.verschieben(lesen("1226"), 1)) == "0127"
+
+
+def test_uebersicht_zeigt_und_liest_mmjj(admin_client, stellen):
+    url = reverse("abrechnung:uebersicht")
+    seite_ = admin_client.get(url, {"monat": "0127"}).content.decode()
+    assert "Abrechnungen 0127" in seite_ and 'value="0127"' in seite_
+    assert "?monat=2026-12" in seite_ and "?monat=2027-02" in seite_  # Vormonat, Folgemonat
+    assert 'type="month"' not in seite_
+    # Unlesbare Eingabe: Meldung, und es bleibt beim bisherigen Monat
+    seite_ = admin_client.get(url, {"monat": "1326", "bisher": "2026-09"}).content.decode()
+    assert "ist kein Monat" in seite_ and "Abrechnungen 0926" in seite_
+    assert admin_client.get(url, {"monat": "<b>"}).status_code == 200
+
+
+def test_ausgabe_bearbeiten_solange_nicht_abgeschickt(mitte_client, nord_client, stellen):
+    mitte, _ = stellen
+    posten(mitte_client, mitte, foto=SimpleUploadedFile("q.jpg", FOTO, content_type="image/jpeg"))
+    p = Posten.objects.get()
+    alt = p.quittung
+    url = reverse("abrechnung:posten_bearbeiten", args=[p.pk])
+    seite_ = mitte_client.get(seite(mitte)).content.decode()
+    assert url in seite_ and "bearbeiten" in seite_
+    maske = mitte_client.get(url).content.decode()
+    assert 'value="12,50"' in maske and "Drogerie" in maske
+    # Betrag und Art ändern, Quittung bleibt
+    antwort = mitte_client.post(url, {"datum": "11.09.2026", "betrag": "14,00", "art": "Müll",
+                                      "empfaenger": "Stadt"}, follow=True)  # fmt: skip
+    assert "Ausgabe geändert" in antwort.content.decode()
+    p.refresh_from_db()
+    assert (p.betrag, p.art, p.empfaenger, p.quittung) == (D("14.00"), "Müll", "Stadt", alt)
+    assert p.datum == dt.date(2026, 9, 11)
+    # neue Quittung ersetzt die alte
+    neu = SimpleUploadedFile("q.png", FOTO, content_type="image/png")
+    mitte_client.post(url, {"datum": "11.09.2026", "betrag": "14,00", "art": "Müll",
+                            "datei": neu})  # fmt: skip
+    p.refresh_from_db()
+    assert p.quittung != alt and p.quittung_typ == "image/png"
+    assert not privatdateien.pfad(Posten.ORDNER, alt).exists()
+    # Datum nach dem Zeitraum und fremde Ausgabestelle
+    antwort = mitte_client.post(url, {"datum": "01.10.2026", "betrag": "14,00", "art": "Müll"})
+    assert "nach dem Ende des Abrechnungszeitraums" in antwort.content.decode()
+    assert nord_client.get(url).status_code == 403
+    assert nord_client.post(url, {"datum": "11.09.2026", "betrag": "1", "art": "Müll"}
+                            ).status_code == 403  # fmt: skip
+    # Eine Art, die es in den Einstellungen nicht mehr gibt, bleibt wählbar
+    Posten.objects.filter(pk=p.pk).update(art="Altes")
+    assert '<option value="Altes" selected>' in mitte_client.get(url).content.decode()
+
+
+def test_eingereichte_sind_auffindbar(mitte_client, admin_client, admin, stellen):
+    """Das Büro findet eingereichte Abrechnungen, ohne den Monat zu kennen: Liste über alle
+    Monate, Datum im Status, Zahl am Menüpunkt."""
+    mitte, nord = stellen
+    url = reverse("abrechnung:uebersicht")
+    leer = admin_client.get(url, {"status": "eingereicht"}).content.decode()
+    assert "wartet keine eingereichte Abrechnung" in leer
+    assert "Entwurf" in admin_client.get(url, {"monat": "0926"}).content.decode()
+    posten(mitte_client, mitte)
+    abr = Monatsabrechnung.objects.get(stelle=mitte, monat=MONAT)
+    mitte_client.post(reverse("abrechnung:aktion", args=[abr.pk, "einreichen"]))
+    heute = f"{timezone.localdate():%d.%m.%Y}"
+    liste = admin_client.get(url, {"status": "eingereicht"})
+    inhalt = liste.content.decode()
+    assert [z["abr"] for z in liste.context["zeilen"]] == [abr]
+    assert f"eingereicht am {heute}" in inhalt and "Nord" not in inhalt.split("<tbody>")[1]
+    assert reverse("abrechnung:monat", args=[mitte.pk, "2026-09"]) in inhalt and ">0926<" in inhalt
+    # in der Monatsansicht eines anderen Monats: Knopf mit Zahl, im Menü ebenfalls
+    anders = admin_client.get(url, {"monat": "0127"}).content.decode()
+    assert "Nur eingereichte (1)" in anders
+    eintrag = next(e for b in admin_client.get(url).context["menue"] for e in b["eintraege"]
+                   if e["url"] == url)  # fmt: skip
+    assert eintrag["zahl"] == 1
+    # Die Ausgabestelle selbst sieht keine Zahl am Menüpunkt
+    eigene = [e for b in mitte_client.get(seite(mitte)).context["menue"] for e in b["eintraege"]
+              if e["url"] == url]  # fmt: skip
+    assert len(eigene) == 1 and not eigene[0].get("zahl")
+    # bestätigt: nicht mehr in der Liste
+    ablauf.bestaetigen(abr, admin)
+    assert not admin_client.get(url, {"status": "eingereicht"}).context["zeilen"]
+    assert f"bestätigt am {heute}" in admin_client.get(url, {"monat": "0926"}).content.decode()

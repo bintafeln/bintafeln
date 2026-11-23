@@ -10,6 +10,7 @@ urlpatterns = [
     path("<int:pk>/pdf/", views.als_pdf, name="pdf"),
     path("<int:pk>/<str:was>/", views.aktion, name="aktion"),
     path("ausgabe/<int:pk>/quittung/", views.quittung, name="quittung"),
+    path("ausgabe/<int:pk>/bearbeiten/", views.posten_bearbeiten, name="posten_bearbeiten"),
     path("ausgabe/<int:pk>/loeschen/", views.posten_loeschen, name="posten_loeschen"),
     path("quittungen/<str:monat>/", views.quittungen, name="quittungen"),
     path("einstellungen/", views.einstellungen, name="einstellungen"),

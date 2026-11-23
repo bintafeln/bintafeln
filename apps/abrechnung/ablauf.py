@@ -77,11 +77,31 @@ def verschieben(monat: dt.date, um: int) -> dt.date:
     return dt.date(zahl // 12, zahl % 12 + 1, 1)
 
 
+def monat_aus_text(text: str) -> dt.date | None:
+    """Liest einen Monat: „1126“ (MMJJ, auch „11/26“ oder „11.26“) oder „2026-11“ (so stehen die
+    Monate in den Adressen). ``None``, wenn das kein Monat ist."""
+    text = (text or "").strip()
+    m = re.fullmatch(r"(\d{2})\s*[./ -]?\s*(\d{2})", text)
+    if m and 1 <= int(m.group(1)) <= 12:
+        return dt.date(2000 + int(m.group(2)), int(m.group(1)), 1)
+    m = re.fullmatch(r"(\d{4})-(\d{1,2})", text)
+    if m and 1 <= int(m.group(2)) <= 12 and int(m.group(1)) >= 2000:
+        return dt.date(int(m.group(1)), int(m.group(2)), 1)
+    return None
+
+
 def monat_lesen(text: str, vorgabe: dt.date) -> dt.date:
-    try:
-        return dt.datetime.strptime(text or "", "%Y-%m").date()
-    except ValueError:
-        return monatsanfang(vorgabe)
+    return monat_aus_text(text) or monatsanfang(vorgabe)
+
+
+def mmjj(monat: dt.date) -> str:
+    """Der Monat, wie ihn die Tafeln schreiben: November 2026 → „1126“."""
+    return f"{monat:%m%y}"
+
+
+def zeitraum_kurz(abr: Monatsabrechnung) -> str:
+    """„1126“ oder bei mehreren Monaten „0926–1126“."""
+    return mmjj(abr.monat) if abr.ende == abr.monat else f"{mmjj(abr.monat)}–{mmjj(abr.ende)}"
 
 
 def monatsname(monat: dt.date) -> str:
@@ -118,6 +138,13 @@ def holen(stelle, monat: dt.date) -> Monatsabrechnung:
 def zeitraeume(abr: Monatsabrechnung) -> list[tuple[int, str]]:
     """Auswahl „bis einschließlich …“: (Anzahl Monate, Name des letzten Monats)."""
     return [(n, monatsname(verschieben(abr.monat, n - 1))) for n in range(1, HOECHSTENS + 1)]
+
+
+def eingereichte():
+    """Alle eingereichten, noch nicht bestätigten Abrechnungen – über alle Monate, die zuletzt
+    eingereichte zuerst. So findet das Büro sie, ohne den Monat zu kennen."""
+    return (Monatsabrechnung.objects.filter(status=Monatsabrechnung.Status.EINGEREICHT)
+            .select_related("stelle").order_by("-eingereicht_am"))  # fmt: skip
 
 
 # --- Zahlen ---
@@ -161,10 +188,15 @@ def _sperren(abr: Monatsabrechnung) -> Monatsabrechnung:
     return Monatsabrechnung.objects.select_for_update().get(pk=abr.pk)
 
 
+ABGESCHICKT = ("Die Abrechnung ist bereits abgeschickt. Ausgaben lassen sich erst wieder ändern "
+               "oder löschen, wenn das Einreichen zurückgenommen oder die Abrechnung vom Büro "
+               "zurückgegeben wurde.")  # fmt: skip
+
+
 def posten_anlegen(abr, daten: dict, datei, benutzer) -> Posten:
     """Neue Ausgabe; die Quittung (Foto oder PDF) wird verschlüsselt gespeichert."""
     if not abr.offen:
-        raise AbrechnungFehler("Die Abrechnung ist eingereicht; Änderungen erst nach Rückgabe.")
+        raise AbrechnungFehler(ABGESCHICKT)
     if daten["datum"] > monatsende(abr.ende):
         raise AbrechnungFehler("Das Datum liegt nach dem Ende des Abrechnungszeitraums.")
     posten = Posten(abrechnung=abr, eingetragen_von=benutzer.get_username(), **daten)
@@ -175,9 +207,31 @@ def posten_anlegen(abr, daten: dict, datei, benutzer) -> Posten:
     return posten
 
 
+def posten_aendern(posten: Posten, daten: dict, datei, benutzer) -> Posten:
+    """Eine eingetragene Ausgabe ändern – nur, solange die Abrechnung nicht abgeschickt ist. Eine
+    neue Quittung ersetzt die alte; ohne neue Datei bleibt die vorhandene."""
+    with transaction.atomic():
+        abr = _sperren(posten.abrechnung)
+        if not abr.offen:
+            raise AbrechnungFehler(ABGESCHICKT)
+        if daten["datum"] > monatsende(abr.ende):
+            raise AbrechnungFehler("Das Datum liegt nach dem Ende des Abrechnungszeitraums.")
+        for feld, wert in daten.items():
+            setattr(posten, feld, wert)
+        alt = ""
+        if datei:
+            alt = posten.quittung
+            posten.quittung = privatdateien.speichern(Posten.ORDNER, datei, max_mb=10)
+            posten.quittung_typ = datei.content_type
+        posten.save()
+    if alt:
+        privatdateien.loeschen(Posten.ORDNER, alt)
+    return posten
+
+
 def posten_loeschen(posten: Posten) -> None:
     if not posten.abrechnung.offen:
-        raise AbrechnungFehler("Die Abrechnung ist eingereicht; Änderungen erst nach Rückgabe.")
+        raise AbrechnungFehler(ABGESCHICKT)
     privatdateien.loeschen(Posten.ORDNER, posten.quittung)
     posten.delete()
 
@@ -289,7 +343,7 @@ def quittungen_zip(abrechnungen) -> tuple[bytes, int]:
                 inhalt = privatdateien.lesen(Posten.ORDNER, p.quittung)
                 if inhalt is None:
                     continue
-                ordner = f"{abr.monat:%Y-%m}_{_sicher(abr.stelle.name)}"
+                ordner = f"{mmjj(abr.monat)}_{_sicher(abr.stelle.name)}"
                 zip_.writestr(f"{ordner}/{quittung_dateiname(p)}", inhalt)
                 anzahl += 1
     return puffer.getvalue(), anzahl
@@ -297,7 +351,7 @@ def quittungen_zip(abrechnungen) -> tuple[bytes, int]:
 
 def pdf(abr: Monatsabrechnung) -> bytes:
     z = zahlen(abr)
-    doc = Pdf("Abrechnung", f"{abr.stelle.name} · {zeitraum_name(abr)}")
+    doc = Pdf("Abrechnung", f"{abr.stelle.name} · {zeitraum_kurz(abr)} ({zeitraum_name(abr)})")
     stand = abr.get_status_display()
     if abr.eingereicht_am:
         stand += f", eingereicht {timezone.localtime(abr.eingereicht_am):%d.%m.%Y} von " \

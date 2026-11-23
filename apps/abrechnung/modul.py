@@ -4,10 +4,18 @@ from apps.core.module import Modul
 
 
 def menue(eintrag):
+    from apps.abrechnung import ablauf
+
+    # Wer prüft, sieht am Menüpunkt, wie viele eingereichte Abrechnungen warten. Dieser Eintrag
+    # steht zuerst: Wer beide Rechte hat, bekommt ihn (dieselbe Adresse erscheint nur einmal).
+    pruefen = eintrag("Abrechnung", "abrechnung:uebersicht")
+    if wartend := ablauf.eingereichte().count():
+        pruefen["zahl"] = wartend
+        pruefen["zahl_titel"] = "eingereichte Abrechnungen warten auf die Prüfung"
     return [
         ("Ausgabestelle", [
+            ("abrechnung.pruefen", pruefen),
             ("abrechnung.fuehren", eintrag("Abrechnung", "abrechnung:uebersicht")),
-            ("abrechnung.pruefen", eintrag("Abrechnung", "abrechnung:uebersicht")),
         ]),
         ("Einstellungen/Ausgabe", [
             ("abrechnung.pruefen", eintrag("Abrechnung", "abrechnung:einstellungen")),

@@ -739,6 +739,19 @@ details.kapazitaet-karte:not([open]) > summary::before { content: "▸"; }
 .kunden-kopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 2rem; }
 .kunden-kopf h1 { margin: 0; }
 .kunden-titel p { margin: 0 0 .25rem; }
+/* Leiste mit Vormonat / Monat / Folgemonat (Abrechnung): alles gleich hoch, in einer Linie, bricht
+   um statt zu scrollen */
+.monatsleiste { display: flex; flex-wrap: wrap; gap: .5rem; align-items: stretch; margin-bottom: 1rem; }
+.monatsleiste > * { margin: 0; }
+.monatsleiste .knopf, .monatsleiste select, .monatsleiste input[type="text"] {
+  width: auto; min-height: 2.9rem; box-sizing: border-box; display: inline-flex; align-items: center;
+  border: 2px solid var(--rand); border-radius: var(--radius); line-height: 1.3; margin: 0; }
+.monatsleiste .knopf { border-color: transparent; }
+.monatsleiste .knopf-zweitrangig { border-color: var(--akzent); }
+.monatsleiste form { display: flex; margin: 0; }
+h1 small.leise { font-size: .6em; font-weight: 400; color: var(--leise); white-space: nowrap; }
+.monatsleiste input[type="text"] { width: 5.5rem; text-align: center; font: inherit; font-weight: 600;
+  padding: 0 .5rem; background: var(--flaeche); color: var(--text); }
 .aktionsleiste { display: flex; flex-wrap: wrap; gap: .5rem; }
 .aktionsleiste .knopf { width: auto; }
 .kopf-meldung { flex-basis: 100%; margin: 0; }

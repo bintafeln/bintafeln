@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block titel %}Abrechnung {{ stelle.name }} {{ name }}{% endblock %}
+{% block titel %}Abrechnung {{ stelle.name }} {{ kurz }}{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
-  <h1>Abrechnung {{ stelle.name }} · {{ name }}</h1>
-  <div class="aktionsleiste">
+  <h1>Abrechnung {{ stelle.name }} · {{ kurz }} <small class="leise">{{ name }}</small></h1>
+  <div class="monatsleiste">
     <a class="knopf knopf-zweitrangig" href="{% url 'abrechnung:monat' stelle.pk zurueck %}">← Davor</a>
     <a class="knopf knopf-zweitrangig" href="{% url 'abrechnung:monat' stelle.pk vor %}">Danach →</a>
     {% if stellen|length > 1 %}
@@ -53,9 +53,11 @@
         <td data-titel="Betrag" class="zahl">{{ p.betrag|floatformat:2 }} €</td>
         <td data-titel="Aktion">
           {% if abr.offen and darf_fuehren %}
+          <a href="{% url 'abrechnung:posten_bearbeiten' p.pk %}">bearbeiten</a> ·
           <form method="post" action="{% url 'abrechnung:posten_loeschen' p.pk %}" class="inline" onsubmit="return confirm('Diese Ausgabe löschen?')">
             {% csrf_token %}<button type="submit" class="link-knopf">löschen</button>
           </form>
+          {% elif darf_fuehren %}<span class="hinweis" title="Bearbeiten und Löschen sind gesperrt, bis das Einreichen zurückgenommen oder die Abrechnung zurückgegeben wird">bereits abgeschickt</span>
           {% endif %}
         </td>
       </tr>
@@ -80,7 +82,7 @@
   </form>
 
   <h2>Abrechnung einreichen</h2>
-  <form method="post" action="{% url 'abrechnung:aktion' abr.pk 'einreichen' %}" onsubmit="return confirm('Abrechnung für {{ name|escapejs }} einreichen? Solange das Büro sie nicht bestätigt hat, können Sie das Einreichen noch zurücknehmen.')">
+  <form method="post" action="{% url 'abrechnung:aktion' abr.pk 'einreichen' %}" onsubmit="return confirm('Abrechnung {{ kurz|escapejs }} ({{ name|escapejs }}) einreichen? Solange das Büro sie nicht bestätigt hat, können Sie das Einreichen noch zurücknehmen.')">
     {% csrf_token %}
     {% include "includes/formular.html" with form=einreichen_form %}
     <button type="submit" class="knopf">Einreichen</button>
