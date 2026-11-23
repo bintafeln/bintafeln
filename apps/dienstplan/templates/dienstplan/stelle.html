@@ -26,7 +26,7 @@
 
   <h3>Aufgaben und feste Besetzung</h3>
   {% if aufgaben %}
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     <input type="hidden" name="aktion" value="besetzung">
     <div class="tabelle-rahmen">

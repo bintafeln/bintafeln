@@ -4,10 +4,11 @@ import datetime as dt
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.html import format_html
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -319,6 +320,18 @@ def stelle(request, pk):
             return redirect(hier)
         if aktion == "besetzung" and tag:
             doppelt, mehrfach = _besetzung_speichern(request, ds, tag)
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                # Sofort-Speichern (autosave.js): Eine übergangene Person erscheint als Fehler am
+                # Feld; Meldungen für die nächste Seite gäbe es hier niemanden, der sie liest.
+                if doppelt:
+                    return HttpResponse(
+                        format_html(
+                            '<form><p class="fehler">Nicht eingetragen – niemand kann an einem '
+                            "Tag an zwei Ausgabestellen eingeteilt sein: {}.</p></form>",
+                            ", ".join(doppelt),
+                        )
+                    )
+                return redirect(hier)
             if doppelt:
                 messages.warning(request, "Niemand kann an einem Tag an zwei Ausgabestellen "
                                           "eingeteilt sein; übergangen: " + ", ".join(doppelt)
