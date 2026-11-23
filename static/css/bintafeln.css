@@ -140,6 +140,12 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
   box-shadow: 0 4px 16px rgba(0, 0, 0, .2); }
 .meldung { padding: .75rem 1rem; border-radius: var(--radius); background: var(--erfolg); }
 .meldung.error { background: #f8e1e1; color: var(--fehler); }
+/* Speicher und Fotos: Füllstand der Festplatte des Servers (ADR 0169) */
+.platte-balken { height: 1.1rem; border: 1px solid var(--rand); border-radius: 999px; overflow: hidden;
+  background: var(--flaeche-2, #f3f3f3); margin: .5rem 0; }
+.platte-balken span { display: block; height: 100%; background: var(--akzent); }
+.platte-balken.platte-knapp span { background: #d9a400; }
+.platte-balken.platte-dringend span { background: var(--fehler); }
 .ausweisdruck { margin: .75rem 0; }
 .ausweisdruck .aktionsleiste { margin-top: .5rem; }
 .meldung.update-neu { border-left: 6px solid var(--akzent); font-size: 1.1rem; }

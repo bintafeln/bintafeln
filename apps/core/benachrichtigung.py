@@ -252,6 +252,13 @@ KERN = (
         wann="Einmal je Sicherheitsupdate, sobald bintafeln davon erfährt.",
         wahl=Empfaengerwahl(lambda: mit_recht("system.update"),
                             "alle, die das Programm aktualisieren dürfen")),
+    Art("speicher_knapp", "Festplatte des Servers wird voll",
+        "Die einzelne Person kann sie nicht abschalten, höchstens täglich sammeln.",
+        fuer=_recht("einstellungen.tafel"), nie_erlaubt=False,
+        wann="Einmal, wenn auf dem Server weniger Platz frei ist als unter „Speicher und Fotos“ "
+             "eingestellt, und noch einmal, wenn es dringend wird.",
+        wahl=Empfaengerwahl(lambda: mit_recht("einstellungen.tafel"),
+                            "alle, die die Tafel einstellen dürfen")),
 )  # fmt: skip
 
 

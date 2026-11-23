@@ -560,6 +560,43 @@ class FotoEinstellungen(models.Model):
         return einstellungen
 
 
+class SpeicherWarnung(models.Model):
+    """Ab wann bintafeln warnt, dass die Festplatte des Servers voll wird (Singleton, ADR 0169).
+    Logik in ``apps/core/speicherplatz.py``."""
+
+    EINZIGE_ID = 1
+
+    warnen_unter = models.PositiveSmallIntegerField(
+        "Warnen unter (% frei)", default=20,
+        validators=[MinValueValidator(1), MaxValueValidator(90)],
+        help_text="Ist weniger frei, steht ein Hinweis auf der Startseite, und es geht einmal "
+        "eine Mail an die unter „Mail-Empfänger“ gewählten Personen.",
+    )  # fmt: skip
+    dringend_unter = models.PositiveSmallIntegerField(
+        "Dringend unter (% frei)", default=10,
+        validators=[MinValueValidator(1), MaxValueValidator(90)],
+        help_text="Ist weniger frei, wird der Hinweis rot, und es geht noch einmal eine Mail.",
+    )  # fmt: skip
+    # Stufe, zu der zuletzt eine Mail ging ("", "knapp", "dringend") – damit sie nur einmal kommt
+    gemeldet = models.CharField(max_length=10, blank=True, editable=False)
+
+    class Meta:
+        verbose_name = "Speicher-Warnung"
+        verbose_name_plural = "Speicher-Warnung"
+
+    def __str__(self):
+        return "Speicher-Warnung"
+
+    def save(self, *args, **kwargs):
+        self.pk = self.EINZIGE_ID
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def laden(cls) -> "SpeicherWarnung":
+        einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return einstellungen
+
+
 auditlog.register(TafelEinstellungen, exclude_fields=["geaendert_am"])
 auditlog.register(
     SicherungsAuftrag,
@@ -569,6 +606,7 @@ auditlog.register(
 # Das (verschlüsselte) Passwort gehört nicht ins Änderungsprotokoll.
 auditlog.register(MailEinstellungen, exclude_fields=["passwort_verschluesselt"])
 auditlog.register(FotoEinstellungen)
+auditlog.register(SpeicherWarnung, exclude_fields=["gemeldet"])
 auditlog.register(MailEmpfaenger, m2m_fields={"personen"})
 
 
