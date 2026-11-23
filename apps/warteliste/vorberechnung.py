@@ -301,14 +301,20 @@ def anzahl_abgleich() -> int | None:
     """Anträge mit noch nicht geprüftem Treffer im Kundenstamm (zuletzt berechneter Stand). Gezählt
     werden nur die, die auch die Abgleich-Seite in der Vorgabe zeigt (Status „neu“/„wartend“) –
     sonst stünde im Menü eine Zahl, aber die geöffnete Seite wäre leer (die übrigen stehen unter
-    „alle offenen prüfen“)."""
+    „alle offenen prüfen“). Aus demselben Grund zählen nur Anträge mit einem Treffer ab
+    ``aufnahme.AB_PRUEFEN`` %: Schwächere blendet die Seite in der Vorgabe aus."""
+    from apps.antraege.aufnahme import AB_PRUEFEN
     from apps.warteliste.models import Wartestand
 
     stand = cache.get(ABG)
     if not (stand and "daten" in stand):
         return None
     aktiv = {Wartestand.Status.NEU, Wartestand.Status.WARTEND}
-    return sum(1 for e in stand["daten"] if e.get("status") in aktiv) or None
+    return sum(
+        1 for e in stand["daten"]
+        if e.get("status") in aktiv
+        and any(t.get("punkte", 0) >= AB_PRUEFEN for t in e.get("treffer", []))
+    ) or None  # fmt: skip
 
 
 def anzahl_dubletten() -> int | None:

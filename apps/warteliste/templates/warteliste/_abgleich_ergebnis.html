@@ -6,8 +6,8 @@
 {% else %}
 {% if ergebnis %}
 <div class="abgleich-regler" data-abgleich-regler>
-  <label for="min-score">Nur Treffer ab <output id="min-score-wert">65</output> % Übereinstimmung anzeigen</label>
-  <input type="range" id="min-score" min="55" max="100" step="5" value="65">
+  <label for="min-score">Nur Treffer ab <output id="min-score-wert">{{ schwelle }}</output> % Übereinstimmung anzeigen</label>
+  <input type="range" id="min-score" min="55" max="100" step="5" value="{{ schwelle }}">
   <span class="hinweis" data-abgleich-zahl></span>
 </div>
 <p class="hinweis" data-abgleich-leer hidden>Kein Treffer über dieser Übereinstimmung – Regler nach links schieben.</p>

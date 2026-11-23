@@ -660,6 +660,25 @@ def test_menue_zaehler_abgleich_nur_neu_und_wartend(modul_an, monkeypatch):
     assert vorberechnung.anzahl_abgleich() == 1  # der Zähler zählt nur den „wartenden“
 
 
+def test_zahl_im_menue_zaehlt_nur_treffer_ab_der_schwelle():
+    """Die Zahl am Menüpunkt „Abgleich mit Kundenstamm“ zählt nur Anträge mit einem Treffer ab
+    65 % – schwächere blendet die Seite in der Vorgabe aus, die Zahl stünde sonst für nichts."""
+    from django.core.cache import cache
+
+    from apps.warteliste import vorberechnung
+
+    def eintrag(status, *punkte):
+        return {"status": status, "treffer": [{"punkte": p} for p in punkte]}
+
+    cache.set(vorberechnung.ABG, {"daten": [
+        eintrag("neu", 60), eintrag("wartend", 64, 55), eintrag("neu", 65),
+        eintrag("wartend", 58, 90), eintrag("eingeladen", 100)]})  # fmt: skip
+    assert vorberechnung.anzahl_abgleich() == 2
+    cache.set(vorberechnung.ABG, {"daten": [eintrag("neu", 60)]})
+    assert vorberechnung.anzahl_abgleich() is None  # dann steht gar keine Zahl im Menü
+    cache.clear()
+
+
 def test_entscheidung_erneuert_nur_den_einen_antrag(modul_an, admin_client, monkeypatch):
     """Nach „Ja/Nein“ im Abgleich bleibt das gespeicherte Ergebnis: nur der entschiedene Antrag
     wird erneuert. Die Zahl im Menü bleibt, und nichts sucht den ganzen Kundenstamm neu durch."""
