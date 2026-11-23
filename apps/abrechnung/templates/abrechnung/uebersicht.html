@@ -10,35 +10,49 @@
   <p class="hinweis">Ihr Konto ist keiner Ausgabestelle zugeordnet. Bitte wenden Sie sich an das Büro.</p>
   {% endfor %}
   {% else %}
-  <h1>Abrechnungen {{ name }}</h1>
-  <div class="aktionsleiste">
+  <h1>{% if nur_eingereichte %}Eingereichte Abrechnungen{% else %}Abrechnungen {{ mmjj }} <small class="leise">{{ name }}</small>{% endif %}</h1>
+  <div class="monatsleiste">
+    {% if not nur_eingereichte %}
     <a class="knopf knopf-zweitrangig" href="?monat={{ zurueck }}">← Vormonat</a>
-    <form method="get" class="inline"><input type="month" name="monat" value="{{ monat|date:'Y-m' }}" onchange="this.form.submit()"></form>
+    <form method="get" class="monatsleiste-feld">
+      <input type="hidden" name="bisher" value="{{ monat|date:'Y-m' }}">
+      <label class="unsichtbar" for="abr-monat">Monat (MMJJ)</label>
+      <input type="text" name="monat" id="abr-monat" value="{{ mmjj }}" inputmode="numeric" maxlength="5" size="4"
+             title="Monat als MMJJ, z. B. 1126 für November 2026"
+             autocomplete="off" onchange="this.form.requestSubmit()">
+    </form>
     <a class="knopf knopf-zweitrangig" href="?monat={{ vor }}">Folgemonat →</a>
     <a class="knopf" href="{% url 'abrechnung:quittungen' monat|date:'Y-m' %}">Alle Quittungen (ZIP)</a>
+    <a class="knopf knopf-zweitrangig" href="?status=eingereicht">Nur eingereichte{% if wartend %} ({{ wartend }}){% endif %}</a>
+    {% else %}
+    <a class="knopf knopf-zweitrangig" href="{% url 'abrechnung:uebersicht' %}">← Alle Ausgabestellen je Monat</a>
+    {% endif %}
   </div>
+  {% if nur_eingereichte %}<p class="hinweis">Alle Abrechnungen, die eine Ausgabestelle eingereicht hat und die noch
+    nicht bestätigt sind – aus allen Monaten, die zuletzt eingereichte zuerst. Ein Klick auf die Ausgabestelle öffnet sie.</p>{% endif %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Ausgabestelle</th><th class="zahl">Einnahmen bar</th><th class="zahl">Ausgaben</th><th class="zahl">Saldo</th><th>Status</th><th class="zahl">Quittungen</th></tr></thead>
+    <thead><tr><th>Ausgabestelle</th><th>Monat</th><th class="zahl">Einnahmen bar</th><th class="zahl">Ausgaben</th><th class="zahl">Saldo</th><th>Status</th><th class="zahl">Quittungen</th></tr></thead>
     <tbody>
       {% for z in zeilen %}
       <tr>
-        <td data-titel="Ausgabestelle"><a href="{% url 'abrechnung:monat' z.stelle.pk monat|date:'Y-m' %}">{{ z.stelle.name }}</a>{% if z.zeitraum %} <span class="hinweis">({{ z.zeitraum }})</span>{% endif %}</td>
+        <td data-titel="Ausgabestelle"><a href="{% url 'abrechnung:monat' z.stelle.pk z.abr.monat|date:'Y-m' %}">{{ z.stelle.name }}</a></td>
+        <td data-titel="Monat">{{ z.kurz }}</td>
         <td data-titel="Einnahmen bar" class="zahl">{{ z.einnahmen_summe|floatformat:2 }} €</td>
         <td data-titel="Ausgaben" class="zahl">{{ z.ausgaben_summe|floatformat:2 }} €</td>
         <td data-titel="Saldo" class="zahl">{{ z.saldo|floatformat:2 }} €</td>
         <td data-titel="Status">{% include "abrechnung/_status.html" with abr=z.abr %}</td>
-        <td data-titel="Quittungen" class="zahl">{% if z.quittungen %}<a href="{% url 'abrechnung:quittungen' monat|date:'Y-m' %}?stelle={{ z.stelle.pk }}" title="Quittungen als ZIP">{{ z.quittungen }} ⬇</a>{% else %}0{% endif %}</td>
+        <td data-titel="Quittungen" class="zahl">{% if z.quittungen %}<a href="{% url 'abrechnung:quittungen' z.abr.monat|date:'Y-m' %}?stelle={{ z.stelle.pk }}" title="Quittungen als ZIP">{{ z.quittungen }} ⬇</a>{% else %}0{% endif %}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="6" class="hinweis">Noch keine Ausgabestellen angelegt.</td></tr>
+      <tr><td colspan="7" class="hinweis">{% if nur_eingereichte %}Zurzeit wartet keine eingereichte Abrechnung auf die Prüfung.{% else %}Noch keine Ausgabestellen angelegt.{% endif %}</td></tr>
       {% endfor %}
     </tbody>
   </table>
   </div>
   <p class="hinweis">Einnahmen bar = bar gezahlte Beiträge und Einzahlungen am Einlass der Ausgabestelle (wie in der Kasse).
-    Offene Abrechnungen zeigen den aktuellen Stand, eingereichte den Stand beim Einreichen. Umfasst eine Abrechnung
-    mehrere Monate, steht der Zeitraum hinter der Ausgabestelle; die Zahlen gelten dann für den ganzen Zeitraum.</p>
+    Entwürfe zeigen den aktuellen Stand, eingereichte den Stand beim Einreichen. Umfasst eine Abrechnung
+    mehrere Monate, steht unter „Monat“ der Zeitraum (z. B. 0926–1126); die Zahlen gelten dann für den ganzen Zeitraum.</p>
   {% endif %}
 </section>
 {% endblock %}

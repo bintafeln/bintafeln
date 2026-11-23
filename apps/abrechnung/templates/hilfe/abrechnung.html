@@ -5,8 +5,11 @@
 <h3>Einnahmen</h3>
 <p>Einnahmen sind die <strong>bar</strong> gezahlten Beiträge und Einzahlungen auf Kundenkonten am Einlass dieser
   Ausgabestelle im Zeitraum der Abrechnung, genau wie in der Kasse. Beiträge aus Guthaben oder angeschriebene Beiträge stehen nur zur
-  Information darunter, weil dabei kein Bargeld fließt. Solange die Abrechnung offen ist, zeigt sie den aktuellen
+  Information darunter, weil dabei kein Bargeld fließt. Solange die Abrechnung ein Entwurf ist, zeigt sie den aktuellen
   Stand; beim Einreichen werden die Zahlen festgehalten.</p>
+<p><strong>Monat als MMJJ:</strong> Der Monat steht überall so, wie die Tafeln ihn schreiben: <strong>1126</strong> ist
+  November 2026, mehrere Monate zusammen heißen z. B. 0926–1126. So steht er in der Überschrift, im PDF und im Namen
+  der heruntergeladenen Dateien.</p>
 
 {% if "abrechnung.fuehren" in rechte %}
 <h3>Ausgaben eintragen</h3>
@@ -17,6 +20,10 @@
     wählen. Die Quittung wird verschlüsselt gespeichert; ohne Quittung steht „fehlt“ in der Liste.</li>
   <li>Am Ende „Einreichen“. Danach ist die Abrechnung gesperrt.</li>
 </ol>
+<p><strong>Ausgabe ändern:</strong> Solange die Abrechnung nicht abgeschickt ist, steht hinter jeder Ausgabe
+  <strong>„bearbeiten“</strong>: Datum, Betrag, Art, „Bezahlt an“ und Anmerkung ändern; die Quittung bleibt, außer Sie
+  wählen eine neue. Nach dem Einreichen steht dort <strong>„bereits abgeschickt“</strong> – Bearbeiten und Löschen sind
+  dann gesperrt, bis Sie das Einreichen zurücknehmen oder das Büro die Abrechnung zurückgibt.</p>
 <p><strong>Mehrere Monate zusammen abrechnen:</strong> Oben unter dem Status steht „Zeitraum der Abrechnung: … bis
   einschließlich …“. Dort wählen Sie den letzten Monat – eine Abrechnung umfasst einen bis sechs Monate. Sie beginnt
   mit dem Monat, den Sie geöffnet haben; für einen anderen ersten Monat wechseln Sie vorher mit „← Davor“ oder
@@ -35,9 +42,14 @@
 
 {% if "abrechnung.pruefen" in rechte %}
 <h3>Prüfen und Quittungen herunterladen</h3>
-<p>Die Übersicht zeigt je Monat alle Ausgabestellen mit Einnahmen, Ausgaben, Saldo und Status. Rechnet eine
-  Ausgabestelle mehrere Monate zusammen ab, erscheint ihre Abrechnung in jedem dieser Monate mit dem Zeitraum hinter dem
-  Namen; die Zahlen gelten für den ganzen Zeitraum. Die Ausgabestelle kann ihr Einreichen selbst zurücknehmen, solange
+<p><strong>Eingereichte Abrechnungen finden:</strong> Wartet eine eingereichte Abrechnung auf die Prüfung, steht ihre
+  Zahl am Menüpunkt „Abrechnung“. Der Knopf <strong>„Nur eingereichte“</strong> zeigt alle eingereichten, noch nicht
+  bestätigten Abrechnungen aus <strong>allen Monaten</strong>, die zuletzt eingereichte zuerst; ein Klick auf die
+  Ausgabestelle öffnet sie. In der Spalte „Status“ steht „Entwurf“, „eingereicht am …“ oder „bestätigt am …“.</p>
+<p>Die Übersicht zeigt je Monat alle Ausgabestellen mit Einnahmen, Ausgaben, Saldo und Status. Den Monat wechseln Sie
+  mit „← Vormonat“ und „Folgemonat →“ oder tippen ihn als MMJJ in das Feld dazwischen (z. B. 1126). Rechnet eine
+  Ausgabestelle mehrere Monate zusammen ab, erscheint ihre Abrechnung in jedem dieser Monate mit dem Zeitraum in der
+  Spalte „Monat“; die Zahlen gelten für den ganzen Zeitraum. Die Ausgabestelle kann ihr Einreichen selbst zurücknehmen, solange
   Sie nicht bestätigt haben. Eine eingereichte
   Abrechnung lässt sich <strong>bestätigen</strong> oder mit einem kurzen Grund <strong>zurückgeben</strong> (auch eine
   bestätigte). „Alle Quittungen (ZIP)“ lädt die Quittungen des Monats herunter, je Ausgabestelle ein Ordner; die Zahl in

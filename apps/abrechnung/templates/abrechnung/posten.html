@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titel %}Ausgabe bearbeiten{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'abrechnung:monat' stelle.pk abr.monat|date:'Y-m' %}">← Abrechnung {{ stelle.name }} · {{ kurz }}</a></p>
+  <h1>Ausgabe bearbeiten</h1>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <p class="hinweis">{% if posten.quittung %}Zu dieser Ausgabe gibt es schon eine Quittung
+      (<a href="{% url 'abrechnung:quittung' posten.pk %}" target="_blank" rel="noopener">ansehen</a>). Sie bleibt, wenn Sie
+      keine neue wählen; eine neue ersetzt sie.{% else %}Zu dieser Ausgabe fehlt die Quittung noch.{% endif %}
+      Ändern geht, solange die Abrechnung nicht abgeschickt ist.</p>
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Änderung speichern</button>
+      <a class="knopf knopf-abbrechen" href="{% url 'abrechnung:monat' stelle.pk abr.monat|date:'Y-m' %}">Abbrechen</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

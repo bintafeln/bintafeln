@@ -35,7 +35,14 @@ def _zur_abrechnung(abr) -> HttpResponse:
 @fuehren_oder_pruefen
 def uebersicht(request):
     """Ausgabestelle: gleich zur eigenen Abrechnung. Büro: alle Ausgabestellen eines Monats."""
-    monat = ablauf.monat_lesen(request.GET.get("monat"), timezone.localdate())
+    eingabe = request.GET.get("monat", "")
+    monat = ablauf.monat_aus_text(eingabe)
+    if monat is None:
+        # Unlesbare Eingabe: beim bisherigen Monat bleiben und sagen, wie es richtig heißt
+        monat = ablauf.monat_lesen(request.GET.get("bisher"), timezone.localdate())
+        if eingabe.strip():
+            messages.error(request, f"„{eingabe.strip()[:20]}“ ist kein Monat. Bitte als MMJJ "
+                                    "eingeben, z. B. 1126 für November 2026.")  # fmt: skip
     stellen = ablauf.stellen_fuer(request.user)
     if not ablauf.darf_pruefen(request.user):
         # die eine eigene oder die oben im Menü gewählte Ausgabestelle (ADR 0067)
@@ -45,21 +52,29 @@ def uebersicht(request):
             return redirect("abrechnung:monat", ziel.pk, f"{monat:%Y-%m}")
         return render(request, "abrechnung/uebersicht.html", {"stellen": stellen,
                       "monat": monat, "zeilen": None})  # fmt: skip
-    vorhanden = {a.stelle_id: a for a in ablauf.im_monat(monat)}
+    nur_eingereichte = request.GET.get("status") == "eingereicht"
+    if nur_eingereichte:  # über alle Monate: was wartet auf die Prüfung?
+        paare = [(a.stelle, a) for a in ablauf.eingereichte()]
+    else:
+        vorhanden = {a.stelle_id: a for a in ablauf.im_monat(monat)}
+        paare = [(s, vorhanden.get(s.pk) or Monatsabrechnung(stelle=s, monat=monat))
+                 for s in stellen]  # fmt: skip
     zeilen = []
-    for s in stellen:
-        abr = vorhanden.get(s.pk) or Monatsabrechnung(stelle=s, monat=monat)
+    for s, abr in paare:
         zeilen.append(
             {
                 "stelle": s,
                 "abr": abr,
-                "zeitraum": ablauf.zeitraum_name(abr) if abr.monate > 1 else "",
+                "zeitraum": ablauf.zeitraum_kurz(abr) if abr.monate > 1 else "",
+                "kurz": ablauf.zeitraum_kurz(abr),
                 **ablauf.zahlen(abr),
                 "quittungen": abr.posten.exclude(quittung="").count() if abr.pk else 0,
             }
         )
     return render(request, "abrechnung/uebersicht.html", {
         "monat": monat, "zeilen": zeilen, "name": ablauf.monatsname(monat),
+        "mmjj": ablauf.mmjj(monat), "nur_eingereichte": nur_eingereichte,
+        "wartend": ablauf.eingereichte().count(),
         "zurueck": f"{ablauf.verschieben(monat, -1):%Y-%m}",
         "vor": f"{ablauf.verschieben(monat, 1):%Y-%m}",
     })  # fmt: skip
@@ -90,6 +105,7 @@ def monat(request, stelle, monat):
                 return _zur_abrechnung(abr)
     return render(request, "abrechnung/monat.html", {
         "abr": abr, "stelle": stelle, "name": ablauf.zeitraum_name(abr), "form": form,
+        "kurz": ablauf.zeitraum_kurz(abr),
         "von": ablauf.monatsname(abr.monat), "zeitraeume": ablauf.zeitraeume(abr),
         "z": ablauf.zahlen(abr), "posten": abr.posten.all(), "darf_fuehren": darf_fuehren,
         "quittungen": abr.posten.exclude(quittung="").count(),
@@ -142,6 +158,36 @@ def aktion(request, pk, was):
     return _zur_abrechnung(abr)
 
 
+@never_cache
+@fuehren_oder_pruefen
+def posten_bearbeiten(request, pk):
+    """Eine eingetragene Ausgabe ändern, solange die Abrechnung nicht abgeschickt ist."""
+    posten = get_object_or_404(Posten.objects.select_related("abrechnung__stelle"), pk=pk)
+    abr = posten.abrechnung
+    if not ablauf.darf_fuehren(request.user, abr.stelle):
+        raise PermissionDenied
+    if not abr.offen:  # auch der direkte Aufruf der Adresse ist gesperrt
+        messages.error(request, ablauf.ABGESCHICKT)
+        return _zur_abrechnung(abr)
+    form = PostenForm(request.POST or None, request.FILES or None, instance=posten)
+    if request.method == "POST" and form.is_valid():
+        daten = {k: form.cleaned_data[k] for k in PostenForm.Meta.fields}
+        try:
+            ablauf.posten_aendern(posten, daten, form.quittung, request.user)
+        except (ablauf.AbrechnungFehler, privatdateien.DateiFehler) as fehler:
+            messages.error(request, str(fehler))
+            posten.refresh_from_db()
+            if not posten.abrechnung.offen:
+                return _zur_abrechnung(abr)
+        else:
+            messages.success(request, "Ausgabe geändert.")
+            return _zur_abrechnung(abr)
+    return render(request, "abrechnung/posten.html", {
+        "form": form, "posten": posten, "abr": abr, "stelle": abr.stelle,
+        "kurz": ablauf.zeitraum_kurz(abr),
+    })  # fmt: skip
+
+
 @require_POST
 @fuehren_oder_pruefen
 def posten_loeschen(request, pk):
@@ -178,7 +224,7 @@ def als_pdf(request, pk):
     abr = get_object_or_404(Monatsabrechnung.objects.select_related("stelle"), pk=pk)
     _stelle(request, abr.stelle_id)
     return pdf_antwort(ablauf.pdf(abr), f"abrechnung-{ablauf._sicher(abr.stelle.name)}-"
-                                        f"{abr.monat:%Y-%m}.pdf")  # fmt: skip
+                                        f"{ablauf.mmjj(abr.monat)}.pdf")  # fmt: skip
 
 
 @never_cache
@@ -200,7 +246,7 @@ def quittungen(request, monat):
     teil = f"-{ablauf._sicher(abrechnungen[0].stelle.name)}" if "stelle" in request.GET else ""
     antwort = HttpResponse(inhalt, content_type="application/zip")
     antwort["Content-Disposition"] = (
-        f'attachment; filename="quittungen{teil}-{beginn:%Y-%m}.zip"')  # fmt: skip
+        f'attachment; filename="quittungen{teil}-{ablauf.mmjj(beginn)}.zip"')  # fmt: skip
     return antwort
 
 

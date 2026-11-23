@@ -1,1 +1,1 @@
-{% if abr.status == "bestaetigt" %}<span class="marke-ok">bestätigt</span>{% elif abr.status == "eingereicht" %}<span class="marke-rolle">eingereicht</span>{% else %}<span class="hinweis">offen</span>{% endif %}
+{% if abr.status == "bestaetigt" %}<span class="marke-ok">bestätigt{% if abr.bestaetigt_am %} am {{ abr.bestaetigt_am|date:"d.m.Y" }}{% endif %}</span>{% elif abr.status == "eingereicht" %}<span class="marke-rolle">eingereicht{% if abr.eingereicht_am %} am {{ abr.eingereicht_am|date:"d.m.Y" }}{% endif %}</span>{% else %}<span class="hinweis">Entwurf</span>{% endif %}

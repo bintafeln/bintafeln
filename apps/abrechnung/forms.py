@@ -26,6 +26,8 @@ class PostenForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         arten = list(AbrechnungEinstellungen.laden().arten or [])
+        if self.instance.pk and self.instance.art and self.instance.art not in arten:
+            arten.append(self.instance.art)  # gespeicherte Art bleibt wählbar
         self.fields["art"].choices = [("", "– bitte wählen –"), *((a, a) for a in arten)]
 
     @property
