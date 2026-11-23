@@ -1812,6 +1812,8 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .feld .mehrfach .mehrfach-eintrag[hidden], .mehrfach .mehrfach-eintrag[hidden] { display: none; }
 .serienbrief-auswahl .abschnitt-titel { font-size: 1.05rem; margin: .5rem 0 .4rem; }
 [data-zeigen-bei][hidden] { display: none; }
+/* Trägt das Eingabefeld selbst die Regel, verschwindet das ganze Feld samt Beschriftung und Hilfe */
+.feld:has(> [data-zeigen-bei][hidden]) { display: none; }
 
 /* Serienbrief-Vorlagen (ADR 0088): Editor links, Live-Vorschau rechts, Platzhalter als Leiste unter dem Text */
 .vorlage-raster { display: grid; gap: 0 1.25rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
