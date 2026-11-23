@@ -24,6 +24,40 @@
   <p class="hinweis">An diesem Tag fährt keine Tour.</p>
   {% endfor %}
   </div>
+  {% if darf_senden or nachrichten %}
+  <section class="tour-nachrichten" id="nachrichten">
+    <h2>Nachricht an die Mannschaft</h2>
+    {% if darf_senden %}
+    <form method="post" action="{% url 'touren:nachricht_senden' %}" class="filter">
+      {% csrf_token %}
+      <div class="filter-feld"><label for="nachricht-tour">An</label>
+        <select name="tour" id="nachricht-tour">
+          <option value="alle">alle, die heute fahren</option>
+          {% for z in zeilen %}<option value="{{ z.tour.pk }}">{{ z.tour.name }}</option>{% endfor %}
+        </select></div>
+      <div class="filter-feld"><label for="nachricht-text">Text</label>
+        <input type="text" name="text" id="nachricht-text" maxlength="300" required list="nachricht-kurztexte"
+               placeholder="z. B. Bitte im Büro anrufen" autocomplete="off">
+        <datalist id="nachricht-kurztexte">{% for k in kurztexte %}<option value="{{ k }}">{% endfor %}</datalist></div>
+      {% if kurztexte %}<p class="tour-kurztexte">{% for k in kurztexte %}<button type="button" class="knopf knopf-zweitrangig knopf-klein" data-kurztext="{{ k }}" onclick="document.getElementById('nachricht-text').value = this.dataset.kurztext; document.getElementById('nachricht-text').focus()">{{ k }}</button>{% endfor %}</p>{% endif %}
+      <button type="submit" class="knopf">Schicken</button>
+    </form>
+    <p class="hinweis">Die Mannschaft bekommt die Nachricht aufs Handy (wenn dort Benachrichtigungen eingeschaltet sind) und
+      als roten Brief über jeder Seite, bis jemand „Gelesen“ tippt. Bleibt eine Nachricht unten „noch nicht bestätigt“, bitte anrufen.</p>
+    {% endif %}
+    {% if nachrichten %}
+    <div class="tabelle-rahmen"><table class="tabelle" id="nachrichten-tabelle">
+      <thead><tr><th>Uhrzeit</th><th>Tour</th><th>Nachricht</th><th>Bestätigt</th></tr></thead>
+      <tbody>{% for n in nachrichten %}
+        <tr><td data-titel="Uhrzeit">{{ n.gesendet_am|date:"H:i" }}</td>
+          <td data-titel="Tour">{{ n.tour.name }}</td>
+          <td data-titel="Nachricht">{{ n.text }} <small class="hinweis">von {{ n.von_name }}</small></td>
+          <td data-titel="Bestätigt">{% if n.gesehen_am %}<span class="marke-ok">{{ n.gesehen_am|date:"H:i" }} von {{ n.gesehen_von_name }}</span>{% else %}<span class="marke-warnung">noch nicht bestätigt</span>{% endif %}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% endif %}
+  </section>
+  {% endif %}
   {% if darf_planen %}<p><a href="{% url 'touren:touren' %}">Touren planen</a> · <a href="{% url 'touren:tour_neu' %}?kurz&amp;tag={{ tag|date:'Y-m-d' }}">Kurzfristige Tour für diesen Tag</a></p>{% endif %}
 </section>
 {% endblock %}

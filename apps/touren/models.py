@@ -13,6 +13,7 @@ from auditlog.registry import auditlog
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone
 
 from apps.core import zeichen
 
@@ -391,6 +392,47 @@ class Umstand(models.Model):
         return self.name
 
 
+class Kurztext(models.Model):
+    """Fertige Texte für Nachrichten an die Mannschaft, z. B. „Bitte im Büro anrufen“
+    (ADR 0168); die Tafel pflegt die Liste."""
+
+    text = models.CharField("Text", max_length=200, unique=True)
+    reihenfolge = models.PositiveSmallIntegerField("Reihenfolge", default=0)
+    aktiv = models.BooleanField("Aktiv", default=True)
+
+    class Meta:
+        verbose_name = "Kurztext für Nachrichten"
+        verbose_name_plural = "Kurztexte für Nachrichten"
+        ordering = ["reihenfolge", "text"]
+
+    def __str__(self):
+        return self.text
+
+
+class Tournachricht(models.Model):
+    """Nachricht der Fahrdienstleitung an die Mannschaft einer Tour an einem Tag (ADR 0168).
+    Sie liegt als roter Brief über jeder Seite, bis jemand aus der Mannschaft bestätigt; Regeln
+    in ``apps/touren/nachrichten.py``."""
+
+    tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="nachrichten")
+    datum = models.DateField("Tag")
+    text = models.CharField("Nachricht", max_length=300)
+    gesendet_am = models.DateTimeField("Geschickt am", default=timezone.now)
+    von = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                            on_delete=models.SET_NULL, related_name="+")  # fmt: skip
+    von_name = models.CharField("Geschickt von", max_length=150, blank=True)
+    gesehen_am = models.DateTimeField("Bestätigt am", null=True, blank=True)
+    gesehen_von_name = models.CharField("Bestätigt von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Nachricht an die Mannschaft"
+        verbose_name_plural = "Nachrichten an die Mannschaft"
+        ordering = ["gesendet_am", "pk"]
+
+    def __str__(self):
+        return f"{self.tour} am {self.datum:%d.%m.%Y}: {self.text[:40]}"
+
+
 class Anfahrt(models.Model):
     """Station ohne Lieferschein abgehakt: Sie wurde an dem Tag auf der Tour angefahren
     (ADR 0152), mit dem Umstand und einer Anmerkung (ADR 0163). Die Station bleibt in der Tour
@@ -748,3 +790,5 @@ auditlog.register(FahrzeugDokument, exclude_fields=["datei"])
 auditlog.register(Fahrt)
 auditlog.register(Fahrzeugmeldung)
 auditlog.register(Zusatzstopp)
+auditlog.register(Kurztext)
+auditlog.register(Tournachricht)
