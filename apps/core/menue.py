@@ -114,7 +114,9 @@ def menue(request) -> list[dict]:
         ("einlass.nutzen", _eintrag("Einlass", "ausgabe:empfang", genau=True)),
         ("kasse.sehen", _eintrag("Kasse", "ausgabe:kasse")),
         ("einlass.nachtragen", _eintrag("Abholungen nachtragen", "ausgabe:nachtragen")),
-        *([("kunden.liste", alle_kunden)] if an_der_stelle else []),
+        # Wer alle Ausgabestellen sieht, bekommt hier die Kundenliste der oben gewählten
+        *([("kunden.liste", alle_kunden)] if an_der_stelle
+          else [("kunden.liste", _eintrag("Kundenliste", "kunden:stellenliste"))]),
         ("einlass.nutzen", _eintrag("Post der Verwaltung", "kunden:postfach")),
     ], vorn=True)  # fmt: skip
     if darf_stempeln(b):  # nur, wer selbst stempelt; steht bei den Dienstplänen

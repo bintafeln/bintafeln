@@ -202,3 +202,63 @@ def test_einlass_fremd_zeigt_ampelgrund(anton, stellen):
     assert "wäre die Ampel rot" in seite and "Ausweis abgelaufen" in seite
     assert "Probe200" not in seite  # weiterhin nicht die ganze Karte
     assert not Zugriff.objects.filter(kundennummer="200").exists()  # weiterhin kein Zugriff
+
+
+def test_kundenliste_der_gewaehlten_stelle(admin_client, admin, stellen, benutzer_mit_rolle,
+                                           anmelden):  # fmt: skip
+    """Wer alle Ausgabestellen sieht, bekommt unter „Ausgabestelle → Kundenliste“ nur die Kunden
+    der oben im Menü gewählten Ausgabestelle – so wie die Ausgabestelle sie sieht."""
+    from apps.ausgabe import stelle as stelle_wahl
+
+    mitte, nord = stellen
+    url, ziel = reverse("kunden:stellenliste"), reverse("kunden:uebersicht")
+
+    def nummern(antwort):
+        return sorted(h.kundennummer for h in antwort.context["seite"])
+
+    def menue(benutzer):
+        from django.test import RequestFactory
+
+        from apps.core.menue import menue as bauen
+
+        anfrage = RequestFactory().get("/")
+        anfrage.user = type(benutzer).objects.get(pk=benutzer.pk)
+        return [e for b in bauen(anfrage) for e in b.get("eintraege", [])]
+
+    # Menü: beim Admin unter „Ausgabestelle“ zusätzlich die Kundenliste der gewählten Stelle
+    eintraege = menue(admin)
+    assert [e["titel"] for e in eintraege if e["url"] == url] == ["Kundenliste"]
+    assert [e["titel"] for e in eintraege if e["url"] == ziel] == ["Kunden einsehen"]
+    # ohne gewählte Ausgabestelle: Hinweis und die ganze Liste
+    antwort = admin_client.get(url, follow=True)
+    assert "eine Ausgabestelle wählen" in antwort.content.decode()
+    assert nummern(admin_client.get(ziel, {"tag": ""})) == ["100", "200", "300"]
+    # mit gewählter Ausgabestelle: nur deren Kunden, der Filter steht in der Leiste
+    stelle_wahl.waehlen(admin, mitte.pk)
+    antwort = admin_client.get(url)
+    assert antwort.status_code == 302 and "stelle=gewaehlt" in antwort["Location"]
+    antwort = admin_client.get(ziel, {"stelle": "gewaehlt", "tag": ""})
+    assert nummern(antwort) == ["100"]
+    seite = antwort.content.decode()
+    assert '<option value="gewaehlt" selected>nur Mitte</option>' in seite
+    assert "Montag Mitte" in seite and "Dienstag Nord" not in seite  # nur deren Kundengruppen
+    assert "stelle=gewaehlt" in antwort.context["abfrage"]  # bleibt beim Sortieren und Blättern
+    # Die Liste folgt der Auswahl oben im Menü
+    stelle_wahl.waehlen(admin, nord.pk)
+    assert nummern(admin_client.get(ziel, {"stelle": "gewaehlt", "tag": ""})) == ["200"]
+    # Gemerkte Filter gelten weiter, die Kundengruppe (einer anderen Stelle) nicht
+    admin.refresh_from_db()
+    admin.listen_filter = {"kunden": "status=aktiv&gruppe=99"}
+    admin.save()
+    ort = admin_client.get(url)["Location"]
+    assert "status=aktiv" in ort and "gruppe" not in ort and "stelle=gewaehlt" in ort
+    # Konten einer Ausgabestelle: Menü wie bisher, die Angabe ändert an ihrer Liste nichts
+    from django.test import Client
+
+    konto = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    konto.ausgabestellen.set([mitte])
+    anton = anmelden(Client(), konto)
+    assert not [e for e in menue(konto) if e["url"] == url]
+    assert [e["titel"] for e in menue(konto) if e["url"] == ziel] == ["Kundenliste"]
+    assert nummern(anton.get(ziel, {"stelle": "gewaehlt", "tag": ""})) == ["100"]
+    assert anton.get(url)["Location"] == ziel
