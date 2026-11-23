@@ -297,6 +297,7 @@ def konto_fuer_adresse(verwalter, adresse, rollen_namen: list[str]):
     _rollen_setzen(verwalter, ziel, rollen_namen)
     helfer_kennzeichnen(ziel)
     personalnummer_zuweisen(ziel)
+    eintritt_vorbelegen(ziel)
     return ziel
 
 
@@ -337,6 +338,18 @@ def personalnummer_zuweisen(konto) -> None:
         return
     sd.personalnummer = naechste_personalnummer()
     sd.save(update_fields=["personalnummer"])
+
+
+def eintritt_vorbelegen(konto) -> None:
+    """Wer in der Oberfläche neu angelegt wird, ist ab heute dabei: Der Eintritt in den Stammdaten
+    wird mit dem heutigen Tag vorbelegt, wenn dort noch nichts steht. Er bleibt änderbar. Nicht
+    beim Import – dort stammen die Personen meist aus früheren Jahren."""
+    from apps.konten.models import Stammdaten
+
+    sd, _ = Stammdaten.objects.get_or_create(benutzer=konto)
+    if sd.eintritt is None:
+        sd.eintritt = timezone.localdate()
+        sd.save(update_fields=["eintritt"])
 
 
 def personennummer(konto) -> str:

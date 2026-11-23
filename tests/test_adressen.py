@@ -5,6 +5,7 @@ import datetime as dt
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.adressen import importieren
 from apps.adressen.models import Adresse, AdressKategorie
@@ -83,6 +84,8 @@ def test_rolle_ohne_konto_legt_konto_an(admin_client):
     assert a.konto_id is not None
     assert list(a.konto.groups.values_list("name", flat=True)) == [rollen.BEIFAHRER]
     assert a.konto.username == "rene.wiechert" and not a.konto.has_usable_password()
+    # Eintritt: der Tag, an dem die Person angelegt wurde
+    assert a.konto.stammdaten.eintritt == timezone.localdate()
     # Erneut aufrufen: die Rolle ist noch da (nicht mehr verloren) – im Formular vorausgewählt
     antwort = admin_client.get(reverse("adressen:bearbeiten", args=[a.pk]))
     assert rollen.BEIFAHRER in antwort.context["form"].initial["rollen"]
