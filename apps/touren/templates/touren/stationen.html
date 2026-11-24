@@ -23,6 +23,9 @@
     {% filter_zuruecksetzen %}
   </form>
   <div id="ergebnis">
+  {% if ohne_anschrift and darf_bearbeiten %}<p class="hinweis">Die Ausgabestellen der Tafel stehen automatisch als Stationen in dieser Liste.
+    Noch ohne vollständige Anschrift (Straße, PLZ, Ort) und deshalb nicht dabei: <strong>{{ ohne_anschrift|join:", " }}</strong>.
+    Die Anschrift tragen Sie an der Ausgabestelle ein.</p>{% endif %}
   <div class="liste-aktionen">
     <span class="hinweis">{{ stationen|length }} Station{{ stationen|length|pluralize:"en" }}</span>
     {% if darf_uebertragen and ohne_adressbuch %}

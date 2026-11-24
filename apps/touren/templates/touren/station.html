@@ -7,6 +7,7 @@
   <h1>{{ s.name }}</h1>
   <p><span class="marke-rolle">{{ s.get_art_display }}</span>{% if s.kette %} <small class="leise">{{ s.kette }}{% if s.filialnummer %} · Filiale {{ s.filialnummer }}{% endif %}</small>{% endif %}
     {% if not s.aktiv %} <span class="marke-warnung">wird nicht mehr angefahren</span>{% endif %}</p>
+  {% if s.ausgabestelle %}<p class="hinweis">Ausgabestelle der Tafel: Name, Anschrift, Telefon und E-Mail kommen aus der Ausgabestelle{% if "einstellungen.listen" in rechte %} und werden <a href="{% url 'kunden:ausgabestelle' s.ausgabestelle.pk %}">dort</a> geändert{% endif %}. Anfahrt, Abholzeit und Notiz pflegen Sie hier.</p>{% endif %}
   <address class="anschrift">{{ s.strasse_hausnummer }}<br>{{ s.plz }} {{ s.ort }}{% if s.ortsteil %} ({{ s.ortsteil }}){% endif %}</address>
   <div class="aktionsleiste">
     <a class="knopf" href="{{ s.navigation }}" target="_blank" rel="noopener noreferrer">🧭 Navigation (Google Maps)</a>
@@ -36,9 +37,9 @@
     {% endif %}
   </div>
   <p class="hinweis">Angelegt am {{ s.angelegt_am|date:"d.m.Y" }}{% if s.geaendert_am %}, zuletzt geändert am {{ s.geaendert_am|date:"d.m.Y H:i" }} von {{ s.geaendert_von }}{% endif %}.</p>
-  <form method="post" action="{% url 'touren:loeschen' s.pk %}" class="abseits" onsubmit="return confirm('Station „{{ s.name|escapejs }}“ in den Papierkorb legen?')">
+  {% if not s.ausgabestelle %}<form method="post" action="{% url 'touren:loeschen' s.pk %}" class="abseits" onsubmit="return confirm('Station „{{ s.name|escapejs }}“ in den Papierkorb legen?')">
     {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Station löschen</button>
-  </form>
+  </form>{% endif %}
   {% endif %}
 </section>
 {% endblock %}

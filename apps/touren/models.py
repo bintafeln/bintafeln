@@ -90,6 +90,12 @@ class Station(models.Model):
         "adressen.Adresse", null=True, blank=True, on_delete=models.SET_NULL,
         related_name="station", verbose_name="Eintrag im Adressbuch",
     )  # fmt: skip
+    ausgabestelle = models.OneToOneField(
+        "kunden.Ausgabestelle", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+", verbose_name="Ausgabestelle", editable=False,
+        help_text="Diese Station ist eine Ausgabestelle der Tafel: Name, Anschrift, Telefon und "
+        "E-Mail kommen von dort (apps/touren/ausgabestellen.py).",
+    )  # fmt: skip
     angelegt_am = models.DateTimeField("Angelegt am", auto_now_add=True)
     geaendert_am = models.DateTimeField("Geändert am", null=True, blank=True)
     geaendert_von = models.CharField("Geändert von", max_length=150, blank=True)

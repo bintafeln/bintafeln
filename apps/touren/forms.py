@@ -30,6 +30,16 @@ class StationForm(forms.ModelForm):
         widgets = {"anfahrt": forms.Textarea(attrs={"rows": 3}),
                    "notiz": forms.Textarea(attrs={"rows": 3})}  # fmt: skip
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk and self.instance.ausgabestelle_id:
+            # Diese Angaben kommen aus der Ausgabestelle und werden dort geändert (ADR 0171)
+            from apps.touren.ausgabestellen import FELDER
+
+            for name in (*FELDER, "art", "kennung"):
+                self.fields[name].disabled = True
+                self.fields[name].help_text = "Kommt aus der Ausgabestelle."
+
     def clean(self):
         daten = super().clean()
         if (daten.get("breite") is None) != (daten.get("laenge") is None):
