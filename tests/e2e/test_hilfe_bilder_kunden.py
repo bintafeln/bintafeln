@@ -581,3 +581,31 @@ def test_hilfe_bild_wechsel_angebot(angemeldet, admin, muster):
     expect(seite.get_by_text("der Wechsel ist eingetragen")).to_be_visible()
     h.refresh_from_db()
     assert h.kundengruppe == neu
+
+
+def test_hilfe_bild_platz_anbieten(angemeldet, admin, muster):
+    """Von der Tafel aus einen Platz anbieten: Maske und Vorschau der Mail (Bilder fürs
+    Handbuch); gesendet wird hier nichts."""
+    stelle = Ausgabestelle.objects.create(name="Ausgabe Beispielweg")
+    alt = Kundengruppe.objects.create(name="Mi 12:00", ausgabestelle=stelle, wochentage="Mi",
+                                      uhrzeit=dt.time(12, 0), maximum=5)  # fmt: skip
+    neu = Kundengruppe.objects.create(name="Mi 14:00", ausgabestelle=stelle, wochentage="Mi",
+                                      uhrzeit=dt.time(14, 0), maximum=5)  # fmt: skip
+    h = Haushalt.objects.create(kundennummer="07004", kundengruppe=alt, telefon="01234 5550",
+                                email="otto@example.org")  # fmt: skip
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Otto", nachname="Beispiel")
+    seite = oeffnen(angemeldet, admin, reverse("kunden:platz_anbieten", args=["07004"]))
+    seite.locator("#gruppe").select_option(str(neu.pk))
+    seite.locator("#antwort").fill("Wir würden uns freuen.")
+    vorschau = seite.get_by_role("button", name="Vorschau der E-Mail")
+    aufnehmen(seite, "platz-anbieten", seite.locator("section.karte").first,
+              Marke(seite.locator("#gruppe"), "rahmen", 1),
+              Marke(seite.locator(".filter-feld", has_text="Wechsel ab"), "rahmen", 2),
+              Marke(vorschau, "rahmen", 3),
+              Marke(seite.get_by_role("button", name="Nur vormerken"), nummer=4,
+                    von="rechts"))  # fmt: skip
+    vorschau.click()
+    expect(seite.get_by_role("heading", name="So bekommt der Kunde die E-Mail")).to_be_visible()
+    aufnehmen(seite, "platz-anbieten-vorschau", seite.locator("section.karte").first,
+              Marke(seite.locator("#mail-vorschau"), "rahmen", 1),
+              Marke(seite.get_by_role("button", name="Jetzt senden"), "rahmen", 2))  # fmt: skip

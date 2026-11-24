@@ -35,7 +35,7 @@
       <div class="aktionsleiste">
         <button type="submit" name="genehmigen" value="1" class="knopf">✓ Genehmigen</button>
         {% if w.angebot_laeuft %}{# läuft schon #}
-        {% elif w.kontakt.email %}<button type="submit" name="anbieten" value="1" class="knopf knopf-zweitrangig" title="E-Mail mit dem Angebot; der Kunde bestätigt über einen Link">✉ Platz anbieten</button>
+        {% elif w.kontakt.email %}<button type="submit" name="anbieten" value="1" class="knopf knopf-zweitrangig" title="Zeigt erst die E-Mail; der Kunde bestätigt über einen Link">✉ Platz anbieten …</button>
         {% else %}<button type="button" class="knopf knopf-zweitrangig" disabled title="Ohne E-Mail-Adresse geht kein Angebot per E-Mail">✉ Platz anbieten</button>{% endif %}
         <button type="submit" name="ablehnen" value="1" class="knopf knopf-zweitrangig" formnovalidate
                 onclick="return confirm('Den Wechselwunsch zu {{ w.kundennummer|escapejs }} ablehnen?')">✕ Ablehnen</button>

@@ -78,6 +78,11 @@ urlpatterns = [
         views_bearbeiten.listeneintrag_loeschen,
         name="listeneintrag_loeschen",
     ),
+    path(
+        "haushalt/<path:kundennummer>/platz-anbieten/",
+        views_wechsel.platz_anbieten,
+        name="platz_anbieten",
+    ),  # fmt: skip
     path("haushalt/<path:kundennummer>/wechseln/", views_wechsel.wunsch, name="wechselwunsch"),
     path("haushalt/<path:kundennummer>/notiz/", views.notiz_neu, name="notiz_neu"),
     path("notiz/<int:pk>/loeschen/", views.notiz_loeschen, name="notiz_loeschen"),

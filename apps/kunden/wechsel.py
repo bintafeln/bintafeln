@@ -64,7 +64,7 @@ def arten(h: Haushalt) -> list[tuple[str, str]]:
     eigene = h.kundengruppe
     if eigene is None or eigene.ausgabestelle_id is None:
         return [(Wechselwunsch.Art.STELLE.value, "eine Ausgabestelle wählen")]
-    return [(a.value, a.label) for a in Wechselwunsch.Art]
+    return [(a.value, a.label) for a in Wechselwunsch.Art if a != Wechselwunsch.Art.TAFEL]
 
 
 def tage_zur_wahl(h: Haushalt) -> list[tuple[str, str]]:
@@ -396,20 +396,17 @@ def _angebot_mail(tafel: str, ziel: str, ab: dt.date, bis: dt.date, zusatz: str,
     return ("\n\n" + "–" * 20 + "\n\n").join(teile_text), "<hr>".join(teile_html)
 
 
-@transaction.atomic
-def anbieten(wunsch: Wechselwunsch, benutzer, gruppe: Kundengruppe, ab: dt.date | None,
-             zusatz: str, link_bauen) -> Wechselwunsch:  # fmt: skip
-    """Bietet dem Kunden per E-Mail einen Platz in ``gruppe`` an. ``link_bauen(schluessel)``
-    liefert die vollständige Adresse der Bestätigungsseite. Der Platz ist reserviert, solange
-    das Angebot läuft (``gruppen.reservierte_zugaenge``). Geht die Mail nicht hinaus, bleibt
-    alles, wie es war."""
-    from apps.core.models import TafelEinstellungen
+def angebot_pruefen(h: Haushalt | None, gruppe: Kundengruppe, ab: dt.date | None,
+                    wunsch: Wechselwunsch | None = None) -> dt.date:  # fmt: skip
+    """Ob sich ``gruppe`` dem Kunden anbieten lässt; liefert das Datum des Wechsels. Angeboten
+    wird nur ein freier Platz – für eine volle Gruppe bleibt das Vormerken (``vormerken()``)."""
+    from apps.antraege.aufnahme import freie_gruppen
 
-    if wunsch.status != Wechselwunsch.Status.OFFEN:
-        raise WechselFehler("Dieser Wunsch ist schon entschieden.")
-    if wunsch.angebot_laeuft:
-        raise WechselFehler("Zu diesem Wunsch läuft schon ein Angebot.")
-    h = Haushalt.objects.filter(kundennummer=wunsch.kundennummer).first()
+    if wunsch is not None:
+        if wunsch.status != Wechselwunsch.Status.OFFEN:
+            raise WechselFehler("Dieser Wunsch ist schon entschieden.")
+        if wunsch.angebot_laeuft:
+            raise WechselFehler("Zu diesem Wunsch läuft schon ein Angebot.")
     if h is None:
         raise WechselFehler("Diesen Kunden gibt es nicht mehr.")
     if not h.email.strip():
@@ -417,22 +414,52 @@ def anbieten(wunsch: Wechselwunsch, benutzer, gruppe: Kundengruppe, ab: dt.date 
                             "E-Mail geht nicht. Bitte anrufen.")  # fmt: skip
     if not gruppe.aktiv:
         raise WechselFehler("Diese Kundengruppe gibt es nicht mehr.")
+    if h.kundengruppe_id == gruppe.pk:
+        raise WechselFehler("In dieser Kundengruppe ist der Kunde schon.")
+    if all(e["gruppe"].pk != gruppe.pk for e in freie_gruppen(h)):
+        raise WechselFehler(f"„{gruppe.name}“ ist voll – ein Platz lässt sich dort nicht "
+                            "anbieten, nur vormerken.")  # fmt: skip
     heute = timezone.localdate()
     ab = ab or heute
     if ab < heute:
         raise WechselFehler("Der Wechsel kann nicht in der Vergangenheit liegen.")
-    schluessel = secrets.token_urlsafe(32)
-    von, ziel = _name(benutzer), gruppe_text(gruppe)
-    bis = heute + dt.timedelta(days=ANGEBOT_TAGE)
-    zusatz = " ".join(zusatz.split())[:500]
+    return ab
+
+
+def angebot_vorschau(h: Haushalt, gruppe: Kundengruppe, ab: dt.date, zusatz: str,
+                     link: str = "") -> dict:  # fmt: skip
+    """Die Mail mit dem Angebot, wie der Kunde sie bekommt – zum Ansehen vor dem Senden (ohne
+    ``link`` mit einem Platzhalter statt des echten Schlüssels) und zum Senden selbst."""
+    from apps.core.models import TafelEinstellungen
+
     tafel = TafelEinstellungen.laden().name
-    text, html = _angebot_mail(tafel, ziel, ab, bis, zusatz, link_bauen(schluessel),
-                               zweitsprache(h))  # fmt: skip
+    bis = timezone.localdate() + dt.timedelta(days=ANGEBOT_TAGE)
+    zusatz = " ".join(zusatz.split())[:500]
+    zweite = zweitsprache(h)
+    text, html = _angebot_mail(tafel, gruppe_text(gruppe), ab, bis, zusatz,
+                               link or "https://…/bestaetigen", zweite)  # fmt: skip
     betreff = "Wir können Ihnen einen Platz anbieten"
+    return {"betreff": f"{betreff} – {tafel}" if tafel else betreff, "text": text, "html": html,
+            "an": h.email.strip(), "bis": bis, "zusatz": zusatz, "sprache": zweite,
+            "ziel": gruppe_text(gruppe)}  # fmt: skip
+
+
+@transaction.atomic
+def anbieten(wunsch: Wechselwunsch, benutzer, gruppe: Kundengruppe, ab: dt.date | None,
+             zusatz: str, link_bauen) -> Wechselwunsch:  # fmt: skip
+    """Bietet dem Kunden per E-Mail einen Platz in ``gruppe`` an. ``link_bauen(schluessel)``
+    liefert die vollständige Adresse der Bestätigungsseite. Der Platz ist reserviert, solange
+    das Angebot läuft (``gruppen.reservierte_zugaenge``). Geht die Mail nicht hinaus, bleibt
+    alles, wie es war."""
+    h = Haushalt.objects.filter(kundennummer=wunsch.kundennummer).first()
+    ab = angebot_pruefen(h, gruppe, ab, wunsch)
+    schluessel = secrets.token_urlsafe(32)
+    post = angebot_vorschau(h, gruppe, ab, zusatz, link_bauen(schluessel))
+    von, ziel, bis, zusatz = _name(benutzer), post["ziel"], post["bis"], post["zusatz"]
     try:
         # vertraulich: Der Link in der Mail ist der Schlüssel, er gehört nicht ins Mail-Archiv
-        mail.senden(f"{betreff} – {tafel}" if tafel else betreff, text, [h.email.strip()],
-                    html=html, art="kunde", vertraulich=True)  # fmt: skip
+        mail.senden(post["betreff"], post["text"], [post["an"]], html=post["html"], art="kunde",
+                    vertraulich=True)  # fmt: skip
     except mail.MailFehler as fehler:
         raise WechselFehler(f"Die E-Mail ging nicht hinaus: {fehler}") from None
     wunsch.angebot_gruppe, wunsch.angebot_text, wunsch.angebot_ab = gruppe, ziel[:150], ab
@@ -481,3 +508,58 @@ def angebot_beantworten(wunsch: Wechselwunsch, ja: bool) -> Wechselwunsch:
     ab = max(wunsch.angebot_ab or timezone.localdate(), timezone.localdate())
     return genehmigen(wunsch, None, gruppe, ab, wunsch.angebot_zusatz,
                       von=f"{wunsch.angebot_von} (vom Kunden bestätigt)"[:150])  # fmt: skip
+
+
+# --- Von der Tafel aus: Platz anbieten oder vormerken, ohne dass der Kunde gefragt hat ---------
+
+
+def _eigener_wunsch(h: Haushalt, benutzer, text: str, gruppe: Kundengruppe,
+                    anmerkung: str = "") -> Wechselwunsch:  # fmt: skip
+    if offene().filter(kundennummer=h.kundennummer).exists():
+        raise WechselFehler("Zu diesem Kunden ist schon ein Wechselwunsch offen – bitte dort "
+                            "entscheiden (Kunden → Wechselwünsche).")  # fmt: skip
+    return Wechselwunsch.objects.create(
+        kundennummer=h.kundennummer, art=Wechselwunsch.Art.TAFEL,
+        bisher=gruppe_text(h.kundengruppe)[:150], wunsch=text[:300], wunsch_gruppe=gruppe,
+        anmerkung=" ".join(anmerkung.split())[:300], ohne_email=not h.email.strip(),
+        von=_name(benutzer),
+    )  # fmt: skip
+
+
+@transaction.atomic
+def von_uns_anbieten(h: Haushalt, benutzer, gruppe: Kundengruppe, ab: dt.date | None,
+                     zusatz: str, link_bauen) -> Wechselwunsch:  # fmt: skip
+    """Die Tafel bietet von sich aus einen freien Platz an: legt den Vorgang an und schickt die
+    Mail. Scheitert etwas, bleibt nichts zurück."""
+    angebot_pruefen(h, gruppe, ab)
+    wunsch = _eigener_wunsch(h, benutzer, f"Angebot der Tafel: {gruppe_text(gruppe)}", gruppe)
+    return anbieten(wunsch, benutzer, gruppe, ab, zusatz, link_bauen)
+
+
+@transaction.atomic
+def vormerken(h: Haushalt, benutzer, gruppe: Kundengruppe, anmerkung: str = "") -> Wechselwunsch:
+    """Die Tafel merkt den Kunden für eine (volle) Kundengruppe vor: Der Vorgang steht bei den
+    Wechselwünschen und lässt sich anbieten oder genehmigen, sobald dort Platz ist. Der Kunde
+    erfährt davon nichts."""
+    if not gruppe.aktiv:
+        raise WechselFehler("Diese Kundengruppe gibt es nicht mehr.")
+    if h.kundengruppe_id == gruppe.pk:
+        raise WechselFehler("In dieser Kundengruppe ist der Kunde schon.")
+    wunsch = _eigener_wunsch(h, benutzer, f"Von der Tafel vorgemerkt: {gruppe_text(gruppe)}",
+                             gruppe, anmerkung)  # fmt: skip
+    Notiz.objects.create(
+        kundennummer=h.kundennummer, benutzer=benutzer, verfasst_von=_name(benutzer)[:100],
+        text=f"Vorgemerkt für {gruppe_text(gruppe)}."[:1000],
+    )  # fmt: skip
+    return wunsch
+
+
+def gruppen_zur_wahl(h: Haushalt) -> list[dict]:
+    """Alle Kundengruppen außer der eigenen und internen, mit freien Plätzen: Wo Platz ist, lässt
+    er sich anbieten, sonst nur vormerken."""
+    return [
+        {"gruppe": e["gruppe"], "text": gruppe_text(e["gruppe"]), "frei": e["frei"],
+         "voll": e["frei"] is not None and e["frei"] <= 0}
+        for e in gruppen.mit_plaetzen(h)
+        if not e["eigene"] and not e["gruppe"].intern
+    ]  # fmt: skip

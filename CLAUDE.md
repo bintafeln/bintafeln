@@ -183,6 +183,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   bestätigt wird erst per Knopf; „Ja“ = `angebot_beantworten()` → `genehmigen()`; laufende
   Angebote reservieren den Platz (`gruppen.reservierte_zugaenge()`). Immer Deutsch, darunter die
   Sprache des Kunden: Texte in `apps/kunden/wechsel_texte/<code>.json` – neue Texte in allen Dateien.
+  Vor dem Senden immer die Vorschau (`angebot_vorschau()`); nur freie Plätze (`angebot_pruefen()`).
+  Von der Tafel aus (Kundenseite, Art `tafel`): `von_uns_anbieten()`, volle Gruppe nur `vormerken()`.
   Einkommensart vieler Haushalte auf einmal ändern (nach Alter der Hauptperson, erst ansehen, dann
   ändern, in Portionen) in `apps/kunden/views_einkommensart.py` (ADR 0146).
   Notizen an die Ausgabestelle (`Notiz.an_stelle`, Startseite, Antwort beim Ausweisdruck) in

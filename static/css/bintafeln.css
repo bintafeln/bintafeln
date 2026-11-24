@@ -1535,6 +1535,8 @@ a.fd-ich { font-weight: 600; text-decoration: underline dotted; }
 .wechsel-karte { border: 1px solid var(--rand); border-radius: var(--radius); padding: .75rem 1rem; margin: 0 0 1rem; }
 .wechsel-entscheiden .filter-kompakt { margin-top: .85rem; }
 .wechsel-karte h3 { margin: 0 0 .4rem; }
+.mail-vorschau { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: 1rem 0; padding: 1rem;
+  background: var(--flaeche-2); border: 1px solid var(--rand); border-radius: var(--radius); unicode-bidi: plaintext; }
 /* Öffentliche Seite hinter dem Link aus der Mail (ADR 0175) */
 .angebot-karte { max-width: 36rem; margin: 1.5rem auto; text-align: center; }
 .angebot-was { font-size: 1.25rem; font-weight: 700; margin: 1rem 0; padding: .9rem 1rem;

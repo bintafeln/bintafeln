@@ -28,7 +28,7 @@
   {% endif %}{% endfor %}
   <dl class="angaben">
     {% if "kunden.stammdaten" in rechte %}<dt>Status</dt><dd>{{ h.get_status_display }}</dd>{% endif %}
-    <dt>Ausgabestelle</dt><dd>{% if h.kundengruppe %}{{ h.kundengruppe.mit_stelle }}{% if h.kundengruppe.wochentage %} ({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %}){% endif %}{% else %}–{% endif %}{% if "kunden.bearbeiten" in rechte %} <a class="leise" href="{% url 'kunden:kundengruppe_aendern' h.kundennummer %}">Kundengruppe ändern</a>{% endif %}</dd>
+    <dt>Ausgabestelle</dt><dd>{% if h.kundengruppe %}{{ h.kundengruppe.mit_stelle }}{% if h.kundengruppe.wochentage %} ({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %}){% endif %}{% else %}–{% endif %}{% if "kunden.bearbeiten" in rechte %} <a class="leise" href="{% url 'kunden:kundengruppe_aendern' h.kundennummer %}">Kundengruppe ändern</a>{% endif %}{% if "kunden.wechsel_entscheiden" in rechte %} · <a class="leise" href="{% url 'kunden:platz_anbieten' h.kundennummer %}">Platz anbieten …</a>{% endif %}</dd>
     {% if geplanter_wechsel %}<dt>Geplanter Umzug</dt><dd class="hinweis">ab {{ geplanter_wechsel.ab|date:"d.m.Y" }} zu {{ geplanter_wechsel.ziel_gruppe.mit_stelle }}</dd>{% endif %}
     <dt>Karte gültig bis</dt><dd>{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
     {% if kontostand_zeigen %}<dt>Kontostand</dt><dd><strong{% if h.kontostand < 0 %} class="fehler"{% endif %}>{{ h.kontostand|default_if_none:0|floatformat:2 }} €</strong></dd>{% endif %}
