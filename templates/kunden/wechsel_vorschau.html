@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titel %}Vorschau: Platz anbieten{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Vorschau: So bekommt der Kunde die E-Mail</h1>
+  <dl class="angaben">
+    <dt>An</dt><dd>{{ post.an }} <small class="leise">(Kunde {{ h.kundennummer }})</small></dd>
+    <dt>Betreff</dt><dd>{{ post.betreff }}</dd>
+    <dt>Antwort bis</dt><dd>{{ post.bis|date:"d.m.Y" }} – so lange ist der Platz reserviert</dd>
+    <dt>Sprache</dt><dd>Deutsch{% if post.sprache %}, darunter {{ post.sprache.deutsch }}{% else %} <small class="leise">(keine zweite Sprache: bei der Hauptperson steht keine passende Staatsangehörigkeit)</small>{% endif %}</dd>
+  </dl>
+  <pre class="mail-vorschau" id="mail-vorschau">{{ post.text }}</pre>
+  <p class="hinweis">In der echten E-Mail stehen statt „https://…/bestaetigen“ der persönliche Link des Kunden und
+    zwei Knöpfe „Ja, ich möchte wechseln“ / „Nein, ich bleibe“. Noch ist nichts gesendet.</p>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="anbieten" value="1"><input type="hidden" name="senden" value="1">
+    <input type="hidden" name="gruppe" value="{{ gruppe.pk }}">
+    <input type="hidden" name="ab" value="{{ ab|date:'Y-m-d' }}">
+    <input type="hidden" name="antwort" value="{{ zusatz }}">
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">✉ Jetzt senden</button>
+      <a href="{{ zurueck }}" class="knopf knopf-abbrechen">Zurück, nichts senden</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

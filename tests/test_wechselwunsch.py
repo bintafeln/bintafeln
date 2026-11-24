@@ -308,7 +308,13 @@ def _angebot(admin_client, admin, lage, **mehr):
     w = wechsel.eintragen(h, admin, "uhrzeit", "spaeter", gruppe=lage["mi14"])
     antwort = admin_client.post(
         reverse("kunden:wechsel_entscheiden", args=[w.pk]),
-        {"anbieten": "1", "gruppe": lage["mi14"].pk, "antwort": "Bitte Tasche mitbringen.", **mehr},
+        {
+            "anbieten": "1",
+            "senden": "1",
+            "gruppe": lage["mi14"].pk,
+            "antwort": "Bitte Tasche mitbringen.",
+            **mehr,
+        },
         follow=True,
     )
     assert "Platz angeboten" in antwort.content.decode()
@@ -394,7 +400,7 @@ def test_angebot_spaeter_abgelehnt_abgelaufen(admin_client, admin, lage):
     import re
 
     ziel = reverse("kunden:wechsel_entscheiden", args=[w.pk])
-    admin_client.post(ziel, {"anbieten": "1", "gruppe": lage["mi14"].pk,
+    admin_client.post(ziel, {"anbieten": "1", "senden": "1", "gruppe": lage["mi14"].pk,
                              "ab": spaeter.isoformat()})  # fmt: skip
     neu = re.search(r"/kunden/wechsel/([\w-]+)/", django_mail.outbox[0].body).group(1)
     assert neu != schluessel
@@ -424,7 +430,9 @@ def test_angebot_ohne_email_geht_nicht(admin_client, admin, lage):
     liste = admin_client.get(LISTE).content.decode()
     assert "Ohne E-Mail-Adresse geht kein Angebot" in liste
     ziel = reverse("kunden:wechsel_entscheiden", args=[w.pk])
-    antwort = admin_client.post(ziel, {"anbieten": "1", "gruppe": lage["mi10"].pk}, follow=True)
+    antwort = admin_client.post(
+        ziel, {"anbieten": "1", "senden": "1", "gruppe": lage["mi10"].pk}, follow=True
+    )
     assert "keine E-Mail-Adresse" in antwort.content.decode()
     w.refresh_from_db()
     assert not w.angebot_am and not django_mail.outbox
@@ -469,3 +477,79 @@ def test_angebot_deutsch_und_sprache_des_kunden(admin_client, admin, lage):
     assert 'lang="ar" dir="rtl"' in seite and "{bis}" not in seite and "{ab}" not in seite
     # ohne Staatsangehörigkeit: nur Deutsch
     assert wechsel.zweitsprache(haushalt("300", lage["mi12"])) is None
+
+
+def test_vorschau_vor_dem_senden(admin_client, admin, lage):
+    """„Platz anbieten“ zeigt erst die Mail; gesendet wird erst mit „Jetzt senden“."""
+    Haushalt.objects.filter(pk=lage["h"].pk).update(email="erika@example.org")
+    lage["h"].refresh_from_db()
+    w = wechsel.eintragen(lage["h"], admin, "uhrzeit", "frueher", gruppe=lage["mi10"])
+    ziel = reverse("kunden:wechsel_entscheiden", args=[w.pk])
+    angaben = {"anbieten": "1", "gruppe": lage["mi10"].pk, "antwort": "Bitte Tasche mitbringen."}
+    seite = admin_client.post(ziel, angaben).content.decode()
+    assert "So bekommt der Kunde die E-Mail" in seite and "erika@example.org" in seite
+    assert "Wir können Ihnen einen Platz anbieten" in seite and "Mi 10:00" in seite
+    assert "Bitte Tasche mitbringen." in seite and "Jetzt senden" in seite
+    assert 'name="senden"' in seite
+    w.refresh_from_db()
+    assert not django_mail.outbox and not w.angebot_am  # noch nichts gesendet
+    # eine volle Gruppe lässt sich nicht anbieten
+    voll = admin_client.post(ziel, {**angaben, "gruppe": lage["mi14"].pk}, follow=True)
+    assert "ist voll" in voll.content.decode()
+    admin_client.post(ziel, {**angaben, "senden": "1"})
+    w.refresh_from_db()
+    assert len(django_mail.outbox) == 1 and w.angebot_laeuft
+
+
+def test_von_der_tafel_aus_anbieten_und_vormerken(admin_client, admin, lage, recht_geben,
+                                                  benutzer_mit_rolle, anmelden):  # fmt: skip
+    """Kundenseite: Die Tafel bietet von sich aus einen freien Platz an (mit Vorschau); für
+    eine volle Kundengruppe geht nur Vormerken."""
+    import re
+
+    h = lage["h"]
+    Haushalt.objects.filter(pk=h.pk).update(email="erika@example.org")
+    seite = reverse("kunden:platz_anbieten", args=["100"])
+    kunde = admin_client.get(reverse("kunden:haushalt", args=["100"])).content.decode()
+    assert f'href="{seite}"' in kunde
+    inhalt = admin_client.get(seite).content.decode()
+    assert "Mi 10:00" in inhalt and "voll, nur vormerken" in inhalt  # Mi 14:00 ist voll
+    assert "Parken" not in inhalt and ">Zentrale – Mi 12:00" not in inhalt  # intern, eigene
+    # volle Gruppe: anbieten geht nicht
+    voll = admin_client.post(seite, {"anbieten": "1", "gruppe": lage["mi14"].pk})
+    assert "ist voll" in voll.content.decode() and not Wechselwunsch.objects.exists()
+    # freie Gruppe: erst Vorschau, dann senden
+    angaben = {"anbieten": "1", "gruppe": lage["mi10"].pk, "antwort": "Wir würden uns freuen."}
+    vorschau = admin_client.post(seite, angaben).content.decode()
+    assert "So bekommt der Kunde die E-Mail" in vorschau and "Wir würden uns freuen." in vorschau
+    assert not django_mail.outbox and not Wechselwunsch.objects.exists()
+    antwort = admin_client.post(seite, {**angaben, "senden": "1"}, follow=True)
+    assert "Platz angeboten" in antwort.content.decode()
+    w = Wechselwunsch.objects.get()
+    assert w.art == "tafel" and w.wunsch.startswith("Angebot der Tafel:") and w.angebot_laeuft
+    (post,) = django_mail.outbox
+    assert post.to == ["erika@example.org"] and "Mi 10:00" in post.body
+    assert "Angebot der Tafel" in admin_client.get(LISTE).content.decode()
+    # solange der Vorgang offen ist, gibt es keinen zweiten
+    assert "schon ein Vorgang offen" in admin_client.get(seite).content.decode()
+    # der Kunde bestätigt: Umzug wie sonst auch
+    schluessel = re.search(r"/kunden/wechsel/([\w-]+)/", post.body).group(1)
+    Client().post(reverse("kunden:wechsel_angebot", args=[schluessel]), {"antwort": "ja"})
+    h.refresh_from_db()
+    assert h.kundengruppe == lage["mi10"]
+
+    # Vormerken für die volle Gruppe: Vorgang ohne Mail, lässt sich später entscheiden
+    django_mail.outbox.clear()
+    angaben = {"vormerken": "1", "gruppe": lage["mi14"].pk, "antwort": "sobald etwas frei wird"}
+    antwort = admin_client.post(seite, angaben, follow=True)
+    assert "Vorgemerkt für Mi 14:00" in antwort.content.decode()
+    v = Wechselwunsch.objects.get(status="offen")
+    assert v.wunsch.startswith("Von der Tafel vorgemerkt:") and v.wunsch_gruppe == lage["mi14"]
+    assert v.anmerkung == "sobald etwas frei wird" and not django_mail.outbox
+    assert Notiz.objects.filter(kundennummer="100", text__startswith="Vorgemerkt für").exists()
+    assert "inzwischen voll" in admin_client.get(LISTE).content.decode()
+
+    # ohne das Recht: kein Link, keine Seite
+    konto = benutzer_mit_rolle("emil", "Büro")
+    client = anmelden(Client(), konto)
+    assert client.get(seite).status_code == 403

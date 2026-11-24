@@ -160,15 +160,14 @@ def entscheiden(request, pk):
             except ValueError:
                 ab = None
             if "anbieten" in request.POST:
-                w = wechsel.anbieten(
-                    w, request.user, gruppe, ab, antwort,
-                    lambda schluessel: request.build_absolute_uri(
-                        reverse("kunden:wechsel_angebot", args=[schluessel])),
-                )  # fmt: skip
-                messages.success(request, f"Platz angeboten ({w.angebot_text}). Der Kunde "
-                                 f"{w.kundennummer} hat eine E-Mail bekommen und kann bis "
-                                 f"{w.angebot_bis:%d.%m.%Y} bestätigen; so lange ist der Platz "
-                                 "reserviert.")  # fmt: skip
+                h = zugang.haushalt(request.user, w.kundennummer)
+                if "senden" not in request.POST:
+                    # erst ansehen: die Mail, wie der Kunde sie bekommt
+                    ab = wechsel.angebot_pruefen(h, gruppe, ab, w)
+                    return _vorschau(request, h, gruppe, ab, antwort,
+                                     reverse("kunden:wechselwuensche"))  # fmt: skip
+                w = wechsel.anbieten(w, request.user, gruppe, ab, antwort, _link(request))
+                messages.success(request, _angeboten(w))
                 return redirect("kunden:wechselwuensche")
             w = wechsel.genehmigen(w, request.user, gruppe, ab, antwort)
             messages.success(request, f"Wechselwunsch zu {w.kundennummer} genehmigt: "
@@ -176,6 +175,74 @@ def entscheiden(request, pk):
     except wechsel.WechselFehler as grund:
         messages.error(request, str(grund))
     return redirect("kunden:wechselwuensche")
+
+
+def _link(request):
+    return lambda schluessel: request.build_absolute_uri(
+        reverse("kunden:wechsel_angebot", args=[schluessel]))  # fmt: skip
+
+
+def _angeboten(w) -> str:
+    return (f"Platz angeboten ({w.angebot_text}). Der Kunde {w.kundennummer} hat eine E-Mail "
+            f"bekommen und kann bis {w.angebot_bis:%d.%m.%Y} bestätigen; so lange ist der "
+            "Platz reserviert.")  # fmt: skip
+
+
+def _vorschau(request, h, gruppe, ab, zusatz, zurueck):
+    """Zeigt die Mail vor dem Senden. „Jetzt senden“ schickt dieselben Angaben noch einmal an
+    dieselbe Adresse, diesmal mit ``senden``."""
+    return render(request, "kunden/wechsel_vorschau.html", {
+        "h": h, "gruppe": gruppe, "ab": ab, "zusatz": zusatz, "zurueck": zurueck,
+        "post": wechsel.angebot_vorschau(h, gruppe, ab, zusatz),
+    })  # fmt: skip
+
+
+@never_cache
+@entscheiden_recht
+def platz_anbieten(request, kundennummer):
+    """Von der Tafel aus (Kundenseite): einen freien Platz per E-Mail anbieten – mit Vorschau –
+    oder den Kunden für eine volle Kundengruppe vormerken."""
+    h = zugang.haushalt(request.user, kundennummer,
+                        Haushalt.objects.select_related("kundengruppe__ausgabestelle"))  # fmt: skip
+    zurueck = reverse("kunden:haushalt", args=[h.kundennummer])
+    wahl = wechsel.gruppen_zur_wahl(h)
+    fehler = ""
+    if request.method == "POST":
+        gruppe = next((e["gruppe"] for e in wahl
+                       if str(e["gruppe"].pk) == request.POST.get("gruppe", "")), None)  # fmt: skip
+        zusatz = request.POST.get("antwort", "")
+        try:
+            ab = dt.date.fromisoformat(request.POST.get("ab", ""))
+        except ValueError:
+            ab = None
+        try:
+            if gruppe is None:
+                raise wechsel.WechselFehler("Bitte eine Kundengruppe wählen.")
+            if "vormerken" in request.POST:
+                wechsel.vormerken(h, request.user, gruppe, zusatz)
+                messages.success(request, f"Vorgemerkt für {gruppe.name}. Der Vorgang steht "
+                                 "unter „Kunden → Wechselwünsche“; der Kunde hat nichts "
+                                 "bekommen.")  # fmt: skip
+                return redirect(zurueck)
+            if "senden" not in request.POST:
+                ab = wechsel.angebot_pruefen(h, gruppe, ab)
+                if wechsel.offene().filter(kundennummer=h.kundennummer).exists():
+                    raise wechsel.WechselFehler(
+                        "Zu diesem Kunden ist schon ein Wechselwunsch offen – bitte dort "
+                        "entscheiden (Kunden → Wechselwünsche).")  # fmt: skip
+                return _vorschau(request, h, gruppe, ab, zusatz, request.path)
+            w = wechsel.von_uns_anbieten(h, request.user, gruppe, ab, zusatz, _link(request))
+            messages.success(request, _angeboten(w))
+            return redirect(zurueck)
+        except wechsel.WechselFehler as grund:
+            fehler = str(grund)
+    return render(request, "kunden/platz_anbieten.html", {
+        "h": h, "wahl": wahl, "fehler": fehler, "zurueck": zurueck,
+        "bisher": wechsel.gruppe_text(h.kundengruppe), "heute": timezone.localdate(),
+        "erreichbar": wechsel.erreichbar(h), "eingaben": request.POST,
+        "offen": wechsel.offene().filter(kundennummer=h.kundennummer).first(),
+        "tage": wechsel.ANGEBOT_TAGE,
+    })  # fmt: skip
 
 
 @never_cache

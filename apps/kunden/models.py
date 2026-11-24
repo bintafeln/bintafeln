@@ -881,6 +881,7 @@ class Wechselwunsch(models.Model):
         UHRZEIT = "uhrzeit", "andere Uhrzeit am selben Tag"
         TAG = "tag", "anderer Tag"
         STELLE = "stelle", "andere Ausgabestelle"
+        TAFEL = "tafel", "von der Tafel aus"
 
     class Status(models.TextChoices):
         OFFEN = "offen", "offen"

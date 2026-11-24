@@ -40,3 +40,16 @@ ihn umsetzt – bisher ging das nur mit einem Anruf.
 Ein unerratbarer, einmaliger Link ist für eine Zusage zu einem Abholtermin angemessen und für
 die Kunden die kleinste Hürde. Das Reservieren verhindert, dass der angebotene Platz in der
 Zwischenzeit vergeben wird; die kurze Frist verhindert, dass Plätze lange blockiert bleiben.
+
+## Nachtrag (2026-11-24): Vorschau, von der Tafel aus, Vormerken
+
+- **Vorschau:** „Platz anbieten“ zeigt immer erst die Mail (`wechsel.angebot_vorschau()`, mit
+  Platzhalter statt des Links); gesendet wird erst mit „Jetzt senden“.
+- **Nur freie Plätze:** `wechsel.angebot_pruefen()` lehnt volle Kundengruppen ab – ein Angebot,
+  das überbucht, soll es nicht geben.
+- **Von der Tafel aus:** Auf der Kundenseite „Platz anbieten …“ (Recht
+  `kunden.wechsel_entscheiden`, `views_wechsel.platz_anbieten`). `von_uns_anbieten()` legt den
+  Vorgang als `Wechselwunsch` der Art `tafel` an und schickt dasselbe Angebot; alles Weitere
+  läuft wie beim Wunsch des Kunden. Der Text der Mail bleibt gleich.
+- **Vormerken:** Für eine volle Kundengruppe legt `vormerken()` nur den Vorgang an (mit Notiz);
+  der Kunde erfährt nichts. Sobald Platz ist, wird in der Liste angeboten oder genehmigt.

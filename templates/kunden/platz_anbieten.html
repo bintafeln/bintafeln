@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titel %}Platz anbieten – {{ h.kundennummer }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{{ zurueck }}">← zurück zum Kunden</a></p>
+  <h1>Platz anbieten</h1>
+  <p>Kunde <strong>{{ h.kundennummer }}</strong>{% with p=h.hauptperson %}{% if p %} · {{ p.vorname }} {{ p.nachname }}{% endif %}{% endwith %}<br>
+    <small class="leise">Bisher: {{ bisher }}</small></p>
+  <p class="hinweis">Von der Tafel aus, ohne dass der Kunde gefragt hat: Er bekommt eine E-Mail mit dem Angebot und
+    bestätigt selbst über einen Link ({{ tage }} Tage Zeit; bei „Ja“ zieht er von selbst um). Vor dem Senden sehen Sie die
+    E-Mail. Ist die Kundengruppe voll, lässt sich der Kunde nur <strong>vormerken</strong> – er erfährt davon nichts.</p>
+
+  {% if offen %}
+  <div class="sicherung update-warnung update-wichtig" role="status"><strong>Zu diesem Kunden ist schon ein Vorgang offen:</strong>
+    {{ offen.wunsch }}. Bitte unter <a href="{% url 'kunden:wechselwuensche' %}#wunsch-{{ offen.pk }}">Kunden → Wechselwünsche</a> entscheiden.</div>
+  {% else %}
+  {% if fehler %}<p class="fehler" role="alert">{{ fehler }}</p>{% endif %}
+  {% if not erreichbar.email %}<p class="fehler"><strong>Bei diesem Kunden steht keine E-Mail-Adresse.</strong> Ein Angebot per
+    E-Mail geht nicht – nur vormerken.</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <div class="filter-kompakt">
+      <div class="filter-feld"><label for="gruppe">Kundengruppe</label>
+        <select name="gruppe" id="gruppe" required>
+          <option value="">– bitte wählen –</option>
+          {% for e in wahl %}<option value="{{ e.gruppe.pk }}"{% if eingaben.gruppe == e.gruppe.pk|stringformat:"s" %} selected{% endif %}>{{ e.text }} – {% if e.voll %}voll, nur vormerken{% elif e.frei is None %}frei{% else %}{{ e.frei }} frei{% endif %}</option>{% endfor %}
+        </select></div>
+      <div class="filter-feld"><label for="ab">Wechsel ab</label>
+        <input type="date" name="ab" id="ab" value="{% if eingaben.ab %}{{ eingaben.ab }}{% else %}{{ heute|date:'Y-m-d' }}{% endif %}" min="{{ heute|date:'Y-m-d' }}"></div>
+    </div>
+    <div class="feld"><label for="antwort">Zusatz (freiwillig) – steht beim Anbieten in der E-Mail, beim Vormerken als Anmerkung am Vorgang</label>
+      <input type="text" name="antwort" id="antwort" maxlength="500" value="{{ eingaben.antwort|default:'' }}"></div>
+    <div class="aktionsleiste">
+      <button type="submit" name="anbieten" value="1" class="knopf"{% if not erreichbar.email %} disabled{% endif %}>Vorschau der E-Mail …</button>
+      <button type="submit" name="vormerken" value="1" class="knopf knopf-zweitrangig">Nur vormerken</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}
