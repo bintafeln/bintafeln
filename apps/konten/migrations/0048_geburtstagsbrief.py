@@ -9,7 +9,9 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("adressen", "0018_email_weitere"),
+        # nur das Modell Adresse wird gebraucht; eine spätere Adress-Migration als Voraussetzung
+        # würde den Umbau-Test (tests/test_umbau_migration.py) blockieren
+        ("adressen", "0001_initial"),
         ("konten", "0047_darstellung"),
     ]
 
