@@ -86,6 +86,12 @@ class TafelEinstellungen(models.Model):
         help_text="Zeigt den Berechtigten auf der Startseite die Geburtstage der Mitarbeitenden "
         "in den nächsten 14 Tagen.",
     )  # fmt: skip
+    geburtstagsbrief = models.BooleanField(
+        "Geburtstagsbrief auf der Startseite", default=True,
+        help_text="Wer heute oder gestern Geburtstag hatte, bekommt auf der Startseite einen "
+        "Glückwunsch als Brief. Wer das Recht „Geburtstagsbrief zu allen Mitarbeitenden“ hat, "
+        "bekommt ihn zu allen Mitarbeitenden.",
+    )  # fmt: skip
     installation = models.UUIDField(
         "Kennung dieser Installation", default=uuid.uuid4, editable=False
     )

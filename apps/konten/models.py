@@ -536,6 +536,30 @@ class AnmeldeProtokoll(models.Model):
         return "angemeldet" if self.erfolg else "Fehlversuch"
 
 
+class GeburtstagGruss(models.Model):
+    """Merkt, dass ein Konto den Geburtstagsbrief zu einer Person an einem Tag bestätigt hat
+    („Gratuliert“ bzw. „Danke!“, ADR 0170) – damit er nicht noch einmal aufgeht. Vorübergehend:
+    nach 30 Tagen gelöscht (``geburtstage.fristen_anwenden``), nicht in der Datensicherung."""
+
+    benutzer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                 related_name="geburtstagsgruesse")  # fmt: skip
+    adresse = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE, related_name="+")
+    tag = models.DateField("Geburtstag am")
+    am = models.DateTimeField("Bestätigt am", default=timezone.now)
+
+    class Meta:
+        verbose_name = "Geburtstagsgruß"
+        verbose_name_plural = "Geburtstagsgrüße"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["benutzer", "adresse", "tag"], name="geburtstaggruss_einmal"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.benutzer} – {self.adresse} ({self.tag:%d.%m.%Y})"
+
+
 auditlog.register(AnmeldeEinstellungen)
 auditlog.register(VertrautesGeraet, exclude_fields=["pruefsumme", "passwort_stand"])
 auditlog.register(TOTPDevice, include_fields=["user", "name", "confirmed"])

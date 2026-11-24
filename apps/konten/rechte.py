@@ -115,6 +115,10 @@ KATALOG = [
     Recht("mitarbeitende.geburtstage", TEAM, "Geburtstage der Mitarbeitenden sehen",
           "Geburtstagskalender des Teams und – wenn die Tafel es einschaltet – die nächsten "
           "Geburtstage auf der Startseite."),
+    Recht("mitarbeitende.geburtstagsbrief", TEAM, "Geburtstagsbrief zu allen Mitarbeitenden",
+          "Auf der Startseite geht ein Brief auf, wenn jemand aus dem Team heute oder gestern "
+          "Geburtstag hatte – gedacht für den Vorstand. Den eigenen Glückwunsch bekommt jede "
+          "Person auch ohne dieses Recht. Vorgabe: nur Admin."),
     Recht("personal.sehen", TEAM, "Personal: Verträge, Abwesenheiten, Stunden, Arbeitszeiten, "
           "vertrauliche Dokumente"),
     # Adressen und Verein (Modul 5)

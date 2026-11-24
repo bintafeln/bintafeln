@@ -1,0 +1,25 @@
+{% load static %}{# Geburtstagsbrief auf der Startseite (ADR 0170): static/js/geburtstagsbrief.js legt ihn als Dialog über die Seite #}
+{% with erster=geburtstagsbrief|first letzter=geburtstagsbrief|last %}
+<template class="geburtstagsbrief" data-titel="{% if erster.eigen %}Glückwunsch zum Geburtstag{% else %}Geburtstag im Team{% endif %}">
+  <div class="gb-konfetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="gb-umschlag" aria-hidden="true"><svg viewBox="0 0 120 96" width="150" height="120">
+    <rect x="10" y="40" width="100" height="52" rx="6" class="gb-papier"/>
+    <path d="M10 46 60 74 110 46" class="gb-klappe"/>
+    <rect x="38" y="30" width="44" height="22" rx="4" class="gb-torte"/>
+    <path d="M38 38q5.5 6 11 0t11 0 11 0 11 0v-4a4 4 0 0 0-4-4H42a4 4 0 0 0-4 4z" class="gb-guss"/>
+    <rect x="47" y="18" width="3" height="12" class="gb-kerze-1"/><rect x="58.5" y="16" width="3" height="14" class="gb-kerze-2"/><rect x="70" y="18" width="3" height="12" class="gb-kerze-3"/>
+    <g class="gb-flamme"><ellipse cx="48.5" cy="14" rx="2.2" ry="3.4"/><ellipse cx="60" cy="12" rx="2.2" ry="3.4"/><ellipse cx="71.5" cy="14" rx="2.2" ry="3.4"/></g>
+  </svg></div>
+  {% if erster.eigen %}<h2>{% if erster.gestern %}Nachträglich alles Gute zum Geburtstag, {{ erster.vorname }}!{% else %}Alles Gute zum Geburtstag, {{ erster.vorname }}!{% endif %}</h2>
+  {% else %}<h2>Geburtstag im Team</h2>{% endif %}
+  {% if not letzter.eigen %}<ul class="gb-liste">{% for g in geburtstagsbrief %}{% if not g.eigen %}
+    <li>{% if g.gestern %}Gestern hatte <strong>{{ g.name }}</strong> Geburtstag (wurde {{ g.alter }}){% else %}Heute hat <strong>{{ g.name }}</strong> Geburtstag (wird {{ g.alter }}){% endif %}</li>{% endif %}{% endfor %}
+  </ul>{% endif %}
+  <form method="post" action="{% url 'konten:geburtstagsbrief_gesehen' %}">{% csrf_token %}
+    {% for g in geburtstagsbrief %}<input type="hidden" name="gruss" value="{{ g.adresse.pk }}:{{ g.tag|date:'Y-m-d' }}">{% endfor %}
+    <button type="submit" class="knopf">{% if letzter.eigen %}Danke!{% elif erster.eigen %}Danke – und gratuliert{% else %}Gratuliert{% endif %}</button>
+    <button type="button" class="knopf knopf-zweitrangig" data-gb-spaeter>Später</button>
+  </form>
+</template>
+<script src="{% static 'js/geburtstagsbrief.js' %}" defer></script>
+{% endwith %}

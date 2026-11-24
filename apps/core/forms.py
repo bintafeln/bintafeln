@@ -151,6 +151,7 @@ class EinstellungenForm(forms.ModelForm):
             "bundesland",
             "papierkorb_tage",
             "geburtstage_startseite",
+            "geburtstagsbrief",
             "module",
         ]
         widgets = {

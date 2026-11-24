@@ -288,6 +288,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Mitarbeitendenliste über `verwaltung.personennummer()` (immer die Personalnummer).
   `Benutzer.passwort_aendern` erzwingt über
   `PasswortAendernMiddleware` ein neues Passwort, bevor die Zwei-Faktor-Einrichtung kommt.
+  Geburtstagsbrief auf der Startseite (ADR 0170): `apps/konten/geburtstage.py` (`brief()`,
+  `gesehen()`, `fristen_anwenden()`), eigener Glückwunsch für jede Person, zu allen mit dem Recht
+  `mitarbeitende.geburtstagsbrief`; gemerkt je Konto in `GeburtstagGruss` (vorübergehend), Vorlage
+  `konten/_geburtstagsbrief.html`, `static/js/geburtstagsbrief.js`, Schalter
+  `TafelEinstellungen.geburtstagsbrief`.
   Stammdaten, Wiedervorlagen, Führerschein-Kopie und Löschfrist in `apps/konten/personal.py`
   (ADR 0017); Fotos verkleinert `privatdateien.speichern()` nach `FotoEinstellungen` (ADR 0064).
   App `personal` (Rolle Personal): Verträge, Abwesenheiten, Stunden; Rechenregeln

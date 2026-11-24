@@ -103,6 +103,12 @@ def start(request):
 
         kontext["geburtstage"] = geburtstage.naechste(14, timezone.localdate())
         kontext["geburtstage_letzte"] = geburtstage.letzte(7, timezone.localdate())
+    # Geburtstagsbrief (ADR 0170): eigener Glückwunsch, mit Recht auch zu allen Mitarbeitenden
+    if TafelEinstellungen.laden().geburtstagsbrief:
+        from apps.konten import geburtstage
+
+        geburtstage.fristen_anwenden(timezone.localdate())
+        kontext["geburtstagsbrief"] = geburtstage.brief(request.user, timezone.localdate())
     kontext["modul_startseite"] = module.startseite(request)
     return render(request, "core/start.html", kontext)
 

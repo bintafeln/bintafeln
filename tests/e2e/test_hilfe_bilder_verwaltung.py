@@ -348,3 +348,41 @@ def test_hilfe_bild_update(angemeldet, admin, muster, settings, tmp_path):
               Marke(neu.locator("input[type=checkbox]"), nummer=4, von="links", laenge=40),
               Marke(neu.get_by_role("button", name="Update starten"), nummer=5, von="rechts",
                     laenge=50))  # fmt: skip
+
+
+def test_hilfe_bild_geburtstagsbrief(angemeldet, admin, muster, django_user_model):
+    """Geburtstagsbrief auf der Startseite (ADR 0170): legt sich als Dialog über die Seite,
+    „Später“ schließt ihn nur, „Gratuliert“ merkt es – danach kommt er nicht wieder."""
+    from apps.adressen.models import Adresse
+    from apps.konten.models import GeburtstagGruss
+
+    heute = timezone.localdate()
+    gestern = heute - dt.timedelta(days=1)
+    for vorname, nachname, tag, jahr in (
+        ("Otto", "Beispiel", heute, 1961),
+        ("Paula", "Probe", gestern, 1975),
+    ):
+        konto = django_user_model.objects.create_user(username=vorname.lower())
+        tag_im_monat = 28 if (tag.month, tag.day) == (2, 29) else tag.day  # kein Schaltjahr
+        Adresse.objects.create(
+            art=Adresse.Art.PERSON, vorname=vorname, nachname=nachname, konto=konto,
+            geburtsdatum=dt.date(jahr, tag.month, tag_im_monat),
+        )  # fmt: skip
+    seite = oeffnen(angemeldet, admin, reverse("core:start"))
+    seite.set_viewport_size({"width": 400, "height": 900})
+    brief = seite.locator("dialog.geburtstagsbrief-dialog")
+    expect(brief).to_be_visible()
+    expect(brief).to_contain_text("Heute hat Otto Beispiel Geburtstag")
+    expect(brief).to_contain_text("Gestern hatte Paula Probe Geburtstag")
+    aufnehmen(seite, "geburtstagsbrief", [brief], rand=8)
+    # „Später“ schließt nur: beim nächsten Besuch der Startseite ist er wieder da
+    brief.get_by_role("button", name="Später").click()
+    expect(seite.locator("dialog.geburtstagsbrief-dialog")).to_have_count(0)
+    assert not GeburtstagGruss.objects.exists()
+    seite.reload()
+    brief = seite.locator("dialog.geburtstagsbrief-dialog")
+    expect(brief).to_be_visible()
+    brief.get_by_role("button", name="Gratuliert").click()
+    expect(seite).to_have_url(re.compile(r"/$"))
+    expect(seite.locator("dialog.geburtstagsbrief-dialog")).to_have_count(0)
+    assert GeburtstagGruss.objects.filter(benutzer=admin).count() == 2
