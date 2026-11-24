@@ -35,3 +35,14 @@ Der Status soll sagen, was am Einlass gilt. Sofort statt mit Kulanzfrist, weil K
 Ampel ohnehin am selben Tag reagieren. Kein automatisches „beendet“, weil das Ende einer
 Kundschaft eine Entscheidung ist und kein Fristablauf. Der Papierkorb statt endgültigem Löschen
 schützt vor einem versehentlich gesetzten „verstorben“.
+
+## Nachtrag (2026-11-24): Eine Sperre geht vor
+
+Eine eingetragene, laufende **Sperre** (`Sperre`, mit Von/Bis und Begründung) war bisher vom
+Status unabhängig: Ein gesperrter Kunde mit abgelaufenem Ausweis wäre „pausiert“ worden. Jetzt
+gilt die Reihenfolge **Sperre → Ausweis**: Wer eine laufende Sperre hat, steht auf „gesperrt“
+(auch mit gültigem Ausweis, auch wenn das Programm ihn zuvor pausiert hatte); endet die Sperre,
+gilt wieder der Ausweis (aktiv oder pausiert). `status_automatisch` merkt jetzt beides –
+vom Programm pausiert oder gesperrt. Ein von Hand gesetztes „gesperrt“ ohne Sperre-Eintrag
+bleibt wie jeder von Hand gesetzte Status unberührt.
+

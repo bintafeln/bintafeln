@@ -84,6 +84,8 @@ def _festhalten(h: Haushalt, vorher, request, zusatz: str = "") -> None:
     if grund:
         messages.warning(request, f"Kundengruppe entfernt ({grund}). Ein Kunde ohne gültigen "
                                   "Ausweis zählt in keiner Kundengruppe.")  # fmt: skip
+    if getattr(h, "status_meldung", ""):
+        messages.info(request, f"{h.status_meldung}.")
     historie.festhalten(
         h.kundennummer, vorher, historie.schnappschuss(h),
         quelle=HaushaltEreignis.Quelle.BEARBEITUNG, von=request.user.get_username(),

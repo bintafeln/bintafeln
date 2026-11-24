@@ -47,13 +47,15 @@ def pruefen(h: Haushalt, heute: dt.date | None = None) -> str:
     from apps.kunden import status
 
     heute = heute or timezone.localdate()
-    status_text = status.pruefen(h, heute)  # abgelaufen → pausiert, verlängert → aktiv (ADR 0176)
+    # erst der Status (Sperre → gesperrt, abgelaufen → pausiert, ADR 0176), dann die Gruppe;
+    # die Meldung dazu liegt für den Aufrufer am Haushalt
+    h.status_meldung = status.pruefen(h, heute)
     text = grund(h, heute) if h.kundengruppe_id and _aktiv() else ""
     if text:
         Haushalt.objects.filter(pk=h.pk).update(kundengruppe=None)
         h.kundengruppe = None
     zeiten_abgleichen([h.kundennummer], heute, text)
-    return text or status_text
+    return text
 
 
 def regel_anwenden(heute: dt.date | None = None, ereignisse: bool = True) -> int:

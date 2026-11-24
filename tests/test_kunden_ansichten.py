@@ -394,7 +394,9 @@ def test_zuletzt_aufgenommen_mit_zeitraum(admin_client):
 
     from apps.kunden.models import Haushalt
 
-    url, jetzt = reverse("kunden:zuletzt_aufgenommen"), timezone.now()
+    # mittags, damit „vor n Tagen“ auch spät abends und über die Zeitumstellung hinweg auf den
+    # gemeinten Kalendertag fällt
+    url, jetzt = reverse("kunden:zuletzt_aufgenommen"), timezone.localtime().replace(hour=12)
     heute = timezone.localdate()
     Haushalt.objects.bulk_create(
         Haushalt(kundennummer=f"8{nr:03d}", aufgenommen_am=jetzt - dt.timedelta(days=nr))

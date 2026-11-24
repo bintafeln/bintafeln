@@ -185,8 +185,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Sprache des Kunden: Texte in `apps/kunden/wechsel_texte/<code>.json` – neue Texte in allen Dateien.
   Vor dem Senden immer die Vorschau (`angebot_vorschau()`); nur freie Plätze (`angebot_pruefen()`).
   Von der Tafel aus (Kundenseite, Art `tafel`): `von_uns_anbieten()`, volle Gruppe nur `vormerken()`.
-  Status nach dem Ausweis (ADR 0176): `apps/kunden/status.py` – abgelaufen → „pausiert“, verlängert →
-  „aktiv“, nur für vom Programm Pausierte (`Haushalt.status_automatisch`), Schalter
+  Status nach Sperre und Ausweis (ADR 0176): `apps/kunden/status.py` – laufende `Sperre` → „gesperrt“
+  (geht vor), Ausweis abgelaufen → „pausiert“, sonst „aktiv“; nur für Aktive und vom Programm
+  Umgestellte (`Haushalt.status_automatisch`), Schalter
   `KundenEinstellungen.status_nach_ausweis` (Vorgabe aus); `Haushalt.save()` führt `status_seit`.
   Status „verstorben“: zählt wie „beendet“ nicht mit (`Haushalt.NICHT_MEHR` statt nur BEENDET
   ausschließen), nach `verstorben_loeschen_monate` in den Papierkorb.
