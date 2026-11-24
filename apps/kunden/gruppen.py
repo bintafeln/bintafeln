@@ -119,12 +119,26 @@ def reservierte_zugaenge(heute: dt.date | None = None) -> dict[int, int]:
 
     heute = heute or timezone.localdate()
     grenze = heute + dt.timedelta(weeks=KundenEinstellungen.laden().verlegung_vorlauf_wochen)
-    return dict(
+    zahlen = dict(
         GeplanterWechsel.objects.filter(erledigt_am__isnull=True, ab__lte=grenze)
         .values("ziel_gruppe")
         .annotate(n=Count("pk"))
         .values_list("ziel_gruppe", "n")
     )
+    # Plätze, die einem Kunden per E-Mail angeboten sind und auf seine Antwort warten (ADR 0175)
+    from apps.kunden.models import Wechselwunsch
+
+    for gruppe, n in (
+        Wechselwunsch.objects.filter(
+            status=Wechselwunsch.Status.OFFEN, angebot_gruppe__isnull=False, angebot_antwort="",
+            angebot_bis__gte=heute,
+        )
+        .values("angebot_gruppe")
+        .annotate(n=Count("pk"))
+        .values_list("angebot_gruppe", "n")
+    ):  # fmt: skip
+        zahlen[gruppe] = zahlen.get(gruppe, 0) + n
+    return zahlen
 
 
 def mit_plaetzen(haushalt: Haushalt | None = None) -> list[dict]:

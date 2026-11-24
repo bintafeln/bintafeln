@@ -1,0 +1,12 @@
+{
+  "gruss": "Hola:",
+  "angebot": "Podemos ofrecerle una plaza",
+  "ab": "El cambio se aplica a partir del {ab}.",
+  "bitte": "Por favor, responda antes del {bis}. El cambio solo es válido cuando usted lo confirme; hasta entonces todo sigue igual.",
+  "ja": "Sí, quiero cambiar",
+  "nein": "No, me quedo",
+  "danke_ja": "Muchas gracias: el cambio está registrado. Pida un carné nuevo en su próxima visita.",
+  "danke_nein": "Gracias por su respuesta. Todo sigue igual.",
+  "abgelaufen": "Esta oferta ya no es válida. Todo sigue igual. Si todavía quiere cambiar, hable con nosotros en el próximo reparto.",
+  "gruss_ende": "Un saludo cordial"
+}

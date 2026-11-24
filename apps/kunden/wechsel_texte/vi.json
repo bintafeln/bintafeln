@@ -1,0 +1,12 @@
+{
+  "gruss": "Xin chào,",
+  "angebot": "Chúng tôi có thể dành cho quý vị một chỗ",
+  "ab": "Thay đổi có hiệu lực từ ngày {ab}.",
+  "bitte": "Xin vui lòng trả lời trước ngày {bis}. Thay đổi chỉ có hiệu lực sau khi quý vị xác nhận; cho đến lúc đó mọi thứ vẫn giữ nguyên.",
+  "ja": "Có, tôi muốn đổi",
+  "nein": "Không, tôi giữ nguyên",
+  "danke_ja": "Cảm ơn – thay đổi đã được ghi nhận. Lần tới xin vui lòng xin thẻ mới.",
+  "danke_nein": "Cảm ơn quý vị đã trả lời. Mọi thứ vẫn giữ nguyên.",
+  "abgelaufen": "Đề nghị này không còn hiệu lực. Mọi thứ vẫn giữ nguyên. Nếu quý vị vẫn muốn đổi, xin nói với chúng tôi vào lần phát tới.",
+  "gruss_ende": "Trân trọng"
+}

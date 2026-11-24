@@ -1,0 +1,12 @@
+{
+  "gruss": "Dzień dobry,",
+  "angebot": "Możemy zaproponować Państwu miejsce",
+  "ab": "Zmiana obowiązuje od {ab}.",
+  "bitte": "Prosimy o odpowiedź do {bis}. Zmiana obowiązuje dopiero po Państwa potwierdzeniu; do tego czasu wszystko zostaje bez zmian.",
+  "ja": "Tak, chcę zmienić",
+  "nein": "Nie, zostaję",
+  "danke_ja": "Dziękujemy – zmiana została zapisana. Przy następnej wizycie prosimy poprosić o nową kartę.",
+  "danke_nein": "Dziękujemy za odpowiedź. Wszystko zostaje bez zmian.",
+  "abgelaufen": "Ta oferta jest już nieaktualna. Wszystko zostaje bez zmian. Jeśli nadal chcą Państwo zmiany, prosimy powiedzieć nam o tym przy następnym wydawaniu.",
+  "gruss_ende": "Z poważaniem"
+}

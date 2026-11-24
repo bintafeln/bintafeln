@@ -1,0 +1,12 @@
+{
+  "gruss": "Dobar dan,",
+  "angebot": "Možemo Vam ponuditi mjesto",
+  "ab": "Promjena važi od {ab}.",
+  "bitte": "Molimo odgovorite do {bis}. Promjena važi tek nakon Vaše potvrde; do tada sve ostaje kako jeste.",
+  "ja": "Da, želim promijeniti",
+  "nein": "Ne, ostajem",
+  "danke_ja": "Hvala – promjena je upisana. Pri sljedećem dolasku zatražite novu iskaznicu.",
+  "danke_nein": "Hvala na odgovoru. Sve ostaje kako jeste.",
+  "abgelaufen": "Ova ponuda više ne važi. Sve ostaje kako jeste. Ako i dalje želite promjenu, recite nam pri sljedećoj podjeli.",
+  "gruss_ende": "Srdačan pozdrav"
+}

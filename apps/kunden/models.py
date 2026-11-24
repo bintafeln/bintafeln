@@ -910,6 +910,25 @@ class Wechselwunsch(models.Model):
     ab = models.DateField("Wechsel ab", null=True, blank=True)
     antwort = models.CharField("Antwort an den Kunden", max_length=500, blank=True)
     mail_stand = models.CharField("E-Mail an den Kunden", max_length=200, blank=True)
+    # Angebot eines Platzes per E-Mail, das der Kunde über einen Link bestätigt (ADR 0175).
+    # Gespeichert wird nur die Prüfsumme des Schlüssels aus dem Link.
+    angebot_gruppe = models.ForeignKey(
+        "Kundengruppe", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+        verbose_name="Angebotene Kundengruppe",
+    )  # fmt: skip
+    angebot_text = models.CharField("Angebot", max_length=150, blank=True)
+    angebot_ab = models.DateField("Angebot: Wechsel ab", null=True, blank=True)
+    angebot_am = models.DateTimeField("Angeboten am", null=True, blank=True)
+    angebot_bis = models.DateField("Angebot gilt bis", null=True, blank=True)
+    angebot_von = models.CharField("Angeboten von", max_length=150, blank=True)
+    angebot_zusatz = models.CharField("Zusatz zum Angebot", max_length=500, blank=True)
+    angebot_schluessel = models.CharField(max_length=64, blank=True, db_index=True,
+                                          editable=False)  # fmt: skip
+    angebot_antwort = models.CharField(
+        "Antwort des Kunden", max_length=5, blank=True,
+        choices=[("ja", "vom Kunden bestätigt"), ("nein", "vom Kunden abgelehnt")],
+    )  # fmt: skip
+    angebot_antwort_am = models.DateTimeField("Antwort am", null=True, blank=True)
 
     class Meta:
         verbose_name = "Wechselwunsch"
@@ -918,6 +937,28 @@ class Wechselwunsch(models.Model):
 
     def __str__(self):
         return f"Wechselwunsch zu {self.kundennummer}"
+
+    @property
+    def angebot_laeuft(self) -> bool:
+        """Angeboten, noch nicht beantwortet und die Frist läuft noch: Der Platz ist reserviert."""
+        return bool(
+            self.status == self.Status.OFFEN and self.angebot_am and not self.angebot_antwort
+            and self.angebot_bis and self.angebot_bis >= timezone.localdate()
+        )  # fmt: skip
+
+    @property
+    def angebot_stand(self) -> str:
+        """Für die Liste: „angeboten am …, Antwort bis …“ / „vom Kunden abgelehnt“ / „keine
+        Antwort“."""
+        if not self.angebot_am:
+            return ""
+        was = f"{self.angebot_text}, ab {self.angebot_ab:%d.%m.%Y}" if self.angebot_ab else ""
+        am = f"angeboten am {timezone.localtime(self.angebot_am):%d.%m.%Y}"
+        if self.angebot_antwort:
+            return f"{was} – {am}, {self.get_angebot_antwort_display()}"
+        if self.angebot_laeuft:
+            return f"{was} – {am}, Antwort bis {self.angebot_bis:%d.%m.%Y}"
+        return f"{was} – {am}, keine Antwort (Frist abgelaufen)"
 
 
 class Ausweisdruck(models.Model):
@@ -1560,4 +1601,4 @@ auditlog.register(StellenNachricht)
 auditlog.register(Rundschreiben)
 auditlog.register(PostEmpfang)
 auditlog.register(GeplanterWechsel)
-auditlog.register(Wechselwunsch)
+auditlog.register(Wechselwunsch, exclude_fields=["angebot_schluessel"])

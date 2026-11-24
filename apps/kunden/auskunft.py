@@ -136,7 +136,8 @@ def kunde_pdf(h: Haushalt) -> bytes:
         ["Datum", "Wunsch", "Stand"],
         [[_datum(timezone.localdate(w.erstellt_am)),
           " – ".join(x for x in (w.wunsch, w.anmerkung) if x),
-          " ".join(x for x in (w.get_status_display(), w.neue_gruppe, w.antwort) if x)]
+          " ".join(x for x in (w.get_status_display(), w.neue_gruppe, w.antwort,
+                               f"Angebot: {w.angebot_stand}" if w.angebot_stand else "") if x)]
          for w in Wechselwunsch.objects.filter(kundennummer=h.kundennummer)],
         breiten=[0.14, 0.5, 0.36],
     )  # fmt: skip

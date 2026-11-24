@@ -1,0 +1,12 @@
+{
+  "gruss": "Salaan,",
+  "angebot": "Waxaan kuu soo bandhigi karnaa boos",
+  "ab": "Isbeddelku wuxuu dhaqan galayaa {ab}.",
+  "bitte": "Fadlan nagu soo jawaab ilaa {bis}. Isbeddelku wuxuu dhaqan galayaa oo keliya markaad xaqiijiso; ilaa markaas wax walba sidooda ayay ahaanayaan.",
+  "ja": "Haa, waan rabaa inaan beddelo",
+  "nein": "Maya, sidayda ayaan ahaanayaa",
+  "danke_ja": "Mahadsanid – isbeddelka waa la diiwaangeliyay. Fadlan booqashadaada xigta weydiiso kaar cusub.",
+  "danke_nein": "Waad ku mahadsan tahay jawaabtaada. Wax walba sidooda ayay ahaanayaan.",
+  "abgelaufen": "Dalabkani hadda ma shaqeynayo. Wax walba sidooda ayay ahaanayaan. Haddii aad weli rabto inaad beddesho, fadlan noo sheeg qaybinta xigta.",
+  "gruss_ende": "Salaan diiran"
+}

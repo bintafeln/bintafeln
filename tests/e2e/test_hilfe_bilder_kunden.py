@@ -539,9 +539,45 @@ def test_hilfe_bild_wechselwunsch(angemeldet, admin, muster):
     aufnehmen(seite, "wechselwuensche", karte,
               Marke(seite.locator('select[name="gruppe"]'), "rahmen", 1),
               Marke(seite.locator(".filter-feld", has_text="Wechsel ab"), "rahmen", 2),
-              Marke(genehmigen, "rahmen", 3))  # fmt: skip
+              Marke(genehmigen, "rahmen", 3),
+              Marke(seite.get_by_role("button", name="Platz anbieten"), nummer=4,
+                    von="unten", laenge=40))  # fmt: skip
     genehmigen.click()
     wunsch.refresh_from_db()
     h.refresh_from_db()
     assert wunsch.status == "genehmigt"
     assert h.kundengruppe == gruppen[1]
+
+
+def test_hilfe_bild_wechsel_angebot(angemeldet, admin, muster):
+    """Seite hinter dem Link aus der Mail: Bild fürs Handbuch und „Ja“ bis zum Umzug."""
+    from apps.kunden import wechsel
+    from apps.kunden.models import Wechselwunsch
+
+    stelle = Ausgabestelle.objects.create(name="Ausgabe Beispielweg")
+    alt = Kundengruppe.objects.create(name="Mi 12:00", ausgabestelle=stelle, wochentage="Mi",
+                                      uhrzeit=dt.time(12, 0), maximum=5)  # fmt: skip
+    neu = Kundengruppe.objects.create(name="Mi 14:00", ausgabestelle=stelle, wochentage="Mi",
+                                      uhrzeit=dt.time(14, 0), maximum=5)  # fmt: skip
+    h = Haushalt.objects.create(kundennummer="07002", kundengruppe=alt, telefon="01234 5550",
+                                email="otto@example.org")  # fmt: skip
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Otto", nachname="Beispiel")
+    heute = timezone.localdate()
+    # wie nach „Platz anbieten“ – die Mail selbst braucht hier niemand
+    Wechselwunsch.objects.create(
+        kundennummer="07002", art="uhrzeit", wunsch="andere Uhrzeit am selben Tag (später)",
+        angebot_gruppe=neu, angebot_text=wechsel.gruppe_text(neu), angebot_ab=heute,
+        angebot_am=timezone.now(), angebot_bis=heute + dt.timedelta(days=7),
+        angebot_von="Clara Beispiel", angebot_schluessel=wechsel._pruefsumme("erfunden-nur-test"),
+    )  # fmt: skip
+    seite = oeffnen(angemeldet, admin,
+                    reverse("kunden:wechsel_angebot", args=["erfunden-nur-test"]) + "?antwort=ja",
+                    breite=430, hoehe=760)  # fmt: skip
+    ja = seite.get_by_role("button", name="Ja, verbindlich wechseln")
+    aufnehmen(seite, "wechsel-angebot", seite.locator("section.karte"),
+              Marke(seite.locator(".angebot-was"), "rahmen", 1),
+              Marke(ja, "rahmen", 2))  # fmt: skip
+    ja.click()
+    expect(seite.get_by_text("der Wechsel ist eingetragen")).to_be_visible()
+    h.refresh_from_db()
+    assert h.kundengruppe == neu

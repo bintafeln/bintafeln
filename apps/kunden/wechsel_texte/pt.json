@@ -1,0 +1,12 @@
+{
+  "gruss": "Olá,",
+  "angebot": "Podemos oferecer-lhe um lugar",
+  "ab": "A mudança vale a partir de {ab}.",
+  "bitte": "Por favor, responda até {bis}. A mudança só vale depois da sua confirmação; até lá, tudo fica como está.",
+  "ja": "Sim, quero mudar",
+  "nein": "Não, fico como estou",
+  "danke_ja": "Obrigado – a mudança foi registada. Peça um cartão novo na sua próxima visita.",
+  "danke_nein": "Obrigado pela sua resposta. Tudo fica como está.",
+  "abgelaufen": "Esta oferta já não é válida. Tudo fica como está. Se ainda quiser mudar, fale connosco na próxima distribuição.",
+  "gruss_ende": "Com os melhores cumprimentos"
+}

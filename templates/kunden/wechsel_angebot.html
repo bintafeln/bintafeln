@@ -1,0 +1,49 @@
+{% load static %}<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="referrer" content="same-origin">
+  <title>Ihr Platz{% if tafel.name %} – {{ tafel.name }}{% endif %}</title>
+  <link rel="stylesheet" href="{% static 'css/bintafeln.css' %}">
+  {% include "includes/farben.html" %}
+  {% include "includes/app_symbol.html" %}
+</head>
+<body class="oeffentlich">
+  <header class="kopf"><span class="marke">
+    {% if tafel.logo %}<img src="{{ tafel.logo.url }}" alt="" class="logo">{% endif %}
+    <span>{{ tafel.name|default:"Tafel" }}</span></span></header>
+  <main class="inhalt">
+    <section class="karte angebot-karte">
+      {% if w.angebot_antwort == "ja" %}
+      <p class="angebot-zeichen" aria-hidden="true">✓</p>
+      <h1>Vielen Dank – der Wechsel ist eingetragen</h1>
+      <p>Für Sie gilt {% if w.ab %}ab dem <strong>{{ w.ab|date:"d.m.Y" }}</strong>{% endif %}:</p>
+      <p class="angebot-was">{{ w.angebot_text }}</p>
+      <p>Bitte lassen Sie sich beim nächsten Besuch einen neuen Ausweis geben. Sie können diese Seite schließen.{% if s2 %}<span class="zweitsprache" lang="{{ s2.code }}" dir="{% if s2.rtl %}rtl{% else %}ltr{% endif %}">{{ t2.danke_ja }}</span>{% endif %}</p>
+      {% elif w.angebot_antwort == "nein" %}
+      <h1>Danke für Ihre Antwort</h1>
+      <p>Sie möchten nicht wechseln. Es bleibt alles, wie es ist. Sie können diese Seite schließen.{% if s2 %}<span class="zweitsprache" lang="{{ s2.code }}" dir="{% if s2.rtl %}rtl{% else %}ltr{% endif %}">{{ t2.danke_nein }}</span>{% endif %}</p>
+      {% elif not w.angebot_laeuft %}
+      <h1>Dieses Angebot gilt nicht mehr</h1>
+      <p>Die Frist ist abgelaufen oder es wurde inzwischen anders entschieden. Es bleibt alles, wie es ist.
+        Wenn Sie weiterhin wechseln möchten, sprechen Sie uns bitte bei der nächsten Ausgabe an.{% if s2 %}<span class="zweitsprache" lang="{{ s2.code }}" dir="{% if s2.rtl %}rtl{% else %}ltr{% endif %}">{{ t2.abgelaufen }}</span>{% endif %}</p>
+      {% else %}
+      <h1>Wir können Ihnen einen Platz anbieten{% if s2 %}<span class="zweitsprache" lang="{{ s2.code }}" dir="{% if s2.rtl %}rtl{% else %}ltr{% endif %}">{{ t2.angebot }}</span>{% endif %}</h1>
+      <p class="angebot-was">{{ w.angebot_text }}</p>
+      <p>Der Wechsel gilt ab dem <strong>{{ w.angebot_ab|date:"d.m.Y" }}</strong>. Bitte antworten Sie bis zum
+        <strong>{{ w.angebot_bis|date:"d.m.Y" }}</strong>.{% if s2 %}<span class="zweitsprache" lang="{{ s2.code }}" dir="{% if s2.rtl %}rtl{% else %}ltr{% endif %}">{{ t2.ab }} {{ t2.bitte }}</span>{% endif %}</p>
+      {% if w.angebot_zusatz %}<p>{{ w.angebot_zusatz }}</p>{% endif %}
+      {% if fehler %}<p class="fehler" role="alert">{{ fehler }}</p>{% endif %}
+      <form method="post" class="angebot-antwort">
+        {% csrf_token %}
+        <button type="submit" name="antwort" value="ja" class="knopf angebot-ja"{% if vorwahl == "ja" %} autofocus{% endif %}>Ja, verbindlich wechseln{% if s2 %}<span class="zweitsprache" lang="{{ s2.code }}" dir="{% if s2.rtl %}rtl{% else %}ltr{% endif %}">{{ t2.ja }}</span>{% endif %}</button>
+        <button type="submit" name="antwort" value="nein" class="knopf knopf-zweitrangig"{% if vorwahl == "nein" %} autofocus{% endif %}>Nein, ich bleibe{% if s2 %}<span class="zweitsprache" lang="{{ s2.code }}" dir="{% if s2.rtl %}rtl{% else %}ltr{% endif %}">{{ t2.nein }}</span>{% endif %}</button>
+      </form>
+      <p class="hinweis">Erst mit Ihrem Klick auf einen der beiden Knöpfe ist Ihre Antwort bei uns. Bis dahin bleibt alles, wie es ist.</p>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "gruss": "Hello,",
+  "angebot": "We can offer you a place",
+  "ab": "The change applies from {ab}.",
+  "bitte": "Please reply by {bis}. The change only takes effect once you confirm; until then everything stays as it is.",
+  "ja": "Yes, I want to change",
+  "nein": "No, I will stay",
+  "danke_ja": "Thank you – the change has been recorded. Please ask for a new card at your next visit.",
+  "danke_nein": "Thank you for your reply. Everything stays as it is.",
+  "abgelaufen": "This offer is no longer valid. Everything stays as it is. If you still want to change, please talk to us at the next distribution.",
+  "gruss_ende": "Kind regards"
+}

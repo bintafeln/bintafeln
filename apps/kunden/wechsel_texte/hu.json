@@ -1,0 +1,12 @@
+{
+  "gruss": "Jó napot kívánunk!",
+  "angebot": "Fel tudunk ajánlani Önnek egy helyet",
+  "ab": "A változás {ab} naptól érvényes.",
+  "bitte": "Kérjük, válaszoljon {bis} napig. A változás csak az Ön megerősítése után érvényes; addig minden marad, ahogy van.",
+  "ja": "Igen, váltani szeretnék",
+  "nein": "Nem, maradok",
+  "danke_ja": "Köszönjük – a változást rögzítettük. A következő alkalommal kérjen új kártyát.",
+  "danke_nein": "Köszönjük a válaszát. Minden marad, ahogy van.",
+  "abgelaufen": "Ez az ajánlat már nem érvényes. Minden marad, ahogy van. Ha továbbra is váltani szeretne, szóljon nekünk a következő osztáskor.",
+  "gruss_ende": "Üdvözlettel"
+}

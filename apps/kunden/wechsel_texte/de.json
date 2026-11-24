@@ -1,0 +1,12 @@
+{
+  "gruss": "Guten Tag,",
+  "angebot": "Wir können Ihnen einen Platz anbieten",
+  "ab": "Der Wechsel gilt ab dem {ab}.",
+  "bitte": "Bitte antworten Sie bis zum {bis}. Erst mit Ihrer Bestätigung gilt der Wechsel; bis dahin bleibt alles, wie es ist.",
+  "ja": "Ja, ich möchte wechseln",
+  "nein": "Nein, ich bleibe",
+  "danke_ja": "Vielen Dank – der Wechsel ist eingetragen. Bitte lassen Sie sich beim nächsten Besuch einen neuen Ausweis geben.",
+  "danke_nein": "Danke für Ihre Antwort. Es bleibt alles, wie es ist.",
+  "abgelaufen": "Dieses Angebot gilt nicht mehr. Es bleibt alles, wie es ist. Wenn Sie weiterhin wechseln möchten, sprechen Sie uns bitte bei der nächsten Ausgabe an.",
+  "gruss_ende": "Mit freundlichen Grüßen"
+}

@@ -1,0 +1,12 @@
+{
+  "gruss": "Bonjour,",
+  "angebot": "Nous pouvons vous proposer une place",
+  "ab": "Le changement s’applique à partir du {ab}.",
+  "bitte": "Merci de répondre avant le {bis}. Le changement n’est valable qu’après votre confirmation ; d’ici là, rien ne change.",
+  "ja": "Oui, je souhaite changer",
+  "nein": "Non, je reste",
+  "danke_ja": "Merci – le changement est enregistré. Demandez une nouvelle carte lors de votre prochaine visite.",
+  "danke_nein": "Merci pour votre réponse. Rien ne change.",
+  "abgelaufen": "Cette offre n’est plus valable. Rien ne change. Si vous souhaitez toujours changer, parlez-nous lors de la prochaine distribution.",
+  "gruss_ende": "Cordialement"
+}

@@ -1,0 +1,12 @@
+{
+  "gruss": "Përshëndetje,",
+  "angebot": "Mund t’ju ofrojmë një vend",
+  "ab": "Ndryshimi vlen nga {ab}.",
+  "bitte": "Ju lutemi përgjigjuni deri më {bis}. Ndryshimi vlen vetëm pas konfirmimit tuaj; deri atëherë gjithçka mbetet siç është.",
+  "ja": "Po, dua të ndryshoj",
+  "nein": "Jo, po qëndroj",
+  "danke_ja": "Faleminderit – ndryshimi u regjistrua. Në vizitën tjetër kërkoni një kartë të re.",
+  "danke_nein": "Faleminderit për përgjigjen. Gjithçka mbetet siç është.",
+  "abgelaufen": "Kjo ofertë nuk vlen më. Gjithçka mbetet siç është. Nëse ende dëshironi të ndryshoni, na tregoni në shpërndarjen tjetër.",
+  "gruss_ende": "Me respekt"
+}
