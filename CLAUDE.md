@@ -427,7 +427,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Anschrift, Telefon, E-Mail kommen von dort und sind an der Station gesperrt, nie löschen.
   Abholtouren (ADR 0148): `touren.Tour` = Stationsfolge über
   `Halt`, `fahrdienst.Tour` bleibt der Personalplan; Regeln nur in `apps/touren/ablauf.py`
-  (`faehrt_am()`, `halte()`, `besetzung()` – aus dem Fahrerplan, sonst `Tour.personen`; `routen()`
+  (`faehrt_am()`, `halte()`, `besetzung()` – aus dem Fahrerplan, sonst `Tour.personen`; dieselbe
+  Station darf mehrfach auf einer Tour stehen, `h.durchgang`/`h.besuche`, abgehakt wird je Besuch
+  nur über `anfahrten.stand()`, ADR 0172; `routen()`
   höchstens zehn Stationen je Link; `senden()` über die Benachrichtigung `touren_tour`). Ansichten
   für unterwegs in `views_touren.py` zuerst fürs Handy bauen und in Handybreite prüfen.
   Stationen beim Planen suchen: `apps/touren/suche.py` (alle Angaben, ab drei Zeichen, Treffer als

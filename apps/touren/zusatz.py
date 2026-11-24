@@ -27,13 +27,9 @@ def darf(benutzer, tour: Tour, datum: dt.date) -> bool:
 
 def naechste_stelle(tour: Tour, datum: dt.date) -> int:
     """So viele Stationen stehen vor dem nächsten offenen Halt – dort kommt „als Nächstes“ hin."""
-    from apps.touren import lieferscheine
-
-    halte = ablauf.halte(tour, datum)
-    da = set(anfahrten.am_tag(tour, datum))
-    da |= set(lieferscheine.am_tag(datum, [h.station_id for h in halte]))
+    halte = anfahrten.stand(tour, datum)
     for nr, h in enumerate(halte):
-        if h.station_id not in da:
+        if not h.angefahren:
             return nr
     return len(halte)
 
@@ -45,8 +41,9 @@ def einfuegen(tour: Tour, datum: dt.date, benutzer, station: Station, hinweis: s
     if not station.aktiv:
         raise ZusatzFehler("Diese Station wird nicht mehr angefahren.")
     halte = ablauf.halte(tour, datum)
-    if any(h.station_id == station.pk for h in halte):
-        raise ZusatzFehler(f"„{station.name}“ steht an dem Tag schon auf der Tour.")
+    # Eine Station darf mehrfach auf der Tour stehen (ADR 0172) – als Zusatzstopp aber nur einmal
+    if any(h.zusatz is not None and h.station_id == station.pk for h in halte):
+        raise ZusatzFehler(f"„{station.name}“ ist an dem Tag schon als Zusatzstopp eingefügt.")
     stelle = len(halte) if am_ende else naechste_stelle(tour, datum)
     # gezählt wird in festen Stationen, damit die Stelle stabil bleibt, wenn weitere dazukommen
     vorher = sum(1 for h in halte[:stelle] if h.zusatz is None)

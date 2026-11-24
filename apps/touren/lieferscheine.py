@@ -257,6 +257,18 @@ def am_tag(tag: dt.date, stationen) -> dict[int, Lieferschein]:
     return {ls.station_id: ls for ls in scheine}
 
 
+def anzahl_am_tag(tag: dt.date, stationen) -> dict[int, int]:
+    """Wie viele Lieferscheine es an dem Tag je Station gibt – steht eine Station mehrfach auf
+    einer Tour, gilt der n-te Lieferschein für den n-ten Besuch (ADR 0172)."""
+    from django.db.models import Count
+
+    return dict(
+        Lieferschein.objects.filter(datum=tag, station__in=stationen)
+        .values_list("station")
+        .annotate(n=Count("pk"))
+    )
+
+
 def fristen_anwenden(heute: dt.date | None = None) -> int:
     """Löscht Lieferscheine nach der eingestellten Aufbewahrungszeit, samt PDF."""
     heute = heute or timezone.localdate()

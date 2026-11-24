@@ -19,30 +19,45 @@ class AnfahrtFehler(Exception):
     pass
 
 
-def am_tag(tour: Tour, datum: dt.date) -> dict[int, Anfahrt]:
-    return {a.station_id: a for a in Anfahrt.objects.filter(tour=tour, datum=datum)}
+def am_tag(tour: Tour, datum: dt.date) -> dict[tuple[int, int], Anfahrt]:
+    """Die Anfahrten des Tages je (Station, Besuch)."""
+    return {(a.station_id, a.durchgang): a
+            for a in Anfahrt.objects.filter(tour=tour, datum=datum)}  # fmt: skip
+
+
+def stand(tour: Tour, datum: dt.date, halte: list | None = None) -> list:
+    """Die Halte des Tages mit ``h.anfahrt`` (abgehakt, oder None) und ``h.angefahren``.
+    Steht eine Station mehrfach auf der Tour (ADR 0172), zählt jeder Besuch für sich: Der zweite
+    ist erst erledigt, wenn er selbst abgehakt ist oder es an dem Tag einen zweiten Lieferschein
+    der Station gibt."""
+    from apps.touren import lieferscheine
+
+    halte = ablauf.halte(tour, datum) if halte is None else halte
+    da = am_tag(tour, datum)
+    scheine = lieferscheine.anzahl_am_tag(datum, {h.station_id for h in halte})
+    for h in halte:
+        h.anfahrt = da.get((h.station_id, h.durchgang))
+        h.angefahren = h.anfahrt is not None or scheine.get(h.station_id, 0) >= h.durchgang
+    return halte
 
 
 def fortschritt(tour: Tour, datum: dt.date) -> dict:
     """Wie weit die Tour ist: {"gesamt", "erledigt", "naechste" (Station | None), "prozent"}.
     Angefahren ist eine Station mit „Hier waren wir“ oder mit einem Lieferschein des Tages."""
-    from apps.touren import lieferscheine
-
-    halte = ablauf.halte(tour, datum)
-    da = set(am_tag(tour, datum))
-    da |= set(lieferscheine.am_tag(datum, [h.station_id for h in halte]))
-    offen = [h.station for h in halte if h.station_id not in da]
+    halte = stand(tour, datum)
+    offen = [h.station for h in halte if not h.angefahren]
     erledigt = len(halte) - len(offen)
     return {"gesamt": len(halte), "erledigt": erledigt, "naechste": offen[0] if offen else None,
             "prozent": round(100 * erledigt / len(halte)) if halte else 0,
             "zusatz": sum(1 for h in halte if h.zusatz is not None)}  # fmt: skip
 
 
-def _pruefen(tour: Tour, station: Station, benutzer) -> dt.date:
+def _pruefen(tour: Tour, station: Station, benutzer, durchgang: int = 1) -> dt.date:
     datum = timezone.localdate()
     if not ablauf.faehrt_am(tour, datum) or not start.darf(benutzer, tour, datum):
         raise AnfahrtFehler("Sie sind für diese Tour heute nicht eingetragen.")
-    if all(h.station_id != station.pk for h in ablauf.halte(tour, datum)):
+    if all((h.station_id, h.durchgang) != (station.pk, durchgang)
+           for h in ablauf.halte(tour, datum)):  # fmt: skip
         raise AnfahrtFehler("Diese Station steht heute nicht auf der Tour.")
     return datum
 
@@ -52,9 +67,11 @@ def umstaende() -> list[Umstand]:
     return list(Umstand.objects.filter(aktiv=True))
 
 
-def markieren(tour: Tour, station: Station, benutzer, umstand=None, anmerkung="") -> Anfahrt:
-    """``umstand`` ist die pk aus ``umstaende()``; ohne Liste entfällt die Wahl."""
-    datum = _pruefen(tour, station, benutzer)
+def markieren(tour: Tour, station: Station, benutzer, umstand=None, anmerkung="",
+              durchgang: int = 1) -> Anfahrt:  # fmt: skip
+    """``umstand`` ist die pk aus ``umstaende()``; ohne Liste entfällt die Wahl. ``durchgang``:
+    der wievielte Besuch der Station auf der Tour (bei mehrfach angefahrenen Stationen)."""
+    datum = _pruefen(tour, station, benutzer, durchgang)
     anmerkung = " ".join((anmerkung or "").split())[:200]
     name = ""
     zur_wahl = umstaende()
@@ -66,16 +83,16 @@ def markieren(tour: Tour, station: Station, benutzer, umstand=None, anmerkung=""
             raise AnfahrtFehler(f"Bitte bei „{gewaehlt.name}“ kurz dazuschreiben, was war.")
         name = gewaehlt.name
     anfahrt, _ = Anfahrt.objects.get_or_create(
-        tour=tour, station=station, datum=datum,
+        tour=tour, station=station, datum=datum, durchgang=durchgang,
         defaults={"von": (benutzer.get_full_name() or benutzer.get_username())[:150],
                   "umstand": name, "anmerkung": anmerkung},
     )  # fmt: skip
     return anfahrt
 
 
-def zuruecknehmen(tour: Tour, station: Station, benutzer) -> None:
-    datum = _pruefen(tour, station, benutzer)
-    Anfahrt.objects.filter(tour=tour, station=station, datum=datum).delete()
+def zuruecknehmen(tour: Tour, station: Station, benutzer, durchgang: int = 1) -> None:
+    datum = _pruefen(tour, station, benutzer, durchgang)
+    Anfahrt.objects.filter(tour=tour, station=station, datum=datum, durchgang=durchgang).delete()
 
 
 def fristen_anwenden(heute: dt.date | None = None) -> int:

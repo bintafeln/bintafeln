@@ -50,7 +50,7 @@ def halte(tour: Tour, datum: dt.date | None = None) -> list[Halt]:
     (Wochentage des Halts, aktive Station)."""
     alle = list(tour.halte.select_related("station"))
     if datum is None:
-        return alle
+        return _durchzaehlen(alle)
     tag = kuerzel(datum)
     liste = [h for h in alle if h.station.aktiv
              and (not wochentage(h.wochentage) or tag in wochentage(h.wochentage))]  # fmt: skip
@@ -58,16 +58,22 @@ def halte(tour: Tour, datum: dt.date | None = None) -> list[Halt]:
         h.zusatz = None
     # Zusatzstopps des Tages (ADR 0156) an ihrer Stelle einreihen – als Halt, der nicht
     # gespeichert ist; Navigation, „Hier waren wir“ und Lieferschein gehen damit wie gewohnt.
-    schon = {h.station_id for h in liste}
-    versatz = 0
-    for z in tour.zusatzstopps.filter(datum=datum).select_related("station"):
-        if z.station_id in schon:
-            continue
+    stopps = tour.zusatzstopps.filter(datum=datum).select_related("station")
+    for versatz, z in enumerate(stopps):
         halt = Halt(tour=tour, station=z.station)
         halt.zusatz = z
         liste.insert(min(z.nach + versatz, len(liste)), halt)
-        versatz += 1
-        schon.add(z.station_id)
+    return _durchzaehlen(liste)
+
+
+def _durchzaehlen(liste: list[Halt]) -> list[Halt]:
+    """Dieselbe Station darf mehrfach auf der Tour stehen (ADR 0172): ``h.durchgang`` ist der
+    wievielte Besuch der Station es ist (1, 2 …), ``h.besuche`` wie oft sie insgesamt vorkommt."""
+    gezaehlt: dict[int, int] = {}
+    for h in liste:
+        gezaehlt[h.station_id] = h.durchgang = gezaehlt.get(h.station_id, 0) + 1
+    for h in liste:
+        h.besuche = gezaehlt[h.station_id]
     return liste
 
 
@@ -184,12 +190,11 @@ def vorschau(stationen: list[Station], zentrale: str = "", schluessel: str = "")
 
 
 def halt_anhaengen(tour: Tour, station: Station, wochentage_: str = "") -> Halt:
+    """Hängt die Station hinten an – auch wenn sie schon auf der Tour steht (ADR 0172)."""
     letzte = tour.halte.aggregate(m=Max("reihenfolge"))["m"] or 0
-    halt, _ = Halt.objects.get_or_create(
-        tour=tour, station=station,
-        defaults={"reihenfolge": letzte + 1, "wochentage": wochentage_},
-    )  # fmt: skip
-    return halt
+    return Halt.objects.create(
+        tour=tour, station=station, reihenfolge=letzte + 1, wochentage=wochentage_
+    )
 
 
 @transaction.atomic

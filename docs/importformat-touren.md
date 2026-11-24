@@ -109,7 +109,8 @@ planen → Importieren“), nach `stationen.csv`.
   wird mit der Tour im Fahrerplan verbunden und fährt nur an diesem Wochentag. Das gilt auch für
   schon eingelesene Touren, die noch nicht verbunden sind.
 - Stationen werden über ihre `kennung` gefunden; unbekannte Kennungen sind ein Fehler der Zeile.
-- Eine Station steht je Tour höchstens einmal.
+- Eine Station darf auf einer Tour mehrfach stehen (z. B. die Zentrale zum Abladen zwischendurch
+  und am Ende): je Besuch eine Zeile mit eigener `reihenfolge`.
 
 ### Spalten
 

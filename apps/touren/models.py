@@ -447,6 +447,10 @@ class Anfahrt(models.Model):
     tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="anfahrten")
     station = models.ForeignKey("Station", on_delete=models.CASCADE, related_name="anfahrten")
     datum = models.DateField("Tag")
+    durchgang = models.PositiveSmallIntegerField(
+        "Besuch", default=1,
+        help_text="Der wievielte Besuch der Station auf dieser Tour an dem Tag (ADR 0172).",
+    )  # fmt: skip
     am = models.DateTimeField("Angefahren am", auto_now_add=True)
     von = models.CharField("Eingetragen von", max_length=150, blank=True)
     # als Text festgehalten, wie er beim Abhaken hieß – die Liste kann sich später ändern
@@ -458,7 +462,7 @@ class Anfahrt(models.Model):
         verbose_name_plural = "Anfahrten"
         constraints = [
             models.UniqueConstraint(
-                fields=["tour", "station", "datum"], name="touren_anfahrt_je_tag"
+                fields=["tour", "station", "datum", "durchgang"], name="touren_anfahrt_je_tag"
             )  # fmt: skip
         ]
 
@@ -543,7 +547,9 @@ class Zusatzstopp(models.Model):
 
 
 class Halt(models.Model):
-    """Eine Station auf einer Tour, an ihrer Stelle in der Fahrtreihenfolge."""
+    """Eine Station auf einer Tour, an ihrer Stelle in der Fahrtreihenfolge. Dieselbe Station
+    darf mehrfach auf einer Tour stehen (ADR 0172) – z. B. die Zentrale zum Abladen zwischendurch
+    und am Ende; ``ablauf.halte()`` zählt die Besuche durch (``durchgang``)."""
 
     tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="halte")
     station = models.ForeignKey(Station, on_delete=models.CASCADE, related_name="halte")
@@ -557,9 +563,6 @@ class Halt(models.Model):
         verbose_name = "Halt"
         verbose_name_plural = "Halte"
         ordering = ["reihenfolge", "pk"]
-        constraints = [
-            models.UniqueConstraint(fields=["tour", "station"], name="halt_station_einmal_je_tour")
-        ]
 
     def __str__(self):
         return f"{self.tour}: {self.station}"

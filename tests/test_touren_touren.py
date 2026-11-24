@@ -108,15 +108,20 @@ def test_halte_nach_wochentag_und_nur_aktive_stationen():
     assert [h.pk for h in ablauf.halte(t, DIENSTAG)] == [a.pk, b.pk]
 
 
-def test_halt_bewegen_und_station_nur_einmal():
+def test_halt_bewegen_und_station_mehrfach():
     t = tour_mit(3)
     a, b, c = t.halte.all()
     ablauf.halt_bewegen(c, -1)
     assert [h.pk for h in t.halte.all()] == [a.pk, c.pk, b.pk]
     ablauf.halt_bewegen(a, -1)  # schon vorn: bleibt
     assert [h.reihenfolge for h in t.halte.all()] == [1, 2, 3]
+    # dieselbe Station darf noch einmal ans Ende (ADR 0172), z. B. zum Abladen
     ablauf.halt_anhaengen(t, a.station)
-    assert t.halte.count() == 3
+    assert t.halte.count() == 4
+    folge = ablauf.halte(t)
+    assert [(h.station_id == a.station_id, h.durchgang, h.besuche) for h in folge] == [
+        (True, 1, 2), (False, 1, 1), (False, 1, 1), (True, 2, 2),
+    ]  # fmt: skip
 
 
 def test_routen_teilen_nach_zehn_stationen():
@@ -181,10 +186,11 @@ def test_import_ersetzt_die_folge_und_legt_touren_an():
     text = "\n".join([KOPF, "Tour 1;2;M-2;", "tour 1;1;M-1;Montag", "Tour 3;1;M-3;",
                       "Tour 3;2;M-9;", "Tour 3;x;M-1;", "Tour 1;3;M-2;"])  # fmt: skip
     bericht = importieren_touren.pruefen(text)
-    assert {z for z, _ in bericht.fehler} == {5, 6, 7}
-    assert bericht.neue_touren == ["Tour 3"] and bericht.halte == 3
-    assert importieren_touren.uebernehmen(bericht, "anton") == (2, 3)
-    assert [(h.station, h.wochentage) for h in alt.halte.all()] == [(a, "Mo"), (b, "")]
+    # Zeile 7: dieselbe Station ein zweites Mal auf der Tour – das ist erlaubt (ADR 0172)
+    assert {z for z, _ in bericht.fehler} == {5, 6}
+    assert bericht.neue_touren == ["Tour 3"] and bericht.halte == 4
+    assert importieren_touren.uebernehmen(bericht, "anton") == (2, 4)
+    assert [(h.station, h.wochentage) for h in alt.halte.all()] == [(a, "Mo"), (b, ""), (b, "")]
     neu = Tour.objects.get(name="Tour 3")
     assert neu.fahrdienst_tour == ft and neu.angelegt_von == "anton"
     assert bleibt.halte.count() == 1
