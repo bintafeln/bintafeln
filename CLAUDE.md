@@ -171,6 +171,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps/kunden/views_notizen.py`, aller Anmerkungen in `views_anmerkungen.py` (ADR 0143; dort auch „Angehakte in Notizen
   umwandeln“, `umwandeln()` – verschiebt, deshalb ohne Papierkorb); „Angehakte
   löschen“ über `static/js/liste_loeschen.js`.
+  Wechselwunsch eines Kunden („Will wechseln“ bei den Notizen, ADR 0173): `Wechselwunsch` an der
+  Kundennummer, Regeln nur in `apps/kunden/wechsel.py` (`moeglichkeiten()`, `eintragen()` – prüft
+  die Erreichbarkeit, `genehmigen()`/`ablehnen()` mit Mail an den Kunden), Ansichten in
+  `views_wechsel.py`; entscheiden nur mit dem Recht `kunden.wechsel_entscheiden`.
   Einkommensart vieler Haushalte auf einmal ändern (nach Alter der Hauptperson, erst ansehen, dann
   ändern, in Portionen) in `apps/kunden/views_einkommensart.py` (ADR 0146).
   Notizen an die Ausgabestelle (`Notiz.an_stelle`, Startseite, Antwort beim Ausweisdruck) in

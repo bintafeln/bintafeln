@@ -11,6 +11,7 @@ from apps.kunden import (
     views_notizen,
     views_post,
     views_verlaengerung,
+    views_wechsel,
 )
 
 app_name = "kunden"
@@ -77,6 +78,7 @@ urlpatterns = [
         views_bearbeiten.listeneintrag_loeschen,
         name="listeneintrag_loeschen",
     ),
+    path("haushalt/<path:kundennummer>/wechseln/", views_wechsel.wunsch, name="wechselwunsch"),
     path("haushalt/<path:kundennummer>/notiz/", views.notiz_neu, name="notiz_neu"),
     path("notiz/<int:pk>/loeschen/", views.notiz_loeschen, name="notiz_loeschen"),
     path("haushalt/<path:kundennummer>/krank/", views.krank_neu, name="krank_neu"),
@@ -102,6 +104,8 @@ urlpatterns = [
     path("anmerkungen/", views_anmerkungen.liste, name="anmerkungen"),
     path("anmerkungen/loeschen/", views_anmerkungen.loeschen, name="anmerkungen_loeschen"),
     path("anmerkungen/umwandeln/", views_anmerkungen.umwandeln, name="anmerkungen_umwandeln"),
+    path("wechselwuensche/", views_wechsel.liste, name="wechselwuensche"),
+    path("wechselwuensche/<int:pk>/", views_wechsel.entscheiden, name="wechsel_entscheiden"),
     path("notizen/", views_notizen.liste, name="notizen"),
     path("notizen/loeschen/", views_notizen.loeschen, name="notizen_loeschen"),
     path("notizen-an-ausgabestelle/", views.notizen_an_stelle, name="notizen_an_stelle"),

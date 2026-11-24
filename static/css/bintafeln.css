@@ -1521,6 +1521,17 @@ a.fd-ich { font-weight: 600; text-decoration: underline dotted; }
 /* Krankmeldung eines Kunden (ADR 0075) */
 .notiz-krank { border-left: 4px solid var(--akzent); padding-left: .5rem; }
 .krank-hinweis { margin: 0 0 1rem; padding: .6rem .9rem; border-left: 4px solid var(--akzent); }
+/* „Will wechseln“ bei den Notizen und die Seiten dazu (ADR 0173) */
+.wechsel-knopf { margin: .75rem 0; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.wechsel-knopf a.knopf-vorlage { display: inline-block; width: auto; min-height: 2.5rem; padding: .4rem .85rem;
+  font-weight: 600; background: var(--flaeche); color: var(--text); border: 1px dashed var(--leise);
+  border-radius: 1.25rem; text-decoration: none; }
+.wechsel-frage { font-size: 1.1rem; margin: 1.5rem 0 .85rem; }
+.wechsel-wahl { display: flex; flex-direction: column; gap: .35rem; margin-bottom: .75rem; }
+.wechsel-warnung { margin: .25rem 0 .75rem; }
+.wechsel-karte { border: 1px solid var(--rand); border-radius: var(--radius); padding: .75rem 1rem; margin: 0 0 1rem; }
+.wechsel-entscheiden .filter-kompakt { margin-top: .85rem; }
+.wechsel-karte h3 { margin: 0 0 .4rem; }
 .krank-melden { margin: .75rem 0; }
 /* Auslöser als richtiger Knopf (wie die Notiz-Vorlagen darüber), nicht als unscheinbarer Link. */
 .krank-melden summary.knopf-vorlage {

@@ -493,3 +493,55 @@ def test_nachrichten_auf_dem_handy(angemeldet, admin, muster):
     expect(seite.get_by_role("button", name="wieder öffnen")).to_be_hidden()
     seite.locator(".nachrichten-erledigt summary").click()
     expect(seite.get_by_role("button", name="wieder öffnen")).to_be_visible()
+
+
+def test_hilfe_bild_wechselwunsch(angemeldet, admin, muster):
+    """„Will wechseln“: Bilder fürs Handbuch und der Ablauf vom Eintragen bis zum Genehmigen."""
+    from apps.kunden.models import Wechselwunsch
+
+    stelle = Ausgabestelle.objects.create(name="Ausgabe Beispielweg")
+    gruppen = [
+        Kundengruppe.objects.create(
+            name=f"Mi {u}:00",
+            ausgabestelle=stelle,
+            wochentage="Mi",
+            uhrzeit=dt.time(u, 0),
+            maximum=5,
+        )  # fmt: skip
+        for u in (12, 10, 11)
+    ]
+    h = Haushalt.objects.create(kundennummer="07001", kundengruppe=gruppen[0],
+                                telefon="01234 5550")  # fmt: skip
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Beispiel")
+    seite = oeffnen(angemeldet, admin, reverse("kunden:wechselwunsch", args=["07001"]),
+                    hoehe=1250)  # fmt: skip
+    seite.get_by_role("link", name="Andere Uhrzeit am selben Tag").click()
+    seite.get_by_role("link", name="Früher").click()
+    seite.get_by_label(re.compile("Mi 10:00")).check()
+    seite.get_by_label("E-Mail-Adresse des Kunden").fill("erika@example.org")
+    knopf = seite.get_by_role("button", name="Wechselwunsch eintragen")
+    aufnehmen(seite, "wechselwunsch", seite.locator("section.karte").first,
+              Marke(seite.locator("#was + .aktionsleiste"), "rahmen", 1),
+              Marke(seite.locator("#weiter + .aktionsleiste"), "rahmen", 2),
+              Marke(seite.locator(".wechsel-wahl"), "rahmen", 3),
+              Marke(seite.get_by_label("E-Mail-Adresse des Kunden"), "rahmen", 4),
+              Marke(knopf, nummer=5, von="rechts"))  # fmt: skip
+    knopf.click()
+    expect(seite.get_by_text("Will wechseln:").first).to_be_visible()
+    wunsch = Wechselwunsch.objects.get(kundennummer="07001")
+    assert wunsch.wunsch_gruppe == gruppen[1]
+    h.refresh_from_db()
+    assert h.email == "erika@example.org"
+
+    seite.goto(reverse("kunden:wechselwuensche"))
+    karte = seite.locator("section.karte").first
+    genehmigen = seite.get_by_role("button", name="Genehmigen")
+    aufnehmen(seite, "wechselwuensche", karte,
+              Marke(seite.locator('select[name="gruppe"]'), "rahmen", 1),
+              Marke(seite.locator(".filter-feld", has_text="Wechsel ab"), "rahmen", 2),
+              Marke(genehmigen, "rahmen", 3))  # fmt: skip
+    genehmigen.click()
+    wunsch.refresh_from_db()
+    h.refresh_from_db()
+    assert wunsch.status == "genehmigt"
+    assert h.kundengruppe == gruppen[1]

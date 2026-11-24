@@ -70,6 +70,10 @@ KATALOG = [
     Recht("kunden.konto", KUNDEN, "Kundenkonto und Buchungen sehen"),
     Recht("kunden.anmerkungen", KUNDEN, "Interne Anmerkungen sehen"),
     Recht("kunden.notizen", KUNDEN, "Notizen schreiben und eigene löschen"),
+    Recht("kunden.wechsel_entscheiden", KUNDEN, "Wechselwünsche der Kunden entscheiden",
+          "Möchte ein Kunde Uhrzeit, Tag oder Ausgabestelle wechseln, trägt der Einlass das ein. "
+          "Mit diesem Recht genehmigt oder lehnt man ab – gedacht für den Vorstand. "
+          "Vorgabe: nur Admin."),
     Recht("kunden.notizen_loeschen", KUNDEN, "Alle Notizen löschen"),
     Recht("kunden.nachrichten", KUNDEN, "Nachrichten der Ausgabestellen zu Kunden lesen",
           "Ausgabestellen schreiben sie zu Kunden, die sie nicht aufrufen dürfen."),

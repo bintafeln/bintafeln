@@ -66,6 +66,10 @@ def start(request):
         kontext["korrekturen_offen"] = Korrekturwunsch.objects.filter(
             status=Korrekturwunsch.Status.OFFEN
         ).count()
+    if rollen.hat_recht(request.user, "kunden.wechsel_entscheiden"):
+        from apps.kunden.models import Wechselwunsch
+
+        kontext["wechsel_offen"] = Wechselwunsch.objects.filter(status="offen").count()
     if rollen.hat_recht(request.user, "kunden.nachrichten"):
         from apps.kunden.views_nachrichten import offene_je_anliegen
 

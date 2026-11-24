@@ -849,6 +849,57 @@ class Nachricht(models.Model):
         return f"Nachricht zu {self.kundennummer}"
 
 
+class Wechselwunsch(models.Model):
+    """Ein Kunde möchte die Uhrzeit, den Tag oder die Ausgabestelle wechseln (ADR 0173).
+    Eingetragen am Einlass oder im Büro, entschieden von jemandem mit dem Recht
+    ``kunden.wechsel_entscheiden``. Hängt an der Kundennummer; erledigte werden nach
+    ``AUFBEWAHREN_TAGE`` gelöscht. Regeln nur in ``apps/kunden/wechsel.py``."""
+
+    AUFBEWAHREN_TAGE = 90
+
+    class Art(models.TextChoices):
+        UHRZEIT = "uhrzeit", "andere Uhrzeit am selben Tag"
+        TAG = "tag", "anderer Tag"
+        STELLE = "stelle", "andere Ausgabestelle"
+
+    class Status(models.TextChoices):
+        OFFEN = "offen", "offen"
+        GENEHMIGT = "genehmigt", "genehmigt"
+        ABGELEHNT = "abgelehnt", "abgelehnt"
+
+    kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
+    art = models.CharField("Was soll sich ändern", max_length=10, choices=Art.choices)
+    # als Text festgehalten, wie es beim Eintragen hieß – Gruppen können sich später ändern
+    bisher = models.CharField("Bisherige Kundengruppe", max_length=150, blank=True)
+    wunsch = models.CharField("Wunsch", max_length=300)
+    wunsch_gruppe = models.ForeignKey(
+        "Kundengruppe", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+        verbose_name="Gewünschte Kundengruppe",
+    )  # fmt: skip
+    anmerkung = models.CharField("Anmerkung", max_length=300, blank=True)
+    ohne_email = models.BooleanField("Kunde hat keine E-Mail-Adresse", default=False)
+    stelle = models.ForeignKey("Ausgabestelle", null=True, blank=True, on_delete=models.SET_NULL,
+                               related_name="+", verbose_name="Eingetragen an")  # fmt: skip
+    erstellt_am = models.DateTimeField("Eingetragen am", default=timezone.now)
+    von = models.CharField("Eingetragen von", max_length=150, blank=True)
+    status = models.CharField("Stand", max_length=10, choices=Status.choices,
+                              default=Status.OFFEN)  # fmt: skip
+    entschieden_am = models.DateTimeField("Entschieden am", null=True, blank=True)
+    entschieden_von = models.CharField("Entschieden von", max_length=150, blank=True)
+    neue_gruppe = models.CharField("Neue Kundengruppe", max_length=150, blank=True)
+    ab = models.DateField("Wechsel ab", null=True, blank=True)
+    antwort = models.CharField("Antwort an den Kunden", max_length=500, blank=True)
+    mail_stand = models.CharField("E-Mail an den Kunden", max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = "Wechselwunsch"
+        verbose_name_plural = "Wechselwünsche"
+        ordering = ["-erstellt_am"]
+
+    def __str__(self):
+        return f"Wechselwunsch zu {self.kundennummer}"
+
+
 class Ausweisdruck(models.Model):
     """Ein Sammeldruck „Alle gemeldeten Ausweise drucken“ (ADR 0167). Hält fest, welche Meldungen
     er erledigt und welche Notizen er geschrieben oder gestrichen hat – damit sich der ganze
@@ -1363,8 +1414,15 @@ def fristen_anwenden() -> int:
         + alte_nachrichten_loeschen()
         + verlegung.anwenden()
         + verlegung.stellen_schliessen()
+        + alte_wechselwuensche_loeschen()
         + _gruppenregel()
     )
+
+
+def alte_wechselwuensche_loeschen() -> int:
+    """Entschiedene Wechselwünsche nach 90 Tagen (ADR 0173)."""
+    grenze = timezone.now() - dt.timedelta(days=Wechselwunsch.AUFBEWAHREN_TAGE)
+    return Wechselwunsch.objects.filter(entschieden_am__lt=grenze).delete()[0]
 
 
 def alte_nachrichten_loeschen() -> int:
@@ -1481,3 +1539,4 @@ auditlog.register(StellenNachricht)
 auditlog.register(Rundschreiben)
 auditlog.register(PostEmpfang)
 auditlog.register(GeplanterWechsel)
+auditlog.register(Wechselwunsch)

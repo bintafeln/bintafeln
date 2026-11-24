@@ -15,6 +15,26 @@
     {% if "kunden.notizen_loeschen" in rechte %}Sie dürfen auch Notizen anderer löschen.{% endif %}</li>
 </ul>
 {% hilfe_bild "notizen-einlass" "① Notiz-Knopf: ein Klick speichert den Text als Notiz, ② eigene Notiz schreiben, ③ „Notiz speichern“, ④ eigene Notiz löschen." %}
+<h3>Will wechseln</h3>
+<p>Möchte ein Kunde eine andere <strong>Uhrzeit</strong>, einen anderen <strong>Tag</strong> oder eine andere
+  <strong>Ausgabestelle</strong>, tragen Sie das mit dem Knopf <strong>„🔁 Will wechseln …“</strong> bei den Notizen ein.
+  Das Programm fragt Schritt für Schritt: Was soll sich ändern? Früher oder später (bzw. welcher Tag, welche
+  Ausgabestelle)? Dann zeigt es, <strong>was dafür aktuell frei ist</strong>. Ist nichts frei oder passt nichts davon, wird
+  der Wunsch trotzdem aufgenommen.</p>
+<p>Zum Schluss prüft das Programm, ob der Kunde <strong>erreichbar</strong> ist: Fehlen E-Mail-Adresse oder Telefonnummer,
+  fragen Sie danach und tragen sie gleich ein – sie werden beim Kunden gespeichert. Hat der Kunde keine E-Mail-Adresse,
+  haken Sie das an; <strong>ohne E-Mail-Adresse kann die Verwaltung nicht zurückschreiben</strong>, der Kunde erfährt das
+  Ergebnis dann nur am Einlass oder am Telefon. Ganz ohne Kontakt lässt sich der Wunsch nicht eintragen.</p>
+<p>Über den Wechsel <strong>entscheidet die Verwaltung</strong>; bis dahin bleibt alles, wie es ist. Der Wunsch steht als
+  Notiz „Will wechseln: …“ beim Kunden, später auch die Entscheidung. Je Kunde kann nur ein Wunsch offen sein.</p>
+{% hilfe_bild "wechselwunsch" "① Was soll sich ändern, ② früher oder später, ③ was dafür frei ist, ④ fehlende E-Mail-Adresse nachtragen, ⑤ „Wechselwunsch eintragen“." %}
+{% if "kunden.wechsel_entscheiden" in rechte %}<p><strong>Entscheiden:</strong> Unter „Kunden → Wechselwünsche“ stehen alle offenen Wünsche (die Zahl steht im Menü und
+  auf der Startseite). Kundengruppe wählen – vorbelegt ist die gewünschte –, das Datum „Wechsel ab“ (vorbelegt: heute; ein
+  späteres Datum wird als geplante Verlegung eingetragen) und auf Wunsch einen Zusatz für den Kunden, dann
+  „Genehmigen“ oder „Ablehnen“. Der Kunde bekommt die Antwort per E-Mail; fehlt die Adresse, sagt das Programm das.
+  Entschiedene Wünsche werden nach 90 Tagen gelöscht. Wer entscheiden darf, regelt das Recht „Wechselwünsche
+  entscheiden“ (Vorgabe: nur Admin).</p>
+{% hilfe_bild "wechselwuensche" "① Neue Kundengruppe (vorbelegt: der Wunsch), ② ab wann, ③ genehmigen oder ablehnen." %}{% endif %}
 {% if "kunden.stammdaten" in rechte %}<h3>Notiz an die Ausgabestelle</h3>
 <p>Auf der Haushaltsseite „An die Ausgabestelle schicken“ anhaken: Die Notiz steht dann zusätzlich auf der Startseite der
   Ausgabestelle, bis dort jemand „✓ gelesen“ klickt. Am Haushalt steht, ob und von wem sie gelesen wurde.</p>

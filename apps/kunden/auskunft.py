@@ -20,6 +20,7 @@ from apps.kunden.models import (
     KundenEinstellungen,
     Nachricht,
     Notiz,
+    Wechselwunsch,
     Zugriff,
     Zusatzfeld,
 )
@@ -128,6 +129,16 @@ def kunde_pdf(h: Haushalt) -> bytes:
           " – ".join(x for x in (n.get_anliegen_display(), n.text, n.ergebnis) if x), n.von]
          for n in Nachricht.objects.filter(kundennummer=h.kundennummer)],
         breiten=[0.14, 0.66, 0.2],
+    )  # fmt: skip
+
+    doc.ueberschrift("Wechselwünsche")
+    doc.tabelle(
+        ["Datum", "Wunsch", "Stand"],
+        [[_datum(timezone.localdate(w.erstellt_am)),
+          " – ".join(x for x in (w.wunsch, w.anmerkung) if x),
+          " ".join(x for x in (w.get_status_display(), w.neue_gruppe, w.antwort) if x)]
+         for w in Wechselwunsch.objects.filter(kundennummer=h.kundennummer)],
+        breiten=[0.14, 0.5, 0.36],
     )  # fmt: skip
 
     doc.ueberschrift("Dokumente")

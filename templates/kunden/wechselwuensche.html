@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block titel %}Wechselwünsche{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Wechselwünsche der Kunden</h1>
+  <p class="hinweis">Möchte ein Kunde Uhrzeit, Tag oder Ausgabestelle wechseln, trägt der Einlass das beim Kunden unter
+    „Will wechseln“ ein. Hier entscheiden Sie. Der Kunde bekommt die Antwort per E-Mail; steht keine Adresse bei ihm,
+    sagt das Programm das. Entschiedene Wünsche werden nach {{ tage }} Tagen gelöscht.</p>
+
+  <h2>Offen{% if offene %} ({{ offene|length }}){% endif %}</h2>
+  {% for w in offene %}
+  <article class="wechsel-karte" id="wunsch-{{ w.pk }}">
+    <h3><a href="{% url 'kunden:haushalt' w.kundennummer %}">{{ w.kundennummer }}</a>{% with p=w.haushalt.hauptperson %}{% if p %} · {{ p.vorname }} {{ p.nachname }}{% endif %}{% endwith %}</h3>
+    <dl class="angaben">
+      <dt>Jetzt</dt><dd>{{ w.jetzt }}</dd>
+      <dt>Wunsch</dt><dd><strong>{{ w.wunsch }}</strong>{% if w.anmerkung %}<br><small>{{ w.anmerkung }}</small>{% endif %}</dd>
+      <dt>Eingetragen</dt><dd>{{ w.erstellt_am|date:"d.m.Y H:i" }} von {{ w.von }}{% if w.stelle %} ({{ w.stelle.name }}){% endif %}</dd>
+      <dt>Erreichbar</dt><dd>{% if w.kontakt.email %}<span class="marke-ok">E-Mail</span>{% else %}<span class="marke-warnung">keine E-Mail – kein Rückschreiben möglich</span>{% endif %}
+        {% if w.kontakt.telefon %}<span class="marke-ok">Telefon</span>{% else %}<span class="marke-warnung">kein Telefon</span>{% endif %}</dd>
+    </dl>
+    <form method="post" action="{% url 'kunden:wechsel_entscheiden' w.pk %}" class="wechsel-entscheiden">
+      {% csrf_token %}
+      <div class="filter-kompakt">
+        <div class="filter-feld"><label for="gruppe-{{ w.pk }}">Neue Kundengruppe</label>
+          <select name="gruppe" id="gruppe-{{ w.pk }}">
+            <option value="">– bitte wählen –</option>
+            {% for z in w.ziele %}<option value="{{ z.gruppe.pk }}"{% if z.gruppe.pk == w.wunsch_gruppe_id %} selected{% endif %}>{{ z.text }}{% if z.voll %} (inzwischen voll){% endif %}</option>{% endfor %}
+          </select></div>
+        <div class="filter-feld"><label for="ab-{{ w.pk }}">Wechsel ab</label>
+          <input type="date" name="ab" id="ab-{{ w.pk }}" value="{{ heute|date:'Y-m-d' }}" min="{{ heute|date:'Y-m-d' }}"></div>
+      </div>
+      <div class="feld"><label for="antwort-{{ w.pk }}">Zusatz für den Kunden (freiwillig, steht in der E-Mail)</label>
+        <input type="text" name="antwort" id="antwort-{{ w.pk }}" maxlength="500"></div>
+      <div class="aktionsleiste">
+        <button type="submit" name="genehmigen" value="1" class="knopf">✓ Genehmigen</button>
+        <button type="submit" name="ablehnen" value="1" class="knopf knopf-zweitrangig" formnovalidate
+                onclick="return confirm('Den Wechselwunsch zu {{ w.kundennummer|escapejs }} ablehnen?')">✕ Ablehnen</button>
+      </div>
+    </form>
+  </article>
+  {% empty %}
+  <p class="hinweis">Kein Wechselwunsch offen.</p>
+  {% endfor %}
+
+  {% if erledigte %}
+  <h2>Zuletzt entschieden</h2>
+  <div class="tabelle-rahmen"><table class="tabelle">
+    <thead><tr><th>Kunde</th><th>Wunsch</th><th>Entscheidung</th><th>E-Mail an den Kunden</th></tr></thead>
+    <tbody>{% for w in erledigte %}
+      <tr><td data-titel="Kunde"><a href="{% url 'kunden:haushalt' w.kundennummer %}">{{ w.kundennummer }}</a></td>
+        <td data-titel="Wunsch">{{ w.wunsch }}</td>
+        <td data-titel="Entscheidung">{% if w.status == "genehmigt" %}<span class="marke-ok">genehmigt</span> {{ w.neue_gruppe }}{% if w.ab %}, ab {{ w.ab|date:"d.m.Y" }}{% endif %}{% else %}<span class="marke-warnung">abgelehnt</span>{% endif %}
+          <br><small class="leise">{{ w.entschieden_am|date:"d.m.Y" }} von {{ w.entschieden_von }}{% if w.antwort %} · „{{ w.antwort }}“{% endif %}</small></td>
+        <td data-titel="E-Mail">{{ w.mail_stand }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -138,12 +138,19 @@ def menue(request) -> list[dict]:
                     .values("kundennummer").distinct().count())  # fmt: skip
         verlaengern["zahl"] = gemeldet or None
         verlaengern["zahl_titel"] = "gemeldete Haushalte"
+    wechsel = _eintrag("Wechselwünsche", "kunden:wechselwuensche")
+    if "kunden.wechsel_entscheiden" in darf:
+        from apps.kunden.models import Wechselwunsch
+
+        wechsel["zahl"] = Wechselwunsch.objects.filter(status="offen").count() or None
+        wechsel["zahl_titel"] = "offene Wechselwünsche"
     dazu("Kunden", [
         *([] if an_der_stelle else [("kunden.liste", alle_kunden)]),
         ("kunden.bearbeiten", _eintrag("Neuer Haushalt", "kunden:haushalt_neu")),
         ("kunden.liste", _eintrag("Zuletzt aufgenommen", "kunden:zuletzt_aufgenommen")),
         ("kunden.bearbeiten", verlaengern),
         ("kunden.nachrichten", nachrichten),
+        ("kunden.wechsel_entscheiden", wechsel),
         ("kunden.notizen_loeschen", _eintrag("Notizen", "kunden:notizen")),
         ("kunden.anmerkungen", _eintrag("Anmerkungen", "kunden:anmerkungen")),
     ], vorn=True)  # fmt: skip
