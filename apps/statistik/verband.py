@@ -147,7 +147,7 @@ def aktive(stichtag: dt.date) -> Aktive:
     a = Aktive()
     kunden = {
         (v.strip().lower(), n.strip().lower(), g)
-        for v, n, g in Person.objects.exclude(haushalt__status=Haushalt.Status.BEENDET)
+        for v, n, g in Person.objects.exclude(haushalt__status__in=Haushalt.NICHT_MEHR)
         .exclude(geburtsdatum=None).values_list("vorname", "nachname", "geburtsdatum")
     }  # fmt: skip
     benutzer = get_user_model()

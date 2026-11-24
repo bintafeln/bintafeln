@@ -1,9 +1,10 @@
 # Importformat für den Kundenstamm
 
-Version 1.5
+Version 1.6
 
 | Version | Änderung |
 |---|---|
+| 1.6 | neuer erlaubter Wert `verstorben` in der Spalte `status` von `haushalte.csv`. Dateien der Version 1.5 bleiben gültig. |
 | 1.5 | neue optionale Spalte `kontostand` in `abholungen.csv` (Kontostand nach dem Besuch). Daraus rechnet „ergänzen“ den wirklich gezahlten Betrag. `beitrag` ist der fällige Beitrag, keine Zahlung. Dateien der Version 1.4 bleiben gültig. |
 | 1.4 | neue optionale Datei `buchungen.csv` (Kontobuchungen). Beim Ergänzen darf `haushalte.csv` fehlen: Dann werden die übrigen Dateien vorhandenen Haushalten hinzugefügt (Nachreichen in Teilen). Dateien der Version 1.3 bleiben gültig. |
 | 1.3 | Das Format bleibt gleich. Neu: Der Import kann den Kundenstamm auch ergänzen statt ersetzen (siehe Grundsätze), und der Import-Assistent nimmt beliebige CSV- und Excel-Dateien und schreibt sie in dieses Format um (ADR 0078). |
@@ -90,7 +91,7 @@ Prüfbericht weist darauf hin, wenn vorher Daten vorhanden waren.
 | `geburtsdatum` | | Hauptperson |
 | `staatsangehoerigkeit` | | Hauptperson |
 | `familienstand` | | Hauptperson, z. B. ledig, verheiratet. Je Tafel abschaltbar |
-| `status` | | `aktiv`, `pausiert`, `gesperrt`, `beendet`. Leer = `aktiv` |
+| `status` | | `aktiv`, `pausiert`, `gesperrt`, `beendet`, `verstorben`. Leer = `aktiv` |
 | `kundengruppe` | | Kürzel **oder** Name einer Kundengruppe |
 | `ausgabestelle` | | Ausgabestelle der Kundengruppe. Wird genutzt, wenn die Kundengruppe noch nicht bekannt ist |
 | `kunde_seit` | | Datum |

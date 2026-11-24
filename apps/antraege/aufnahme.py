@@ -172,7 +172,7 @@ def freie_gruppen(haushalt: Haushalt | None = None) -> list[dict]:
     """
     from apps.kunden import gruppen as gruppen_modul
 
-    belegt = Count("haushalte", filter=~Q(haushalte__status=Haushalt.Status.BEENDET))
+    belegt = Count("haushalte", filter=~Q(haushalte__status__in=Haushalt.NICHT_MEHR))
     reserviert = gruppen_modul.reservierte_zugaenge()
     gruppen = []
     for g in (
