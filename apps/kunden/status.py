@@ -1,10 +1,12 @@
-"""Status nach dem Ausweis (ADR 0176).
+"""Status nach Sperre und Ausweis (ADR 0176).
 
 Ein Kunde ohne gültigen Ausweis ist nicht „aktiv“: Läuft der Ausweis ab, setzt das Programm ihn
-auf „pausiert“; wird der Ausweis verlängert, ist er wieder „aktiv“. Das gilt nur für Kunden, die
-das Programm selbst pausiert hat (``Haushalt.status_automatisch``) – wer von Hand pausiert,
-gesperrt, beendet oder als verstorben eingetragen ist, bleibt, wie er ist. Ohne eingetragenes
-Ablaufdatum bleibt ein Kunde aktiv (unbekannt ist nicht abgelaufen, wie in ADR 0061).
+auf „pausiert“; wird der Ausweis verlängert, ist er wieder „aktiv“. Eine laufende Sperre
+(``Sperre``) geht vor: Wer gesperrt ist, steht auf „gesperrt“, nicht auf „pausiert“; endet die
+Sperre, gilt wieder der Ausweis. Zurückgestellt wird nur, wen das Programm selbst umgestellt hat
+(``Haushalt.status_automatisch``) – wer von Hand pausiert, gesperrt, beendet oder als verstorben
+eingetragen ist, bleibt, wie er ist. Ohne eingetragenes Ablaufdatum gilt ein Ausweis nicht als
+abgelaufen (wie in ADR 0061).
 
 Verstorbene Kunden wandern nach ``KundenEinstellungen.verstorben_loeschen_monate`` in den
 Papierkorb.
@@ -13,9 +15,10 @@ Papierkorb.
 import datetime as dt
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
-from apps.kunden.models import Haushalt, HaushaltEreignis, KundenEinstellungen
+from apps.kunden.models import Haushalt, HaushaltEreignis, KundenEinstellungen, Sperre
 
 S = Haushalt.Status
 
@@ -24,37 +27,55 @@ def an() -> bool:
     return KundenEinstellungen.laden().status_nach_ausweis
 
 
-def neuer_status(h: Haushalt, heute: dt.date) -> str:
-    """Welchen Status der Haushalt nach der Regel haben muss; leer, wenn er bleibt."""
+def gesperrte(heute: dt.date) -> set[int]:
+    """Haushalte (pk) mit einer Sperre, die an dem Tag läuft."""
+    return set(
+        Sperre.objects.filter(von__lte=heute)
+        .filter(Q(bis__isnull=True) | Q(bis__gte=heute))
+        .values_list("haushalt_id", flat=True)
+    )
+
+
+def neuer_status(h: Haushalt, heute: dt.date, gesperrt: bool) -> str:
+    """Welchen Status der Haushalt nach der Regel haben muss; leer, wenn er bleibt. Eine laufende
+    Sperre geht vor dem Ausweis. Angefasst wird nur, wer aktiv ist oder vom Programm umgestellt
+    wurde – ein von Hand gesetzter Status bleibt."""
+    if h.status != S.AKTIV and not (h.status_automatisch and h.status in (S.PAUSIERT, S.GESPERRT)):
+        return ""
     abgelaufen = h.ausweis_gueltig_bis is not None and h.ausweis_gueltig_bis < heute
-    if h.status == S.AKTIV and abgelaufen:
-        return S.PAUSIERT
-    if h.status == S.PAUSIERT and h.status_automatisch and not abgelaufen:
-        return S.AKTIV
-    return ""
+    soll = S.GESPERRT if gesperrt else S.PAUSIERT if abgelaufen else S.AKTIV
+    return "" if soll == h.status else soll
 
 
 def _grund(h: Haushalt, neu: str) -> str:
+    if neu == S.GESPERRT:
+        return "Sperre eingetragen"
     if neu == S.PAUSIERT:
         return f"Ausweis abgelaufen am {h.ausweis_gueltig_bis:%d.%m.%Y}"
-    return "Ausweis wieder gültig"
+    return "Sperre beendet" if h.status == S.GESPERRT else "Ausweis wieder gültig"
 
 
-def betroffene(heute: dt.date | None = None):
-    """Aktive Kunden mit abgelaufenem Ausweis – die die Regel jetzt pausieren würde."""
+def betroffene(heute: dt.date | None = None) -> list[tuple[Haushalt, str]]:
+    """Alle, deren Status nicht zu Sperre und Ausweis passt, mit dem Status, den sie bekämen."""
     heute = heute or timezone.localdate()
-    return Haushalt.objects.filter(status=S.AKTIV, ausweis_gueltig_bis__lt=heute)
+    sperren = gesperrte(heute)
+    kandidaten = Haushalt.objects.filter(
+        Q(status=S.AKTIV) | Q(status_automatisch=True, status__in=(S.PAUSIERT, S.GESPERRT))
+    ).only("kundennummer", "status", "status_automatisch", "ausweis_gueltig_bis")
+    return [(h, neu) for h in kandidaten if (neu := neuer_status(h, heute, h.pk in sperren))]
 
 
 def pruefen(h: Haushalt, heute: dt.date | None = None) -> str:
     """Nach einer Änderung im Programm: stellt den Status sofort um. Liefert den Grund (für eine
     Meldung) oder leer. Die Historie hält der Aufrufer wie bei jeder Änderung fest."""
     heute = heute or timezone.localdate()
-    neu = neuer_status(h, heute) if an() else ""
+    if not an():
+        return ""
+    neu = neuer_status(h, heute, h.pk in gesperrte(heute))
     if not neu:
         return ""
     grund = _grund(h, neu)
-    h.status, h.status_automatisch, h.status_seit = neu, neu == S.PAUSIERT, heute
+    h.status, h.status_automatisch, h.status_seit = neu, neu != S.AKTIV, heute
     Haushalt.objects.filter(pk=h.pk).update(
         status=neu, status_automatisch=h.status_automatisch, status_seit=heute
     )
@@ -63,22 +84,18 @@ def pruefen(h: Haushalt, heute: dt.date | None = None) -> str:
 
 
 def regel_anwenden(heute: dt.date | None = None, ereignisse: bool = True) -> int:
-    """Täglich (Fristen), beim Import und beim Einschalten: alle, deren Status nicht mehr zum
-    Ausweis passt. Der Import hält die Historie selbst fest (``ereignisse=False``)."""
+    """Täglich (Fristen), beim Import und beim Einschalten: alle, deren Status nicht mehr zu
+    Sperre und Ausweis passt. Der Import hält die Historie selbst fest (``ereignisse=False``)."""
     heute = heute or timezone.localdate()
     if not an():
         return 0
-    kandidaten = list(betroffene(heute)) + [
-        h for h in Haushalt.objects.filter(status=S.PAUSIERT, status_automatisch=True)
-        if neuer_status(h, heute)
-    ]  # fmt: skip
+    liste = betroffene(heute)
     with transaction.atomic():
         neu_ereignisse = []
-        for h in kandidaten:
-            neu = neuer_status(h, heute)
+        for h, neu in liste:
             alt = h.get_status_display()
             Haushalt.objects.filter(pk=h.pk).update(
-                status=neu, status_automatisch=neu == S.PAUSIERT, status_seit=heute
+                status=neu, status_automatisch=neu != S.AKTIV, status_seit=heute
             )
             if ereignisse:
                 neu_ereignisse.append(HaushaltEreignis(
@@ -86,7 +103,7 @@ def regel_anwenden(heute: dt.date | None = None, ereignisse: bool = True) -> int
                     text=f"Status: {alt} → {S(neu).label} ({_grund(h, neu)})"[:300],
                 ))  # fmt: skip
         HaushaltEreignis.objects.bulk_create(neu_ereignisse, batch_size=1000)
-    return len(kandidaten)
+    return len(liste)
 
 
 def verstorbene_entfernen(heute: dt.date | None = None) -> int:

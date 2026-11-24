@@ -77,10 +77,11 @@ class KundenEinstellungen(models.Model):
     status_nach_ausweis = models.BooleanField(
         "Kunden mit abgelaufenem Ausweis auf „pausiert“ setzen", default=False,
         help_text="An: Läuft ein Ausweis ab, steht der Kunde ab dem nächsten Tag von selbst auf "
-        "„pausiert“; wird der Ausweis verlängert, ist er wieder „aktiv“. Wer von Hand pausiert, "
-        "gesperrt, beendet oder als verstorben eingetragen ist, bleibt, wie er ist. Kunden ohne "
-        "eingetragenes Ablaufdatum bleiben aktiv. Beim Einschalten werden alle Kunden mit "
-        "abgelaufenem Ausweis sofort umgestellt.",
+        "„pausiert“; wird der Ausweis verlängert, ist er wieder „aktiv“. Wer eine laufende Sperre "
+        "eingetragen hat, steht auf „gesperrt“ – das geht vor. Wer von Hand pausiert, gesperrt, "
+        "beendet oder als verstorben eingetragen ist, bleibt, wie er ist. Kunden ohne "
+        "eingetragenes Ablaufdatum bleiben aktiv. Beim Einschalten werden alle betroffenen "
+        "Kunden sofort umgestellt.",
     )  # fmt: skip
     verstorben_loeschen_monate = models.PositiveSmallIntegerField(
         "Verstorbene Kunden löschen nach (Monaten)", default=3,
@@ -553,8 +554,9 @@ class Haushalt(models.Model):
 
     kundennummer = models.CharField("Kundennummer", max_length=20, unique=True)
     status = models.CharField("Status", max_length=10, choices=Status.choices, default=Status.AKTIV)
-    # „pausiert“, weil der Ausweis abgelaufen ist (ADR 0176): Nur dann macht eine Verlängerung
-    # den Kunden von selbst wieder aktiv. Von Hand gesetzte Status fasst die Automatik nie an.
+    # „pausiert“ (Ausweis abgelaufen) oder „gesperrt“ (Sperre eingetragen) vom Programm gesetzt
+    # (ADR 0176): Nur dann stellt es den Status auch wieder zurück. Von Hand gesetzte Status
+    # fasst die Automatik nie an.
     status_automatisch = models.BooleanField(default=False, editable=False)
     status_seit = models.DateField("Status seit", null=True, blank=True, editable=False)
     kundengruppe = models.ForeignKey(
@@ -613,8 +615,9 @@ class Haushalt(models.Model):
         """Hält fest, seit wann der Status gilt (für die Frist bei „verstorben“)."""
         if self.status != getattr(self, "_status_geladen", None):
             self.status_seit = timezone.localdate()
-            if self.status != self.Status.PAUSIERT:
-                self.status_automatisch = False
+            # Wer den Status von Hand setzt, nimmt den Kunden aus der Automatik (die Regel in
+            # status.py schreibt per update() und kommt hier nicht vorbei)
+            self.status_automatisch = False
             felder = kwargs.get("update_fields")
             if felder is not None and "status" in felder:
                 kwargs["update_fields"] = [*felder, "status_seit", "status_automatisch"]

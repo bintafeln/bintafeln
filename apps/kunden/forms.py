@@ -69,11 +69,13 @@ class KundenEinstellungenForm(forms.ModelForm):
         if not self.instance.status_nach_ausweis:
             from apps.kunden import status
 
-            n = status.betroffene().count()
-            self.fields[
-                "status_nach_ausweis"
-            ].help_text += (
-                f" Das beträfe heute {n} Kunde{'n' if n != 1 else ''} (aktiv, Ausweis abgelaufen)."
+            liste = status.betroffene()
+            sperre = sum(1 for _, neu in liste if neu == "gesperrt")
+            feld = self.fields["status_nach_ausweis"]
+            feld.help_text += (
+                f" Das beträfe heute {len(liste)} Kunde{'n' if len(liste) != 1 else ''}: "
+                f"{sperre} auf „gesperrt“ (Sperre eingetragen), {len(liste) - sperre} auf "
+                "„pausiert“ (Ausweis abgelaufen)."
             )
 
     def clean_sb_merkzeichen(self):
