@@ -397,3 +397,58 @@ def test_spalten_reihenfolge_je_person(admin_client, admin, pdf_text):
     geordnet = "<tr><td>x</td><td>B</td><td>A</td><td>Z</td></tr>"
     assert listen.spalten_ordnen(html, ["b", "a"]) == geordnet
     assert listen.spalten_ordnen(html, None) == "<tr><td>x</td><td>A</td><td>B</td><td>Z</td></tr>"
+
+
+def test_leerspalten_im_pdf(admin_client, pdf_text, rf):
+    """Ein oder zwei leere Spalten rechts im PDF (zum Eintragen oder Unterschreiben), mit oder
+    ohne Überschrift; die CSV-Datei bleibt unverändert."""
+    from django.http import HttpResponse
+
+    # Angaben aus der Adresse: höchstens zwei, Überschriften mit Komma, Unsinn zählt als keine
+    def gelesen(**angaben):
+        return listenexport.leerspalten(rf.get("/", angaben))
+
+    assert gelesen() == [] and gelesen(leer="0") == [] and gelesen(leer="x") == []
+    assert gelesen(leer="1") == [""]
+    assert gelesen(leer="2", leer_titel="Unterschrift, Anmerkung") == ["Unterschrift", "Anmerkung"]
+    assert gelesen(leer="2", leer_titel="Unterschrift") == ["Unterschrift", ""]
+    assert gelesen(leer="9", leer_titel="a,b,c") == ["a", "b"]
+    assert gelesen(leer="1", leer_titel="a,b") == ["a"]
+    # Breiten: jede Leerspalte ein Fünftel, der Rest nach Länge des Inhalts, zusammen das Blatt
+    kopf, zeilen, breiten = listenexport.mit_leerspalten(
+        ["Nr", "Name"], [["1", "Erika Beispiel aus Musterstadt"]], ["Unterschrift", ""]
+    )
+    assert kopf == ["Nr", "Name", "Unterschrift", ""] and zeilen[0][:2] == [
+        "1",
+        "Erika Beispiel aus Musterstadt",
+    ]
+    assert len(zeilen[0]) == 4 and not any(isinstance(z, str) for z in zeilen[0][2:])
+    assert breiten[2:] == [0.2, 0.2] and breiten[0] < breiten[1]
+    assert abs(sum(breiten) - 1) < 1e-9
+    assert listenexport.mit_leerspalten(["Nr"], [["1"]], []) == (["Nr"], [["1"]], None)
+    text = pdf_text(
+        HttpResponse(
+            listenexport.pdf_aus_csv("Testliste", CSV, leer=["Unterschrift"]),
+            content_type="application/pdf",
+        )
+    )
+    assert "Erika Beispiel" in text and "Unterschrift" in text
+    # eine leere Liste bleibt „Keine Einträge.“
+    assert listenexport.pdf_aus_csv("T", "Name;Ort\r\n", leer=["x"])[:4] == b"%PDF"
+    # über eine echte Liste: Felder stehen im Aufklapper, das PDF hat die Spalte, die CSV nicht
+    Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Beispiel", vorname="Erika")
+    liste = reverse("adressen:liste")
+    seite = admin_client.get(liste).content.decode()
+    assert 'name="leer" form="auswahl"' in seite and 'name="leer_titel" form="auswahl"' in seite
+    angaben = {"leer": "2", "leer_titel": "Unterschrift,Datum"}
+    antwort = admin_client.get(liste, {"aktion": "pdf", **angaben})
+    text = pdf_text(antwort)
+    assert "Unterschrift" in text and "Datum" in text  # (das Adressbuch hat sehr viele Spalten)
+    datei = admin_client.get(liste, {"aktion": "csv", **angaben}).content.decode()
+    assert "Unterschrift" not in datei and "Beispiel" in datei
+    # „Liste zusammenstellen“ (Mitarbeitende und Personen, auch Archiv) kann es ebenso
+    druck = reverse("adressen:druckliste")
+    assert 'name="leer"' in admin_client.get(druck).content.decode()
+    text = pdf_text(admin_client.get(druck, {"aktion": "pdf", **angaben}))
+    assert "Unterschrift" in text and "Datum" in text and "Beispiel" in text
+    assert "Unterschrift" not in pdf_text(admin_client.get(druck, {"aktion": "pdf"}))

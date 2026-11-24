@@ -271,6 +271,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Spalten über `apps/core/listen.py`, Export über `apps/core/listenexport.py`, Suche). Das PDF
   einer Liste lässt ausgeblendete Spalten weg (`ausliefern(ohne_spalten=listen.pdf_ohne(…))`,
   ADR 0096), die CSV behält alle – neue Listen mit Spaltenauswahl ebenso anschließen.
+  Leerspalten im PDF (eine oder zwei, zum Eintragen/Unterschreiben): zentral über
+  `listenexport.leerspalten()`/`mit_leerspalten()`, Felder im Baustein `includes/leerspalten.html`.
   Listen, deren Zeilen an einer Adresse hängen (Mitglieder, Spenden), bieten deren Felder als
   Spalten an: `listen.ADRESS_SPALTEN`/`adress_spalten()` (nur mit `adressen.sehen`), Bausteine
   `includes/adress_spalten_kopf.html`/`…_zellen.html`; in der Vorgabe ausgeblendet über

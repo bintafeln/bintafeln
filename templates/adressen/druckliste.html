@@ -42,6 +42,7 @@
       <span class="druck-format-gruppe">Ausrichtung:
         <label><input type="radio" name="ausrichtung" value="quer"{% if ausrichtung == "quer" %} checked{% endif %}> quer</label>
         <label><input type="radio" name="ausrichtung" value="hoch"{% if ausrichtung == "hoch" %} checked{% endif %}> hoch</label></span>
+      {% include "includes/leerspalten.html" %}
       <button type="submit" name="aktion" value="pdf" class="knopf" formtarget="_blank">🖨 Als PDF drucken</button>
       <span class="hinweis" data-auswahl-zahl="druck"></span>
     </div>

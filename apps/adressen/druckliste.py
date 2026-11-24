@@ -148,13 +148,20 @@ def zeilen(adressen, spalten: list[str]) -> list[list[str]]:
     return [[_wert(a, k) for k in spalten] for a in adressen]
 
 
-def pdf(titel: str, spalten: list[tuple[str, str]], adressen, format_: str, quer: bool) -> bytes:
-    """Die zusammengestellte Liste als PDF in der gewählten Größe/Ausrichtung."""
+def pdf(titel: str, spalten: list[tuple[str, str]], adressen, format_: str, quer: bool,
+        leer=()) -> bytes:  # fmt: skip
+    """Die zusammengestellte Liste als PDF in der gewählten Größe/Ausrichtung. ``leer``:
+    Überschriften von Leerspalten rechts (zum Eintragen oder Unterschreiben)."""
     from django.utils import timezone
+
+    from apps.core import listenexport
 
     doc = Pdf(titel, f"Stand {timezone.localdate():%d.%m.%Y} · {len(adressen)} "
               f"Person{'en' if len(adressen) != 1 else ''}",
               seitengroesse=_seitengroesse(format_, quer))  # fmt: skip
     kopf = [t for _, t in spalten]
-    doc.tabelle(kopf, zeilen(adressen, [k for k, _ in spalten]), gitter=True)
+    kopf, inhalt, breiten = listenexport.mit_leerspalten(
+        kopf, [list(z) for z in zeilen(adressen, [k for k, _ in spalten])], leer
+    )
+    doc.tabelle(kopf, inhalt, breiten=breiten, gitter=True, luft=bool(leer))
     return doc.erzeugen()

@@ -40,3 +40,13 @@ Mail-Anhang) lässt deshalb die Spalten weg, die die Person in dieser Liste ausg
 (`listenexport.ausliefern(ohne_spalten=…)`, Zuordnung über `listen.pdf_ohne()`). Die CSV-Datei
 bleibt vollständig: Sie ist der Datenexport, das PDF die Ansicht zum Drucken. Spalten der CSV, zu
 denen es in der Liste keine wählbare Spalte gibt, bleiben im PDF stehen.
+
+## Nachtrag (2026-11-24): Leerspalten im PDF
+
+Für Unterschriften- und Eintragelisten lassen sich rechts **eine oder zwei leere Spalten**
+anhängen, wahlweise mit Überschrift (`leer`, `leer_titel` in der Abfrage;
+`listenexport.leerspalten()`, `mit_leerspalten()`). Das gilt zentral für jede Liste, die über
+`listenexport.ausliefern()` ausgibt, und für „Liste zusammenstellen“ im Adressbuch – keine Liste
+braucht eigenen Code dafür. Mit Leerspalten bekommt die Tabelle ein Gitter und höhere Zeilen; jede
+Leerspalte erhält ein Fünftel der Blattbreite (bei sehr vielen Spalten weniger), der Rest teilt
+sich nach der Länge des Inhalts auf. Nur im PDF: Die CSV-Datei bleibt der reine Datenexport.
