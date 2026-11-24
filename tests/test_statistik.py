@@ -110,15 +110,20 @@ def test_auswertungen(daten):
     assert k.neue_kunden == 1 and k.aktive_haushalte == 1
 
 
-def test_mehr_als_acht_stellen_werden_andere():
+def test_mehr_als_acht_stellen_bleiben_einzeln():
     for i in range(10):
         stelle = Ausgabestelle.objects.create(name=f"Stelle {i:02d}")
         h = Haushalt.objects.create(kundennummer=f"S{i}")
         for _ in range(i + 1):
             Abholung.objects.create(haushalt=h, datum=dt.date(2026, 1, 5), ausgabestelle=stelle)
     serien = aw.verlauf_je_stelle(Z)
-    assert len(serien) == 8 and serien[-1].name == "Andere" and serien[-1].summe == 1 + 2 + 3
-    assert sorted(s.farbe for s in serien) == list(range(8))
+    assert [s.name for s in serien] == [f"Stelle {i:02d}" for i in range(10)]  # nie „Andere“
+    assert [s.summe for s in serien] == list(range(1, 11))
+    # acht Farben; die neunte und zehnte beginnen von vorn, mit gestrichelter Linie
+    assert [s.farbe for s in serien] == [*range(8), 0, 1]
+    assert [s.gestrichelt for s in serien] == [False] * 8 + [True] * 2
+    svg = dg.linien(["Jan"], serien, "Titel")
+    assert svg.count("linie-gestrichelt") == 2 and "linie linie-0 linie-gestrichelt" in svg
 
 
 def test_diagramme_escapen_und_skala():

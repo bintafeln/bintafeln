@@ -16,7 +16,8 @@ JavaScript-Framework und ohne fremde Server aus.
   wählbar; die Feinheit der Verläufe richtet sich nach der Länge (Tag, Woche, Monat).
 - Diagramme werden auf dem Server als SVG gezeichnet (`diagramme.py`): eine Achse, dezente
   Hilfslinien, Werte per Tooltip, Legende bei mehreren Reihen, feste und auf Farbsehschwäche
-  geprüfte Farbreihenfolge (höchstens acht Reihen, darüber „Andere“). Jeder Abschnitt hat
+  geprüfte Farbreihenfolge (acht Farben; bei mehr Zwecken „Andere“; Ausgabestellen bleiben
+  einzeln: ab der neunten dieselben Farben mit gestrichelter Linie). Jeder Abschnitt hat
   zusätzlich eine Tabelle und einen CSV-Export.
 - Wer einer Ausgabestelle zugeordnet ist (ADR 0034), sieht nur deren Zahlen.
 - Ergänzung Modul 5: Spenden (ADR 0045) und Mitglieder (ADR 0046) erscheinen nur ohne Auswahl

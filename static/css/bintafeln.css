@@ -1079,6 +1079,10 @@ ul.kompakt { margin: .3rem 0; padding-left: 1rem; }
 .diagramm .wert { fill: #0b0b0b; font-size: 13px; font-weight: 600; }
 .diagramm .linie { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .diagramm .punkt { stroke: #fff; stroke-width: 2; }
+/* ab der neunten Reihe wiederholen sich die Farben: gestrichelte Linie, in der Legende zwei Striche */
+.diagramm .linie-gestrichelt { stroke-dasharray: 7 5; }
+.legende-farbe.legende-gestrichelt { -webkit-mask: linear-gradient(90deg, #000 40%, transparent 40% 60%, #000 60%);
+  mask: linear-gradient(90deg, #000 40%, transparent 40% 60%, #000 60%); }
 .diagramm path[class^="reihe-"]:hover, .diagramm .punkt:hover { opacity: .75; }
 .legende { list-style: none; display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: 0; margin: .25rem 0; font-size: .9rem; }
 .legende li { display: flex; align-items: center; gap: .4rem; }

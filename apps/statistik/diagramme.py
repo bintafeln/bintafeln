@@ -174,7 +174,8 @@ def linien(beschriftungen: list[str], serien, titel: str, einheit: str = "") -> 
         pfad = " ".join(
             f"{'M' if i == 0 else 'L'}{x:.1f},{y:.1f}" for i, (x, y) in enumerate(punkte)
         )
-        teile.append(f'<path class="linie linie-{s.farbe}" d="{pfad}"/>')
+        strich = " linie-gestrichelt" if getattr(s, "gestrichelt", False) else ""
+        teile.append(f'<path class="linie linie-{s.farbe}{strich}" d="{pfad}"/>')
         for (x, y), w, b in zip(punkte, s.werte, beschriftungen, strict=True):
             teile.append(
                 f'<circle class="punkt reihe-{s.farbe}" cx="{x:.1f}" cy="{y:.1f}" r="4">'
