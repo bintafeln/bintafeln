@@ -45,6 +45,17 @@ def test_dienst_status(dienst):
     assert sicherung.dienst_status().erreichbar
     spaeter = timezone.now() + dt.timedelta(minutes=5)
     assert not sicherung.dienst_status(spaeter).erreichbar
+    # Während eine Sicherung läuft, meldet sich der Dienst nicht: kein Alarm – außer der Lauf
+    # dauert länger, als der Dienst ihm selbst zugesteht (dann hängt er).
+    a = standard()
+    a.laeuft_seit = timezone.now()
+    a.save()
+    assert sicherung.dienst_status(spaeter).erreichbar
+    haengt = timezone.now() + sicherung.LAUF_HOECHSTENS + dt.timedelta(minutes=5)
+    assert not sicherung.dienst_status(haengt).erreichbar
+    a.laeuft_seit = None
+    a.save()
+    assert not sicherung.dienst_status(spaeter).erreichbar
     assert dienst.ziele_liste()[0] == ("/media/usb", 1024**3, 2 * 1024**3)
     SicherungsDienst.objects.all().delete()
     assert sicherung.dienst_status() == sicherung.DienstStatus(False, None, False)

@@ -68,6 +68,8 @@ def lese_status(pfad: Path | None = None, jetzt: datetime | None = None) -> Sich
 # --- Sicherungsaufträge und Dienst (ADR 0042) ---------------------------------------------------
 
 DIENST_STILL = timedelta(minutes=2)  # Der Dienst meldet sich alle 15 Sekunden
+# wie LAUF_HOECHSTENS in docker/backup/sicherung.sh: danach gilt ein Lauf als hängengeblieben
+LAUF_HOECHSTENS = timedelta(minutes=180)
 
 
 @dataclass(frozen=True)
@@ -84,9 +86,16 @@ def dienst_status(jetzt: datetime | None = None) -> DienstStatus:
     if dienst is None or dienst.letzter_kontakt is None:
         return DienstStatus(False, None, False)
     jetzt = jetzt or timezone.now()
-    return DienstStatus(
-        jetzt - dienst.letzter_kontakt <= DIENST_STILL, dienst.letzter_kontakt, dienst.schluessel_ok
-    )
+    erreichbar = jetzt - dienst.letzter_kontakt <= DIENST_STILL
+    if not erreichbar:
+        # Während eine Sicherung läuft, meldet sich der Dienst nicht – er arbeitet. Das ist kein
+        # Ausfall, solange der Lauf nicht länger dauert, als der Dienst selbst ihm zugesteht.
+        from apps.core.models import SicherungsAuftrag
+
+        erreichbar = SicherungsAuftrag.objects.filter(
+            laeuft_seit__gte=jetzt - LAUF_HOECHSTENS, laeuft_seit__lte=jetzt
+        ).exists()
+    return DienstStatus(erreichbar, dienst.letzter_kontakt, dienst.schluessel_ok)
 
 
 def auftraege_mit_fehler():

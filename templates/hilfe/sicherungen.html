@@ -73,7 +73,8 @@
   <li><strong>„Fehlgeschlagen“</strong> auf der Startseite: Die Meldung nennt den Grund, z. B. „Ziel nicht erreichbar“
     (Platte nicht angesteckt) oder ein volles Ziel.</li>
   <li><strong>„Der Sicherungsdienst meldet sich nicht“</strong>: Auf dem Server <code>docker compose up -d</code>; die
-    technisch verantwortliche Person sieht Details mit <code>docker compose logs backup</code>.</li>
+    technisch verantwortliche Person sieht Details mit <code>docker compose logs backup</code>. Während eine
+    Sicherung läuft (z. B. das Hochladen auf die Fernablage), erscheint die Meldung nicht – der Dienst arbeitet dann.</li>
   <li><strong>Kein Sicherungsschlüssel</strong>: Auf dem Server einmal <code>./betrieb schluessel</code> ausführen.</li>
 </ul>
 <h3>Wiederherstellen</h3>
