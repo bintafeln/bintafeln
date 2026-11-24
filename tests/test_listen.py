@@ -439,3 +439,27 @@ def test_abholungen_ohne_ausgabestelle(admin_client, daten):
         "06.10.2026" not in admin_client.get(*url("ohne_stelle", status="", von="2026-11-01")).text
     )
     assert zeilen(admin_client.get(*url("ohne_stelle", status="", bis="2026-09-30"))) == []
+
+
+def test_filter_ausweis_gueltig_oder_nicht(admin_client, daten):
+    """In jeder Liste wählbar: Ausweis heute gültig oder nicht (abgelaufen oder keiner)."""
+    gestern = timezone.localdate() - dt.timedelta(days=1)
+    Haushalt.objects.filter(kundennummer="2").update(ausweis_gueltig_bis=gestern)
+    Haushalt.objects.filter(kundennummer="3").update(ausweis_gueltig_bis=None)
+    assert sorted(zeilen(admin_client.get(*url("alle_kunden")))) == ["1", "2", "3"]
+    assert zeilen(admin_client.get(*url("alle_kunden", ausweis="gueltig"))) == ["1"]
+    assert sorted(zeilen(admin_client.get(*url("alle_kunden", ausweis="ungueltig")))) == ["2", "3"]
+    # heute läuft er ab: gilt heute noch
+    Haushalt.objects.filter(kundennummer="2").update(ausweis_gueltig_bis=timezone.localdate())
+    assert sorted(zeilen(admin_client.get(*url("alle_kunden", ausweis="gueltig")))) == ["1", "2"]
+    # auch in „Lange nicht gekommen“ und in Personenlisten (dort zählt der Ausweis des Haushalts)
+    antwort = admin_client.get(*url("lange_nicht", ausweis="ungueltig", status=""))
+    assert 'name="ausweis"' in antwort.text and zeilen(antwort) == ["3"]
+    personen = admin_client.get(*url("alle_personen", ausweis="gueltig", status=""))
+    assert {z["nummer"] for g in personen.context["e"].gruppen for z in g["zeilen"]} == {"1", "2"}
+    # steht im Kopf von PDF und CSV
+    from apps.listen import views
+
+    liste = katalog.NACH_KENNUNG["alle_kunden"]
+    assert "Ausweis: gültig" in views._beschreibung(liste, {"ausweis": "gueltig"})
+    assert "Ausweis" not in views._beschreibung(liste, {"ausweis": "quatsch"})
