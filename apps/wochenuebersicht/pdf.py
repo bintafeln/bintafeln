@@ -1,6 +1,8 @@
 """Druck der Wochenübersicht als PDF (ADR 0021): Hochformat je Tag, Querformat wie das bisherige
 Excel-Blatt (Zeilen = Ausgabestellen, je Tag fünf Spalten mit gedrehten Köpfen)."""
 
+import datetime as dt
+
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
@@ -19,6 +21,11 @@ def _z(wert) -> str:
 
 
 def _untertitel(daten) -> str:
+    vorschau = daten.get("vorschau")
+    if vorschau:
+        ende = vorschau + dt.timedelta(days=6)
+        return (f"Vorschau KW {vorschau:%V} ({vorschau:%d.%m.}–{ende:%d.%m.%Y}) · "
+                f"gerechnet am {daten['stichtag']:%d.%m.%Y}")  # fmt: skip
     teile = [f"Stand {daten['stichtag']:%d.%m.%Y}"]
     if daten["woche"]:
         teile.append(f"Abholungen KW {daten['woche']:%V} ab {daten['woche']:%d.%m.%Y}")
@@ -31,8 +38,9 @@ def hochformat(daten) -> bytes:
     kopf = ["Ausgabestelle", *SPALTEN] + (["Abgeholt"] if mit_abholung else [])
     breiten = [0.34] + [0.11] * 6 if mit_abholung else [0.4] + [0.12] * 5
     for tag in daten["tage"]:
-        doc.ueberschrift(tag.name)
-        zeilen = [[z.name, _z(z.soll), z.haushalte, z.erwachsene, z.kinder, z.personen]
+        doc.ueberschrift(f"{tag.name}, {tag.datum:%d.%m.}" if tag.datum else tag.name)
+        zeilen = [([f"{z.name} – {z.geschlossen}", "", "", "", "", ""] if z.geschlossen else
+                   [z.name, _z(z.soll), z.haushalte, z.erwachsene, z.kinder, z.personen])
                   + ([_z(z.abgeholt)] if mit_abholung else []) for z in tag.zeilen]  # fmt: skip
         for s in tag.selbstabholer:
             zeilen.append([f"Selbstabholer: {s.name}", "", "", "", "", s.personen]
@@ -49,6 +57,8 @@ def hochformat(daten) -> bytes:
         ["Selbstabholer gesamt", daten["selbst_gesamt"]],
         ["GESAMT ALLE PERSONEN", daten["alle_personen"]],
     ], breiten=[0.7, 0.3], rechts=[1], summe=True)  # fmt: skip
+    for hinweis in daten.get("hinweise", []):
+        doc.absatz(hinweis)
     return doc.erzeugen()
 
 
@@ -92,6 +102,9 @@ def querformat(daten) -> bytes:
         zeile = [name]
         for t in tage:
             z = next((z for z in t.zeilen if z.name == name), None)
+            if z and z.geschlossen:
+                zeile += ["zu"] + [""] * (n - 1)
+                continue
             zeile += ([_z(z.soll), _z(z.haushalte), _z(z.erwachsene), _z(z.kinder),
                        _z(z.personen)] if z else [""] * n)  # fmt: skip
         zeilen.append(zeile)
@@ -136,4 +149,6 @@ def querformat(daten) -> bytes:
     g = daten["gesamt"]
     doc.absatz(f"GESAMT: Ausgabestellen {g.personen} | Selbstabholer {daten['selbst_gesamt']} | "
                f"Alle Personen {daten['alle_personen']}")  # fmt: skip
+    for hinweis in daten.get("hinweise", []):
+        doc.absatz(hinweis)
     return doc.erzeugen()
