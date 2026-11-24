@@ -18,7 +18,7 @@
     <p class="tour-stand-text"><strong>{{ z.stand.erledigt }} von {{ z.stand.gesamt }}</strong> angefahren{% if z.stand.zusatz %} · {{ z.stand.zusatz }} Zusatzstopp{{ z.stand.zusatz|pluralize:"s" }}{% endif %}{% if z.fahrt %}{% if z.fahrt.beendet_am %} · <span class="marke-ok">beendet {{ z.fahrt.beendet_am|date:"H:i" }}</span>{% else %} · unterwegs seit {{ z.fahrt.begonnen_am|date:"H:i" }}{% endif %}{% endif %}{% if z.stand.naechste and z.stand.erledigt %}<br><small class="leise">als Nächstes: {{ z.stand.naechste.name }}</small>{% endif %}</p>
     {% endif %}
     <a class="knopf tour-knopf" href="{% url 'touren:fahren' z.tour.pk %}?tag={{ tag|date:'Y-m-d' }}">Tour öffnen</a>
-    {% if z.darf_zusatz and not z.meine %}<a class="knopf knopf-zweitrangig tour-knopf" href="{% url 'touren:zusatzstopp' z.tour.pk %}?tag={{ tag|date:'Y-m-d' }}">＋ Zusatzstopp einfügen</a>{% endif %}
+    {% if z.darf_zusatz %}<a class="knopf knopf-zweitrangig tour-knopf" href="{% url 'touren:zusatzstopp' z.tour.pk %}?tag={{ tag|date:'Y-m-d' }}">＋ Zusatzstopp einfügen</a>{% endif %}
   </article>
   {% empty %}
   <p class="hinweis">An diesem Tag fährt keine Tour.</p>

@@ -117,6 +117,8 @@ def test_am_handy_suchen_freie_adresse_entfernen(client, anmelden, lage):
     tour_seite = client.get(reverse("touren:fahren", args=[nord.pk])).content.decode()
     adresse = reverse("touren:zusatzstopp", args=[nord.pk])
     assert "Zusatzstopp einfügen" in tour_seite and adresse in tour_seite
+    # auch auf „Touren heute“ steht der Knopf an der eigenen Tour (wie an den anderen Karten)
+    assert adresse in client.get(reverse("touren:heute")).content.decode()
     seite = client.get(adresse).content.decode()
     assert "Station suchen" in seite and "steht nicht in der Liste" in seite
     treffer = client.get(adresse, {"q": "hofl"}).content.decode()

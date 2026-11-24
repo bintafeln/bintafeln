@@ -2320,13 +2320,15 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .tour-tage .knopf { width: auto; flex: 1 1 auto; }
 .tour-karte { border: 1px solid var(--rand); border-radius: 10px; padding: .75rem; margin-bottom: .75rem; }
 .tour-karte h2 { margin: 0 0 .25rem; }
-.tour-meine { border-color: var(--akzent); border-width: 2px; }
+.tour-meine { border-color: var(--akzent); box-shadow: 0 0 0 1px var(--akzent); }
 .tour-knopf { display: block; width: 100%; text-align: center; font-size: 1.1rem; padding: .85rem 1rem; margin-top: .5rem; }
 /* Am PC: Touren nebeneinander, Knöpfe nicht über die ganze Bildschirmbreite */
 @media (min-width: 50rem) {
   .tour-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr)); gap: .75rem;
-    align-items: start; }
-  .tour-liste .tour-karte { margin-bottom: 0; }
+    align-items: stretch; }
+  /* alle Karten gleich hoch; die Zeile mit den Namen nimmt den Rest, Balken und Knöpfe stehen auf einer Linie */
+  .tour-liste .tour-karte { margin-bottom: 0; display: flex; flex-direction: column; }
+  .tour-liste .tour-karte > p.leise { flex: 1 0 auto; }
   .tour-knopf { display: inline-block; width: auto; min-width: 14rem; margin-right: .5rem; }
   .tour-karte .tour-knopf { display: block; width: 100%; min-width: 0; margin-right: 0; }
   .tour-tage .knopf { flex: 0 0 auto; }
