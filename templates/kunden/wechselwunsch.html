@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block titel %}Will wechseln – {{ h.kundennummer }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{{ zurueck }}">← zurück zum Kunden</a></p>
+  <h1>Will wechseln</h1>
+  <p>Kunde <strong>{{ h.kundennummer }}</strong>{% with p=h.hauptperson %}{% if p %} · {{ p.vorname }} {{ p.nachname }}{% endif %}{% endwith %}<br>
+    <small class="leise">Bisher: {{ bisher }}</small></p>
+
+  {% if offen %}
+  <div class="sicherung update-warnung update-wichtig" role="status"><strong>Zu diesem Kunden ist schon ein Wechselwunsch offen:</strong>
+    {{ offen.wunsch }} <small>(eingetragen am {{ offen.erstellt_am|date:"d.m.Y" }} von {{ offen.von }})</small>.
+    Die Verwaltung prüft ihn; ein zweiter lässt sich erst danach eintragen.</div>
+  {% else %}
+
+  <h2 class="wechsel-frage" id="was">1. Was soll sich ändern?</h2>
+  <div class="aktionsleiste">
+    {% for wert, name in arten %}<a class="knopf{% if wert != was %} knopf-zweitrangig{% endif %}" href="?was={{ wert }}{% if von %}&amp;von={{ von }}{% endif %}#weiter"{% if wert == was %} aria-current="true"{% endif %}>{{ name|capfirst }}</a>{% endfor %}
+  </div>
+
+  {% if was == "uhrzeit" %}
+  <h2 class="wechsel-frage" id="weiter">2. Früher oder später?</h2>
+  <div class="aktionsleiste">
+    {% for wert, name in richtungen %}<a class="knopf{% if wert != richtung %} knopf-zweitrangig{% endif %}" href="?was=uhrzeit&amp;richtung={{ wert }}{% if von %}&amp;von={{ von }}{% endif %}#frei"{% if wert == richtung %} aria-current="true"{% endif %}>{{ name|capfirst }}</a>{% endfor %}
+  </div>
+  {% elif was == "tag" %}
+  <h2 class="wechsel-frage" id="weiter">2. An welchem Tag?</h2>
+  {% if tage %}<div class="aktionsleiste">
+    {% for wert, name in tage %}<a class="knopf{% if wert != tag %} knopf-zweitrangig{% endif %}" href="?was=tag&amp;tag={{ wert }}{% if von %}&amp;von={{ von }}{% endif %}#frei"{% if wert == tag %} aria-current="true"{% endif %}>{{ name }}</a>{% endfor %}
+  </div>{% else %}<p class="hinweis">Diese Ausgabestelle gibt an keinem anderen Tag aus. Vielleicht passt eine andere Ausgabestelle.</p>{% endif %}
+  {% elif was == "stelle" %}
+  <h2 class="wechsel-frage" id="weiter">2. Welche Ausgabestelle?</h2>
+  {% if stellen %}<div class="aktionsleiste">
+    {% for s in stellen %}<a class="knopf{% if s != stelle %} knopf-zweitrangig{% endif %}" href="?was=stelle&amp;stelle={{ s.pk }}{% if von %}&amp;von={{ von }}{% endif %}#frei"{% if s == stelle %} aria-current="true"{% endif %}>{{ s.name }}</a>{% endfor %}
+  </div>{% else %}<p class="hinweis">Es gibt keine andere Ausgabestelle.</p>{% endif %}
+  {% endif %}
+
+  {% if fertig %}
+  <form method="post" action="?was={{ was }}{% if richtung %}&amp;richtung={{ richtung }}{% endif %}{% if tag %}&amp;tag={{ tag }}{% endif %}{% if stelle %}&amp;stelle={{ stelle.pk }}{% endif %}{% if von %}&amp;von={{ von }}{% endif %}#frei" id="frei">
+    {% csrf_token %}
+    <input type="hidden" name="was" value="{{ was }}"><input type="hidden" name="richtung" value="{{ richtung }}">
+    <input type="hidden" name="tag" value="{{ tag }}"><input type="hidden" name="stelle" value="{{ stelle.pk|default:'' }}">
+    <input type="hidden" name="von" value="{{ von }}">
+    <h2 class="wechsel-frage">3. Was ist dafür aktuell frei?</h2>
+    {% if fehler %}<p class="fehler" role="alert">{{ fehler }}</p>{% endif %}
+    {% if moeglich %}
+    <div class="wechsel-wahl" role="radiogroup" aria-label="Freie Möglichkeiten">
+      {% for m in moeglich %}<label class="auswahl"><input type="radio" name="gruppe" value="{{ m.gruppe.pk }}"{% if eingaben.gruppe == m.gruppe.pk|stringformat:"s" %} checked{% endif %} required> {{ m.text }}{% if m.frei is not None %} <small class="leise">· {{ m.frei }} frei</small>{% endif %}</label>{% endfor %}
+      <label class="auswahl"><input type="radio" name="gruppe" value="keine"{% if eingaben.gruppe == "keine" %} checked{% endif %}> Nichts davon passt – der Wunsch wird trotzdem aufgenommen</label>
+    </div>
+    {% else %}
+    <p class="hinweis">Dafür ist im Moment <strong>nichts frei</strong>. Der Wunsch wird trotzdem aufgenommen; die Verwaltung
+      meldet sich, wenn sich etwas ergibt.</p>
+    <input type="hidden" name="gruppe" value="keine">
+    {% endif %}
+    <div class="feld"><label for="wechsel-anmerkung">Anmerkung (freiwillig)</label>
+      <input type="text" name="anmerkung" id="wechsel-anmerkung" maxlength="300" value="{{ eingaben.anmerkung|default:'' }}" placeholder="z. B. wegen Arbeit erst ab 15 Uhr möglich"></div>
+
+    <h2 class="wechsel-frage">4. Ist der Kunde erreichbar?</h2>
+    {% if erreichbar.email and erreichbar.telefon %}
+    <p class="hinweis">✓ E-Mail-Adresse und Telefonnummer sind beim Kunden hinterlegt.</p>
+    {% else %}
+    <p class="hinweis">Die Antwort geht per E-Mail an den Kunden. Bitte nachtragen, was fehlt – es wird beim Kunden gespeichert.</p>
+    {% if not erreichbar.email %}
+    <div class="feld"><label for="wechsel-email">E-Mail-Adresse des Kunden</label>
+      <input type="email" name="email" id="wechsel-email" maxlength="254" value="{{ eingaben.email|default:'' }}" autocomplete="off"></div>
+    <label class="auswahl"><input type="checkbox" name="ohne_email" value="1"{% if eingaben.ohne_email %} checked{% endif %}> Der Kunde hat keine E-Mail-Adresse</label>
+    <p class="fehler wechsel-warnung"><strong>Ohne E-Mail-Adresse können wir nicht zurückschreiben.</strong> Der Kunde erfährt
+      das Ergebnis dann nur am Einlass oder am Telefon.</p>
+    {% else %}<p class="hinweis">✓ E-Mail-Adresse ist hinterlegt.</p>{% endif %}
+    {% if not erreichbar.telefon %}
+    <div class="feld"><label for="wechsel-telefon">Telefon (Handy oder Festnetz)</label>
+      <input type="tel" name="telefon" id="wechsel-telefon" maxlength="50" value="{{ eingaben.telefon|default:'' }}" autocomplete="off"></div>
+    {% else %}<p class="hinweis">✓ Telefonnummer ist hinterlegt.</p>{% endif %}
+    {% endif %}
+    <button type="submit" class="knopf">Wechselwunsch eintragen</button>
+    <p class="hinweis">Über den Wechsel entscheidet die Verwaltung. Bis dahin bleibt alles, wie es ist.</p>
+  </form>
+  {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

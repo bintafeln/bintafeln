@@ -41,6 +41,9 @@
   </div>
   {% endif %}
 
+  {% if "kunden.notizen" in rechte %}<p class="wechsel-knopf"><a class="knopf knopf-vorlage" href="{% url 'kunden:wechselwunsch' h.kundennummer %}{% if notiz_htmx %}?von=einlass{% endif %}"><span aria-hidden="true">🔁 </span>Will wechseln …</a>
+    <small class="leise">andere Uhrzeit, anderer Tag oder andere Ausgabestelle</small></p>{% endif %}
+
   {% if krankmeldung %}
   <details class="krank-melden">
     <summary class="knopf knopf-vorlage"><span aria-hidden="true">🤒 </span>Abwesend melden …</summary>
