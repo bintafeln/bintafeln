@@ -3,7 +3,8 @@
 Je Zeile eine Station auf einer Tour. Für jede Tour, die in der Datei vorkommt, ersetzt die
 Datei deren ganze Stationsfolge; Touren, die nicht vorkommen, bleiben unverändert. Unbekannte
 Touren werden als eigene Touren angelegt – heißt eine Tour im Fahrerplan genauso, wird sie mit
-ihr verbunden. Stationen werden über ihre ``kennung`` gefunden.
+ihr verbunden. Stationen werden über ihre ``kennung`` gefunden; dieselbe Station darf mehrfach
+auf einer Tour stehen (ADR 0172).
 """
 
 import csv
@@ -100,11 +101,7 @@ def pruefen(text: str) -> Bericht:
             continue
         name = namen.setdefault(w["tour"].lower(), w["tour"])
         liste = bericht.touren.setdefault(name, [])
-        if any(k == station.kennung for _, k, _, _ in liste):
-            bericht.fehler.append(
-                (nummer, f"Station „{station.kennung}“ steht doppelt auf „{name}“")
-            )
-            continue
+        # Dieselbe Station darf mehrfach auf einer Tour stehen (ADR 0172), z. B. zum Abladen
         liste.append((int(w["reihenfolge"]), station.kennung, station.name, tage))
     for name, liste in bericht.touren.items():
         liste.sort(key=lambda h: h[0])

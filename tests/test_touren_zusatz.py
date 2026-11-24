@@ -84,11 +84,9 @@ def test_zusatzstopp_als_naechstes_und_am_ende(lage):
     stand = anfahrten.fortschritt(nord, heute)
     assert (stand["gesamt"], stand["erledigt"], stand["zusatz"], stand["prozent"]) == (5, 2, 2, 40)
     assert stand["naechste"].name == "Markt 2"
-    # doppelt, schon auf der Tour, nicht mehr angefahren
-    with pytest.raises(zusatz.ZusatzFehler, match="schon auf der Tour"):
+    # doppelt als Zusatzstopp geht nicht, nicht mehr angefahren auch nicht
+    with pytest.raises(zusatz.ZusatzFehler, match="schon als Zusatzstopp"):
         zusatz.einfuegen(nord, heute, fritz, extra)
-    with pytest.raises(zusatz.ZusatzFehler, match="schon auf der Tour"):
-        zusatz.einfuegen(nord, heute, fritz, Station.objects.get(kennung="M-2"))
     with pytest.raises(zusatz.ZusatzFehler, match="nicht mehr angefahren"):
         zusatz.einfuegen(nord, heute, fritz, station(30, aktiv=False))
 
@@ -301,3 +299,47 @@ def test_besetzung_aendern_nur_am_tag_der_tour(client, anmelden, lage):
     assert antwort.status_code == 302
     nord.refresh_from_db()
     assert nord.gast == ""
+
+
+def test_station_mehrfach_auf_der_tour(client, anmelden, lage):
+    """Eine Station – z. B. die Zentrale zum Abladen – steht zweimal auf der Tour (ADR 0172):
+    Jeder Besuch wird für sich abgehakt, der Fortschritt zählt beide."""
+    from apps.touren.models import Anfahrt
+
+    nord, heute, fritz = lage["nord"], lage["heute"], lage["fritz"]
+    lager = station(50, name="Zentrale", lieferschein=False)
+    for h in nord.halte.all():  # Folge: Markt 1, Zentrale, Markt 2, Markt 3, Zentrale
+        h.reihenfolge = {"Markt 1": 1, "Markt 2": 3, "Markt 3": 4}[h.station.name]
+        h.save()
+    from apps.touren.models import Halt
+
+    Halt.objects.create(tour=nord, station=lager, reihenfolge=2)
+    ablauf.halt_anhaengen(nord, lager)
+    assert namen(nord, heute) == ["Markt 1", "Zentrale", "Markt 2", "Markt 3", "Zentrale"]
+    assert [h.durchgang for h in ablauf.halte(nord, heute)] == [1, 1, 1, 1, 2]
+    # der erste Besuch abgehakt: der zweite bleibt offen
+    anfahrten.markieren(nord, Station.objects.get(kennung="M-1"), fritz, ABGEHOLT())
+    anfahrten.markieren(nord, lager, fritz, ABGEHOLT())
+    stand = anfahrten.fortschritt(nord, heute)
+    assert (stand["gesamt"], stand["erledigt"], stand["naechste"].name) == (5, 2, "Markt 2")
+    assert [h.angefahren for h in anfahrten.stand(nord, heute)] == [True, True, False, False, False]
+    # die Seite zeigt beide Besuche und schickt mit, welcher gemeint ist
+    anmelden(client, fritz)
+    seite = client.get(reverse("touren:fahren", args=[nord.pk])).content.decode()
+    assert "1. Anfahrt" in seite and "2. Anfahrt" in seite
+    assert 'name="durchgang" value="2"' in seite
+    ziel = reverse("touren:angefahren", args=[nord.pk, lager.pk])
+    client.post(ziel, {"umstand": ABGEHOLT(), "durchgang": "2"})
+    assert sorted(Anfahrt.objects.filter(station=lager).values_list("durchgang", flat=True)) == [
+        1, 2,
+    ]  # fmt: skip
+    assert anfahrten.fortschritt(nord, heute)["erledigt"] == 3
+    # zurücknehmen trifft nur diesen Besuch
+    client.post(ziel, {"zurueck": "1", "durchgang": "2"})
+    assert list(Anfahrt.objects.filter(station=lager).values_list("durchgang", flat=True)) == [1]
+    # einen dritten Besuch gibt es nicht
+    with pytest.raises(anfahrten.AnfahrtFehler, match="nicht auf der Tour"):
+        anfahrten.markieren(nord, lager, fritz, ABGEHOLT(), durchgang=3)
+    # ein Zusatzstopp an einer Station, die schon auf der Tour steht, ist ein weiterer Besuch
+    zusatz.einfuegen(nord, heute, fritz, Station.objects.get(kennung="M-1"))
+    assert namen(nord, heute).count("Markt 1") == 2

@@ -122,15 +122,12 @@ def fahren(request, pk):
         request.user, "touren.lieferscheine")  # fmt: skip
     darf_schein = (lieferscheine.an() and eigene
                    and rollen.hat_recht(request.user, "touren.lieferschein"))  # fmt: skip
-    alle_scheine = lieferscheine.am_tag(tag, [h.station_id for h in halte])
-    scheine = alle_scheine if eigene else {}
-    da = anfahrten.am_tag(tour, tag)
+    scheine = lieferscheine.am_tag(tag, [h.station_id for h in halte]) if eigene else {}
+    anfahrten.stand(tour, tag, halte)  # je Besuch: abgehakt? (ADR 0172)
     aktuell = None  # die erste Station, an der noch niemand war
     for nr, h in enumerate(halte, start=1):
         h.schein = scheine.get(h.station_id)
         h.schein_moeglich = darf_schein  # an jeder Station, auch wo keiner erwartet wird
-        h.anfahrt = da.get(h.station_id)
-        h.angefahren = h.anfahrt is not None or h.station_id in alle_scheine
         if aktuell is None and not h.angefahren:
             aktuell = nr
     return render(request, "touren/fahren.html", {
@@ -303,12 +300,14 @@ def angefahren(request, pk, station_pk):
     nächsten offenen Station."""
     tour = get_object_or_404(Tour.objects.select_related("fahrdienst_tour"), pk=pk)
     station = get_object_or_404(Station, pk=station_pk)
+    besuch = request.POST.get("durchgang", "")
+    besuch = int(besuch) if besuch.isdigit() and 0 < int(besuch) < 100 else 1
     try:
         if "zurueck" in request.POST:
-            anfahrten.zuruecknehmen(tour, station, request.user)
+            anfahrten.zuruecknehmen(tour, station, request.user, besuch)
         else:
             anfahrten.markieren(tour, station, request.user, request.POST.get("umstand"),
-                                request.POST.get("anmerkung", ""))  # fmt: skip
+                                request.POST.get("anmerkung", ""), besuch)  # fmt: skip
     except anfahrten.AnfahrtFehler as grund:
         messages.error(request, str(grund))
     return redirect(reverse("touren:fahren", args=[tour.pk]))
