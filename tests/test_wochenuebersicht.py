@@ -1,6 +1,7 @@
 """Modul Wochenübersicht (ADR 0054): Soll/Ist je Ausgabestelle und Tag, Selbstabholer, PDF."""
 
 import datetime as dt
+import io
 import re
 
 import pytest
@@ -330,3 +331,40 @@ def test_vorschau_seite_auswahl_und_pdf(modul_an, admin_client, daten, pdf_text)
     # eine vergangene Woche ohne Haken bleibt die Übersicht von heute
     alt = (diese - dt.timedelta(weeks=2)).strftime("%G-W%V")
     assert "Vorschau auf KW" not in admin_client.get(ziel, {"kw": alt}).content.decode()
+
+
+@pytest.mark.django_db
+def test_querformat_fuellt_das_blatt():
+    """Wenige Zeilen: große Schrift und hohe Zeilen; viele Zeilen: nie kleiner als bisher.
+    Eine übliche Woche (elf Ausgabestellen, sieben Selbstabholer) bleibt auf einer Seite."""
+    from types import SimpleNamespace as N
+
+    from pypdf import PdfReader
+
+    from apps.wochenuebersicht import pdf
+
+    gross, hoch, _ = pdf._masse(5, 0)
+    assert gross == pdf.SCHRIFT_MAX and hoch > gross * 1.75
+    mittel, _, _ = pdf._masse(19, 0)
+    assert pdf.SCHRIFT_MIN < mittel < pdf.SCHRIFT_MAX
+    klein, hoehe, _ = pdf._masse(60, 2)
+    assert klein == pdf.SCHRIFT_MIN and hoehe >= klein * 1.75
+
+    def woche(stellen, selbst):
+        tage = []
+        for i, name in enumerate(["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"]):
+            zeilen = [N(name=f"Ausgabe Beispiel {k}", soll=240, haushalte=236, erwachsene=331,
+                        kinder=126, personen=457, geschlossen="")
+                      for k in range(stellen)]  # fmt: skip
+            sa = [N(name=f"Kooperation Beispiel {k}", personen=70) for k in range(selbst)]
+            summe = N(name="Summe", soll=362, haushalte=351, erwachsene=484, kinder=172,
+                      personen=1756 + i)  # fmt: skip
+            tage.append(N(name=name, zeilen=zeilen, selbstabholer=sa, summe=summe,
+                          selbst_personen=70 * selbst))  # fmt: skip
+        return {"tage": tage, "woche": None, "stichtag": dt.date(2026, 11, 24),
+                "gesamt": N(personen=2285), "selbst_gesamt": 740,
+                "alle_personen": 3025}  # fmt: skip
+
+    assert len(PdfReader(io.BytesIO(pdf.querformat(woche(11, 7)))).pages) == 1
+    assert len(PdfReader(io.BytesIO(pdf.querformat(woche(3, 0)))).pages) == 1
+    assert len(PdfReader(io.BytesIO(pdf.querformat(woche(40, 10)))).pages) == 2
