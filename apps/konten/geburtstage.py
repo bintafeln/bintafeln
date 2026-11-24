@@ -114,6 +114,77 @@ def letzte(tage: int = 7, heute: dt.date | None = None) -> list[dict]:
     return ergebnis
 
 
+# --- Geburtstagsbrief auf der Startseite (ADR 0170) ---------------------------------------------
+
+GRUSS_TAGE = 30  # so lange bleibt gemerkt, dass ein Brief bestätigt wurde
+
+
+def brief(benutzer, heute: dt.date | None = None) -> list[dict]:
+    """Die Glückwünsche, die dieses Konto heute auf der Startseite als Brief bekommt: der eigene
+    Geburtstag (heute oder gestern) und – mit dem Recht ``mitarbeitende.geburtstagsbrief`` – die
+    aller Mitarbeitenden. Was das Konto schon bestätigt hat, fehlt. Der eigene steht vorn, heute
+    vor gestern. Jeder Eintrag: adresse, tag, name, vorname, eigen, gestern, alter."""
+    from apps.konten import rollen
+    from apps.konten.models import GeburtstagGruss
+
+    heute = heute or dt.date.today()
+    tage = (heute, heute - dt.timedelta(days=1))
+    alle = rollen.hat_recht(benutzer, "mitarbeitende.geburtstagsbrief")
+    gemerkt = set(
+        GeburtstagGruss.objects.filter(benutzer=benutzer, tag__in=tage).values_list(
+            "adresse_id", "tag"
+        )
+    )
+    ergebnis = []
+    for a in _mitarbeitende():
+        eigen = a.konto_id == benutzer.pk
+        if not (eigen or alle):
+            continue
+        for tag in tage:
+            if _dieses_jahr(a.geburtsdatum, tag.year) != tag or (a.pk, tag) in gemerkt:
+                continue
+            ergebnis.append(
+                {
+                    "adresse": a,
+                    "tag": tag,
+                    "name": _name(a),
+                    "vorname": a.vorname or _name(a),
+                    "eigen": eigen,
+                    "gestern": tag != heute,
+                    "alter": tag.year - a.geburtsdatum.year,
+                }
+            )
+    ergebnis.sort(key=lambda e: (not e["eigen"], e["gestern"], e["name"]))
+    return ergebnis
+
+
+def gesehen(benutzer, eintraege: list[tuple[int, dt.date]], heute: dt.date | None = None) -> int:
+    """Merkt für dieses Konto, dass es die Briefe bestätigt hat („Gratuliert“, „Danke!“). Nur was
+    dem Konto gerade wirklich als Brief zusteht, wird gemerkt. Liefert die Anzahl."""
+    from apps.konten.models import GeburtstagGruss
+
+    wunsch = set(eintraege)
+    anzahl = 0
+    for e in brief(benutzer, heute):
+        if (e["adresse"].pk, e["tag"]) in wunsch:
+            GeburtstagGruss.objects.get_or_create(
+                benutzer=benutzer, adresse=e["adresse"], tag=e["tag"]
+            )
+            anzahl += 1
+    return anzahl
+
+
+def fristen_anwenden(heute: dt.date | None = None) -> int:
+    """Löscht die Merker bestätigter Briefe nach 30 Tagen."""
+    from apps.konten.models import GeburtstagGruss
+
+    heute = heute or dt.date.today()
+    alt = GeburtstagGruss.objects.filter(tag__lt=heute - dt.timedelta(days=GRUSS_TAGE))
+    anzahl = alt.count()
+    alt.delete()
+    return anzahl
+
+
 MONATE = [
     "Januar", "Februar", "März", "April", "Mai", "Juni",
     "Juli", "August", "September", "Oktober", "November", "Dezember",

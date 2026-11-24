@@ -62,4 +62,5 @@
   <p class="hinweis"><a href="{% url 'konten:geburtstage' %}">Zum Geburtstagskalender</a></p>
 </section>
 {% endif %}
+{% if geburtstagsbrief %}{% include "konten/_geburtstagsbrief.html" %}{% endif %}
 {% endblock %}

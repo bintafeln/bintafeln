@@ -2478,6 +2478,46 @@ details.tour-vorzeitig[open] { padding: .75rem 1rem 1rem; }
 @keyframes heuler-pochen { from { transform: scale(1); } to { transform: scale(1.12); } }
 @media (prefers-reduced-motion: reduce) { .heuler-dialog, .heuler-umschlag svg { animation: none; } }
 
+/* Geburtstagsbrief auf der Startseite (static/js/geburtstagsbrief.js, ADR 0170): festlich, kein Alarm */
+.geburtstagsbrief-dialog { width: min(30rem, 92vw); border: 4px solid #e87ba4; border-radius: .8rem; padding: 1.2rem;
+  text-align: center; background: var(--flaeche); color: var(--text); overflow: hidden;
+  animation: gb-auf .5s ease-out; }
+.geburtstagsbrief-dialog::backdrop { background: rgba(60, 30, 90, .45); }
+.geburtstagsbrief-dialog h2 { margin: .3rem 0 .6rem; font-size: 1.4rem; }
+.gb-umschlag svg { animation: gb-wippen 2.4s ease-in-out infinite alternate; transform-origin: 50% 90%; }
+.gb-papier { fill: #2a78d6; stroke: #1b4f91; stroke-width: 2; }
+.gb-klappe { fill: none; stroke: #eda100; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+.gb-torte { fill: #f6d9a8; stroke: #a8621b; stroke-width: 1.5; }
+.gb-guss { fill: #e87ba4; }
+.gb-kerze-1 { fill: #1baf7a; } .gb-kerze-2 { fill: #6250d6; } .gb-kerze-3 { fill: #eb6834; }
+.gb-flamme { fill: #eda100; animation: gb-flackern 1.1s ease-in-out infinite alternate; transform-origin: 50% 20%; }
+.gb-liste { list-style: none; padding: 0; margin: .2rem 0 .8rem; font-size: 1.15rem; }
+.gb-liste li { margin: .35rem 0; }
+.geburtstagsbrief-dialog form { display: flex; flex-direction: column; gap: .5rem; position: relative; }
+.geburtstagsbrief-dialog .knopf { width: 100%; min-height: 3rem; font-size: 1.1rem; }
+.gb-konfetti { position: absolute; inset: 0; pointer-events: none; }
+.gb-konfetti i { position: absolute; top: -1rem; width: .5rem; height: .8rem; border-radius: 2px; opacity: .85;
+  animation: gb-fallen 4.5s linear infinite; }
+.gb-konfetti i:nth-child(4n+1) { background: #2a78d6; } .gb-konfetti i:nth-child(4n+2) { background: #eda100; }
+.gb-konfetti i:nth-child(4n+3) { background: #1baf7a; } .gb-konfetti i:nth-child(4n) { background: #e87ba4; }
+.gb-konfetti i:nth-child(1) { left: 5%; animation-delay: -.4s; } .gb-konfetti i:nth-child(2) { left: 13%; animation-delay: -2.9s; }
+.gb-konfetti i:nth-child(3) { left: 22%; animation-delay: -1.6s; } .gb-konfetti i:nth-child(4) { left: 30%; animation-delay: -3.7s; }
+.gb-konfetti i:nth-child(5) { left: 39%; animation-delay: -.9s; } .gb-konfetti i:nth-child(6) { left: 47%; animation-delay: -2.2s; }
+.gb-konfetti i:nth-child(7) { left: 56%; animation-delay: -4.1s; } .gb-konfetti i:nth-child(8) { left: 64%; animation-delay: -1.2s; }
+.gb-konfetti i:nth-child(9) { left: 72%; animation-delay: -3.1s; } .gb-konfetti i:nth-child(10) { left: 80%; animation-delay: -.1s; }
+.gb-konfetti i:nth-child(11) { left: 88%; animation-delay: -2.5s; } .gb-konfetti i:nth-child(12) { left: 95%; animation-delay: -1.9s; }
+.geburtstagsbrief-dialog > :not(.gb-konfetti) { position: relative; }
+@keyframes gb-auf { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes gb-wippen { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+@keyframes gb-flackern { from { transform: scaleY(1); } to { transform: scaleY(.8); } }
+@keyframes gb-fallen { from { transform: translateY(0) rotate(0); } to { transform: translateY(34rem) rotate(540deg); } }
+/* ohne Bewegung: Konfetti liegt still und verstreut im Brief */
+@media (prefers-reduced-motion: reduce) {
+  .geburtstagsbrief-dialog, .gb-umschlag svg, .gb-flamme, .gb-konfetti i { animation: none; }
+  .gb-konfetti i:nth-child(odd) { top: 6%; } .gb-konfetti i:nth-child(even) { top: 17%; }
+  .gb-konfetti i:nth-child(3n) { top: 30%; transform: rotate(40deg); }
+}
+
 /* Fahrtenbuch: Kilometer ohne Eintrag (ADR 0161) */
 .fahrt-unbekannt td { background: var(--grund); font-style: italic; }
 
@@ -2583,3 +2623,7 @@ details.tour-vorzeitig[open] { padding: .75rem 1rem 1rem; }
 :root[data-nacht] .grafik-wahl, :root[data-nacht] .brief-vorschau-knopf, :root[data-nacht] .unterschrift-vorschau,
 :root[data-nacht] .druck-seite, :root[data-nacht] .unterschrift-flaeche, :root[data-nacht] .ausweis-mini,
 :root[data-nacht] .bilder-galerie img { filter: brightness(.78); }
+/* Geburtstagsbrief im Nachtmodus: gedecktere Farben, dunkler Hintergrund */
+:root[data-nacht] .geburtstagsbrief-dialog { border-color: #b85c80; }
+:root[data-nacht] .geburtstagsbrief-dialog::backdrop { background: rgba(0, 0, 0, .65); }
+:root[data-nacht] .gb-umschlag svg, :root[data-nacht] .gb-konfetti { filter: brightness(.82); }

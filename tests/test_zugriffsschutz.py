@@ -67,6 +67,7 @@ ALLE_ANGEMELDETEN = {
     "konten:abmelden",
     "konten:mein_konto",
     "konten:darstellung",
+    "konten:geburtstagsbrief_gesehen",  # merkt nur fürs eigene Konto (ADR 0170)
     "core:druck_senden",
     "core:druck_umschalten",
     "core:druck_vorschau",

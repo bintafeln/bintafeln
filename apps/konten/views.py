@@ -256,6 +256,26 @@ def darstellung(request):
     return redirect(reverse("konten:mein_konto") + "#darstellung")
 
 
+@login_required
+@require_POST
+def geburtstagsbrief_gesehen(request):
+    """„Gratuliert“ bzw. „Danke!“ im Geburtstagsbrief der Startseite (ADR 0170): merkt nur für
+    das eigene Konto und nur, was ihm gerade als Brief zusteht."""
+    import datetime as dt
+
+    from apps.konten import geburtstage
+
+    eintraege = []
+    for wert in request.POST.getlist("gruss"):
+        nummer, _, tag = wert.partition(":")
+        try:
+            eintraege.append((int(nummer), dt.date.fromisoformat(tag)))
+        except ValueError:
+            continue
+    geburtstage.gesehen(request.user, eintraege, timezone.localdate())
+    return redirect("core:start")
+
+
 def _eigene_unterschrift(benutzer):
     """Die eigene Unterschrift für Zuwendungsbestätigungen (ADR 0130) – nur für Konten, die
     Bestätigungen ausstellen dürfen; „Mein Konto“ ist der Ort, sie zu ändern oder zu löschen."""
