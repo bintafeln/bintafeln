@@ -197,6 +197,13 @@ def angebot(request, schluessel):
         else:
             return redirect("kunden:wechsel_angebot", schluessel)
     tafel = TafelEinstellungen.laden()
+    # immer Deutsch, darunter die Sprache des Kunden (zur Staatsangehörigkeit der Hauptperson)
+    s2 = wechsel.zweitsprache(Haushalt.objects.filter(kundennummer=w.kundennummer).first())
+    t2 = wechsel.texte(s2.code) if s2 else {}
+    if t2:
+        t2 = {**t2, "ab": t2["ab"].format(ab=f"{w.angebot_ab or timezone.localdate():%d.%m.%Y}"),
+              "bitte": t2["bitte"].format(bis=f"{w.angebot_bis:%d.%m.%Y}")}  # fmt: skip
     return render(request, "kunden/wechsel_angebot.html", {
         "w": w, "tafel": tafel, "fehler": fehler, "vorwahl": request.GET.get("antwort", ""),
+        "s2": s2, "t2": t2,
     })  # fmt: skip

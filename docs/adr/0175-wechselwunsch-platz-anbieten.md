@@ -26,6 +26,11 @@ ihn umsetzt – bisher ging das nur mit einem Anruf.
 - **Frist 7 Tage** (`wechsel.ANGEBOT_TAGE`). So lange ist der Platz **reserviert**
   (`gruppen.reservierte_zugaenge()` zählt laufende Angebote mit). Danach steht „keine Antwort“
   da; die Verwaltung kann neu anbieten – ein neues Angebot macht den alten Link ungültig.
+- **Sprache:** Mail und Seite sind immer deutsch; darunter steht dasselbe in der Sprache zur
+  Staatsangehörigkeit der Hauptperson (`wechsel.zweitsprache()`, dieselbe Zuordnung wie bei den
+  Mails der Anträge). Texte je Sprache in `apps/kunden/wechsel_texte/<code>.json` (Grundlage
+  `de.json`); ein Test prüft Vollständigkeit und Platzhalter. Kundengruppe und freier Zusatz
+  werden nicht übersetzt.
 - Regeln nur in `apps/kunden/wechsel.py` (`anbieten()`, `angebot_finden()`,
   `angebot_beantworten()`); die Felder `angebot_*` hängen am `Wechselwunsch` und werden mit ihm
   nach 90 Tagen gelöscht.

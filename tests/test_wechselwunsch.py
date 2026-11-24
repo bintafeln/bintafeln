@@ -428,3 +428,44 @@ def test_angebot_ohne_email_geht_nicht(admin_client, admin, lage):
     assert "keine E-Mail-Adresse" in antwort.content.decode()
     w.refresh_from_db()
     assert not w.angebot_am and not django_mail.outbox
+
+
+def test_angebot_texte_in_allen_sprachen():
+    """Jede Sprache des Antrags hat alle Texte des Angebots, mit denselben Platzhaltern."""
+    import re
+
+    from apps.antraege import sprachen
+
+    deutsch = wechsel.texte("de")
+    for code in sprachen.NACH_CODE:
+        assert (wechsel.TEXTE / f"{code}.json").is_file(), code
+        t = wechsel.texte(code)
+        assert set(t) == set(deutsch), code
+        for schluessel, wert in deutsch.items():
+            assert t[schluessel].strip(), (code, schluessel)
+            assert re.findall(r"\{\w+\}", t[schluessel]) == re.findall(r"\{\w+\}", wert), (
+                code, schluessel)  # fmt: skip
+
+
+def test_angebot_deutsch_und_sprache_des_kunden(admin_client, admin, lage):
+    """Mail und Seite: zuerst Deutsch, darunter die Sprache zur Staatsangehörigkeit der
+    Hauptperson. Ohne Angabe (oder deutsch) bleibt es bei Deutsch."""
+    from apps.antraege import sprachen
+    from apps.core.auswahl import LAENDERCODE
+
+    land = next(name for name, code in LAENDERCODE.items()
+                if sprachen.LAND_SPRACHE.get(code) == "ar")  # fmt: skip
+    Person.objects.filter(haushalt=lage["h"]).update(staatsangehoerigkeit=land)
+    w, schluessel, post = _angebot(admin_client, admin, lage)
+    ar = wechsel.texte("ar")
+    deutsch_zuerst = post.body.index("Wir können Ihnen einen Platz anbieten")
+    assert deutsch_zuerst < post.body.index(ar["angebot"])
+    assert post.body.count("?antwort=ja") == 2 and ar["ja"] in post.body
+    assert post.body.count("Bitte Tasche mitbringen.") == 1  # der freie Zusatz nur einmal
+    html = post.alternatives[0][0]
+    assert '<div lang="ar" dir="rtl">' in html and ar["nein"] in html
+    seite = Client().get(reverse("kunden:wechsel_angebot", args=[schluessel])).content.decode()
+    assert seite.index("Ja, verbindlich wechseln") < seite.index(ar["ja"])
+    assert 'lang="ar" dir="rtl"' in seite and "{bis}" not in seite and "{ab}" not in seite
+    # ohne Staatsangehörigkeit: nur Deutsch
+    assert wechsel.zweitsprache(haushalt("300", lage["mi12"])) is None

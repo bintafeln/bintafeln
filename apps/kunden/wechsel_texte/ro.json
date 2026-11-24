@@ -1,0 +1,12 @@
+{
+  "gruss": "Bună ziua,",
+  "angebot": "Vă putem oferi un loc",
+  "ab": "Schimbarea este valabilă din {ab}.",
+  "bitte": "Vă rugăm să răspundeți până la {bis}. Schimbarea este valabilă doar după confirmarea dumneavoastră; până atunci totul rămâne cum este.",
+  "ja": "Da, vreau să schimb",
+  "nein": "Nu, rămân",
+  "danke_ja": "Vă mulțumim – schimbarea a fost înregistrată. La următoarea vizită cereți un card nou.",
+  "danke_nein": "Vă mulțumim pentru răspuns. Totul rămâne cum este.",
+  "abgelaufen": "Această ofertă nu mai este valabilă. Totul rămâne cum este. Dacă doriți în continuare să schimbați, spuneți-ne la următoarea distribuire.",
+  "gruss_ende": "Cu stimă"
+}

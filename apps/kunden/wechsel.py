@@ -9,7 +9,10 @@ Telefon stehen; fehlendes wird beim Eintragen nachgetragen.
 
 import datetime as dt
 import hashlib
+import json
 import secrets
+from functools import cache
+from pathlib import Path
 
 from django.db import transaction
 from django.utils import timezone
@@ -332,29 +335,65 @@ def _pruefsumme(schluessel: str) -> str:
     return hashlib.sha256(schluessel.encode()).hexdigest()
 
 
+TEXTE = Path(__file__).resolve().parent / "wechsel_texte"
+
+
+@cache
+def texte(code: str) -> dict[str, str]:
+    """Texte des Angebots in einer Sprache (``wechsel_texte/<code>.json``, Grundlage Deutsch)."""
+    deutsch = json.loads((TEXTE / "de.json").read_text(encoding="utf-8"))
+    datei = TEXTE / f"{code}.json"
+    if code == "de" or not datei.is_file():
+        return deutsch
+    return {**deutsch, **json.loads(datei.read_text(encoding="utf-8"))}
+
+
+def zweitsprache(h: Haushalt | None):
+    """Sprache zur Staatsangehörigkeit der Hauptperson (wie bei den Mails der Anträge); ``None``,
+    wenn das Deutsch ist oder nichts bekannt."""
+    from types import SimpleNamespace
+
+    from apps.antraege import sprachen
+
+    hp = h.hauptperson if h else None
+    if not hp or not hp.staatsangehoerigkeit:
+        return None
+    code = sprachen.mail_sprachen(
+        SimpleNamespace(staatsangehoerigkeit=hp.staatsangehoerigkeit, sprache="")
+    )[-1]
+    return None if code == "de" else sprachen.sprache(code)
+
+
 def _angebot_mail(tafel: str, ziel: str, ab: dt.date, bis: dt.date, zusatz: str,
-                  link: str) -> tuple[str, str]:  # fmt: skip
-    """Text- und HTML-Fassung der Mail mit dem Angebot."""
-    kopf = f"wir können Ihnen einen Platz anbieten: {ziel}, ab dem {ab:%d.%m.%Y}."
-    bitte = (f"Bitte bestätigen Sie bis zum {bis:%d.%m.%Y}, dass Sie wechseln möchten. Erst mit "
-             "Ihrer Bestätigung gilt der Wechsel; bis dahin bleibt alles, wie es ist.")  # fmt: skip
-    gruss = "Mit freundlichen Grüßen" + (f"\nIhre {tafel}" if tafel else "")
-    text = "\n\n".join(x for x in (
-        "Guten Tag,", kopf, bitte, f"Ja, ich möchte wechseln:\n{link}?antwort=ja",
-        f"Nein, ich bleibe:\n{link}?antwort=nein", zusatz, gruss) if x)  # fmt: skip
+                  link: str, zweite=None) -> tuple[str, str]:  # fmt: skip
+    """Text- und HTML-Fassung der Mail mit dem Angebot: immer Deutsch, darunter – wenn bekannt –
+    dasselbe in der Sprache des Kunden (``zweite``). Kundengruppe und Zusatz bleiben, wie sie
+    sind."""
     knopf = ("display:inline-block;padding:12px 22px;margin:6px 8px 6px 0;border-radius:8px;"
              "font-weight:bold;text-decoration:none;")  # fmt: skip
     adresse = escape(link)
-    html = "".join([
-        f"<p>Guten Tag,</p><p>{escape(kopf)}</p><p>{escape(bitte)}</p><p>",
-        f'<a href="{adresse}?antwort=ja" style="{knopf}background:#1a7f37;color:#ffffff">',
-        "Ja, ich möchte wechseln</a>",
-        f'<a href="{adresse}?antwort=nein" style="{knopf}background:#eeeeee;color:#222222">',
-        "Nein, ich bleibe</a></p>",
-        f"<p>{escape(zusatz)}</p>" if zusatz else "",
-        "<p>Mit freundlichen Grüßen", f"<br>Ihre {escape(tafel)}" if tafel else "", "</p>",
-    ])  # fmt: skip
-    return text, html
+    teile_text, teile_html = [], []
+    for sprache in [None, zweite] if zweite else [None]:
+        t = texte(sprache.code if sprache else "de")
+        kopf = f"{t['angebot']}: {ziel}. {t['ab'].format(ab=f'{ab:%d.%m.%Y}')}"
+        bitte = t["bitte"].format(bis=f"{bis:%d.%m.%Y}")
+        gruss = t["gruss_ende"] + (f"\n{tafel}" if tafel else "")
+        teile_text.append("\n\n".join(x for x in (
+            t["gruss"], kopf, bitte, f"{t['ja']}:\n{link}?antwort=ja",
+            f"{t['nein']}:\n{link}?antwort=nein", zusatz if sprache is None else "", gruss,
+        ) if x))  # fmt: skip
+        richtung = ' dir="rtl"' if sprache and sprache.rtl else ""
+        teile_html.append("".join([
+            f'<div lang="{sprache.code if sprache else "de"}"{richtung}>',
+            f"<p>{escape(t['gruss'])}</p><p>{escape(kopf)}</p><p>{escape(bitte)}</p><p>",
+            f'<a href="{adresse}?antwort=ja" style="{knopf}background:#1a7f37;color:#ffffff">',
+            f"{escape(t['ja'])}</a>",
+            f'<a href="{adresse}?antwort=nein" style="{knopf}background:#eeeeee;color:#222222">',
+            f"{escape(t['nein'])}</a></p>",
+            f"<p>{escape(zusatz)}</p>" if zusatz and sprache is None else "",
+            f"<p>{escape(t['gruss_ende'])}", f"<br>{escape(tafel)}" if tafel else "", "</p></div>",
+        ]))  # fmt: skip
+    return ("\n\n" + "–" * 20 + "\n\n").join(teile_text), "<hr>".join(teile_html)
 
 
 @transaction.atomic
@@ -387,7 +426,8 @@ def anbieten(wunsch: Wechselwunsch, benutzer, gruppe: Kundengruppe, ab: dt.date 
     bis = heute + dt.timedelta(days=ANGEBOT_TAGE)
     zusatz = " ".join(zusatz.split())[:500]
     tafel = TafelEinstellungen.laden().name
-    text, html = _angebot_mail(tafel, ziel, ab, bis, zusatz, link_bauen(schluessel))
+    text, html = _angebot_mail(tafel, ziel, ab, bis, zusatz, link_bauen(schluessel),
+                               zweitsprache(h))  # fmt: skip
     betreff = "Wir können Ihnen einen Platz anbieten"
     try:
         # vertraulich: Der Link in der Mail ist der Schlüssel, er gehört nicht ins Mail-Archiv

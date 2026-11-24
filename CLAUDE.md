@@ -181,7 +181,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Platz per E-Mail anbieten (ADR 0175): `wechsel.anbieten()` – Link mit Zufallsschlüssel (nur die
   Prüfsumme wird gespeichert), öffentliche Seite `kunden:wechsel_angebot` zeigt nur das Angebot,
   bestätigt wird erst per Knopf; „Ja“ = `angebot_beantworten()` → `genehmigen()`; laufende
-  Angebote reservieren den Platz (`gruppen.reservierte_zugaenge()`).
+  Angebote reservieren den Platz (`gruppen.reservierte_zugaenge()`). Immer Deutsch, darunter die
+  Sprache des Kunden: Texte in `apps/kunden/wechsel_texte/<code>.json` – neue Texte in allen Dateien.
   Einkommensart vieler Haushalte auf einmal ändern (nach Alter der Hauptperson, erst ansehen, dann
   ändern, in Portionen) in `apps/kunden/views_einkommensart.py` (ADR 0146).
   Notizen an die Ausgabestelle (`Notiz.an_stelle`, Startseite, Antwort beim Ausweisdruck) in

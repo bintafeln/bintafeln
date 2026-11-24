@@ -1544,6 +1544,7 @@ a.fd-ich { font-weight: 600; text-decoration: underline dotted; }
 .angebot-zeichen { font-size: 3rem; margin: 0; color: var(--erfolg-text, #1a7f37); }
 .angebot-antwort { display: flex; flex-direction: column; gap: .75rem; margin: 1.25rem 0 .5rem; }
 .angebot-antwort .knopf { width: 100%; min-height: 3.2rem; font-size: 1.1rem; }
+.angebot-antwort .knopf .zweitsprache { color: inherit; opacity: .9; }
 .krank-melden { margin: .75rem 0; }
 /* Auslöser als richtiger Knopf (wie die Notiz-Vorlagen darüber), nicht als unscheinbarer Link. */
 .krank-melden summary.knopf-vorlage {

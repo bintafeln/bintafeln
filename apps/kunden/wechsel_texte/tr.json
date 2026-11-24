@@ -1,0 +1,12 @@
+{
+  "gruss": "Merhaba,",
+  "angebot": "Size bir yer önerebiliriz",
+  "ab": "Değişiklik {ab} tarihinden itibaren geçerlidir.",
+  "bitte": "Lütfen {bis} tarihine kadar yanıt verin. Değişiklik ancak siz onayladıktan sonra geçerli olur; o zamana kadar her şey olduğu gibi kalır.",
+  "ja": "Evet, değiştirmek istiyorum",
+  "nein": "Hayır, kalıyorum",
+  "danke_ja": "Teşekkürler – değişiklik kaydedildi. Lütfen bir sonraki gelişinizde yeni bir kart isteyin.",
+  "danke_nein": "Yanıtınız için teşekkürler. Her şey olduğu gibi kalıyor.",
+  "abgelaufen": "Bu teklif artık geçerli değil. Her şey olduğu gibi kalıyor. Hâlâ değiştirmek istiyorsanız lütfen bir sonraki dağıtımda bize söyleyin.",
+  "gruss_ende": "Saygılarımızla"
+}
