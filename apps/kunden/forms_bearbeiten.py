@@ -319,6 +319,9 @@ class AnmerkungForm(MitVonMixin, forms.ModelForm):
     def __init__(self, *args, angemeldet=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.von_einbauen(angemeldet)
+        # Neue Anmerkung: das heutige Datum vorbelegen (überschreibbar)
+        if not self.instance.pk:
+            self.initial["datum"] = self.initial.get("datum") or timezone.localdate()
 
 
 class AusnahmeForm(MitVonMixin, forms.ModelForm):
