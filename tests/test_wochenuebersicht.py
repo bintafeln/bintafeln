@@ -333,6 +333,26 @@ def test_vorschau_seite_auswahl_und_pdf(modul_an, admin_client, daten, pdf_text)
     assert "Vorschau auf KW" not in admin_client.get(ziel, {"kw": alt}).content.decode()
 
 
+def test_vorschau_neues_maximum_ab_datum(daten):
+    """Ein geplantes neues Maximum einer Kundengruppe zählt in der Vorschau ab seinem Tag als
+    Soll – vorher und in der laufenden Woche gilt das bisherige (ADR 0174)."""
+    montag = auswertung.montag(STICHTAG) + dt.timedelta(weeks=1)  # Mo 26.10.2026
+    z1 = Kundengruppe.objects.get(name="Zentrale Mi 12:30")  # Maximum 10, daneben eine mit 8
+    z1.maximum_neu, z1.maximum_ab = 25, montag + dt.timedelta(days=2)  # ab dem Mittwoch
+    z1.save()
+
+    def soll_mi(**mehr):
+        tage = {t.kurz: t for t in auswertung.uebersicht(STICHTAG, **mehr)["tage"]}
+        return tage["Mi"].zeilen[0].soll
+
+    assert soll_mi() == 18  # laufende Woche: noch das alte
+    assert soll_mi(vorschau=montag) == 33  # 25 + 8
+    z1.maximum_ab = montag + dt.timedelta(days=3)  # erst ab Donnerstag: am Mittwoch noch alt
+    z1.save()
+    assert soll_mi(vorschau=montag) == 18
+    assert soll_mi(vorschau=montag + dt.timedelta(weeks=1)) == 33
+
+
 @pytest.mark.django_db
 def test_querformat_fuellt_das_blatt():
     """Wenige Zeilen: große Schrift und hohe Zeilen; viele Zeilen: nie kleiner als bisher.

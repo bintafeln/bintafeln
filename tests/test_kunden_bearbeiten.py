@@ -469,3 +469,38 @@ def test_haushaltsgroesse_wird_berechnet(admin_client, h):
     seite = admin_client.get(url("bearbeiten", h.kundennummer)).content.decode()
     assert 'value="1 Erwachsene, 2 Kinder"' in seite and "disabled" in seite
     assert "groesse" not in HaushaltForm().fields  # neuer Haushalt: noch keine Angehörigen
+
+
+def test_kundengruppe_maximum_ab_datum(admin_client):
+    """Neues Maximum mit Datum: steht in der Liste, gilt am Tag von selbst (ADR 0174)."""
+    from django.utils import timezone
+
+    from apps.kunden import verlegung
+
+    heute = timezone.localdate()
+    spaeter = heute + dt.timedelta(days=10)
+    g = Kundengruppe.objects.create(name="Mittwoch", wochentage="Mi", maximum=40)
+    seite = url("listeneintrag", "kundengruppen", g.pk)
+    felder = {"name": "Mittwoch", "wochentage": ["Mi"], "maximum": "40", "aktiv": "on"}
+    # nur eines von beiden geht nicht
+    antwort = admin_client.post(seite, {**felder, "maximum_neu": "50"})
+    assert "ab wann das neue Maximum gilt" in antwort.content.decode()
+    antwort = admin_client.post(seite, {**felder, "maximum_ab": f"{spaeter:%d.%m.%Y}"})
+    assert "Bitte das neue Maximum angeben" in antwort.content.decode()
+    admin_client.post(seite, {**felder, "maximum_neu": "50",
+                              "maximum_ab": f"{spaeter:%d.%m.%Y}"})  # fmt: skip
+    g.refresh_from_db()
+    assert (g.maximum, g.maximum_neu, g.maximum_ab) == (40, 50, spaeter)
+    assert g.maximum_am(heute) == 40 and g.maximum_am(spaeter) == 50
+    liste = admin_client.get(url("liste", "kundengruppen")).content.decode()
+    assert f"40 → 50 ab {spaeter:%d.%m.%Y}" in liste
+    # vor dem Tag ändert der tägliche Lauf nichts, am Tag wird das neue zum Maximum
+    assert verlegung.maxima_anwenden(heute) == 0
+    assert verlegung.maxima_anwenden(spaeter) == 1
+    g.refresh_from_db()
+    assert (g.maximum, g.maximum_neu, g.maximum_ab) == (50, None, None)
+    # ein Datum von heute oder früher gilt sofort
+    admin_client.post(seite, {**felder, "maximum": "50", "maximum_neu": "30",
+                              "maximum_ab": f"{heute:%d.%m.%Y}"})  # fmt: skip
+    g.refresh_from_db()
+    assert (g.maximum, g.maximum_neu, g.maximum_ab) == (30, None, None)

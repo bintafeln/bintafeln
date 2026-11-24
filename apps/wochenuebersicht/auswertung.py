@@ -215,7 +215,8 @@ def uebersicht(stichtag: dt.date, woche: dt.date | None = None,
                     if pause:
                         z.geschlossen = pause.bezeichnung or "geschlossen"
                 zeilen[tag][schluessel] = z
-            z.dazu(Zeile("", soll=g.maximum, haushalte=wert.haushalte,
+            soll = g.maximum_am(datum) if datum else g.maximum
+            z.dazu(Zeile("", soll=soll, haushalte=wert.haushalte,
                          erwachsene=wert.erwachsene, kinder=wert.kinder))  # fmt: skip
             z.gruppen.append(g.name)
     selbst: dict[int, list[Selbstabholer]] = defaultdict(list)
