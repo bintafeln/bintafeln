@@ -1045,7 +1045,10 @@ ul.kompakt { margin: .3rem 0; padding-left: 1rem; }
 .rechte-bereich legend { font-weight: 700; padding: 0 .25rem; }
 .rechte-alle { margin: 0 0 .5rem; font-size: .9rem; }
 .recht { display: flex; gap: .6rem; align-items: flex-start; padding: .3rem 0; }
-.recht input { margin-top: .25rem; width: auto; }
+/* Kästchen und Auswahlpunkte dürfen in einer Zeile mit langem Text nicht schrumpfen (Safari am
+   iPad drückt sie sonst auf wenige Pixel zusammen). */
+input[type="checkbox"], input[type="radio"] { flex-shrink: 0; }
+.recht input { margin-top: .2rem; width: 1.25rem; height: 1.25rem; }
 .recht small { display: block; }
 .recht-fremd { opacity: .55; }
 @media (min-width: 64rem) { .rechte-bereich { columns: 2; column-gap: 2rem; } .recht { break-inside: avoid; } }
