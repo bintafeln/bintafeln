@@ -63,6 +63,9 @@ def stationen(request):
     umleiten = listen.filter_merken(request, "touren_stationen", ["art", "stand", "q"])
     if umleiten is not None:
         return umleiten
+    from apps.touren import ausgabestellen
+
+    abgleich = ausgabestellen.abgleichen()  # Ausgabestellen der Tafel stehen immer mit drin
     liste, f = _gefiltert(request)
     if request.GET.get("format") == "csv":
         # Die ganze Liste mit Kontaktdaten als Datei: nur für die, die sie pflegen
@@ -80,13 +83,14 @@ def stationen(request):
         "darf_bearbeiten": rollen.hat_recht(request.user, "touren.stationen_bearbeiten"),
         "darf_uebertragen": _darf_uebertragen(request.user),
         "ohne_adressbuch": Station.objects.filter(aktiv=True, adresse__isnull=True).count(),
+        "ohne_anschrift": abgleich["ohne_anschrift"],
     })  # fmt: skip
 
 
 @never_cache
 @sehen
 def station(request, pk):
-    s = get_object_or_404(Station.objects.select_related("adresse"), pk=pk)
+    s = get_object_or_404(Station.objects.select_related("adresse", "ausgabestelle"), pk=pk)
     return render(request, "touren/station.html", {
         "s": s, "zur_tour": _zur_tour(request),
         "darf_bearbeiten": rollen.hat_recht(request.user, "touren.stationen_bearbeiten"),
@@ -136,6 +140,11 @@ def bearbeiten(request, pk=None):
 @bearbeiten_recht
 def loeschen(request, pk):
     s = get_object_or_404(Station, pk=pk)
+    if s.ausgabestelle_id:
+        messages.error(request, "Diese Station ist eine Ausgabestelle der Tafel und lässt sich "
+                       "hier nicht löschen. Sie verschwindet aus den Touren, wenn die "
+                       "Ausgabestelle abgeschaltet wird.")  # fmt: skip
+        return redirect("touren:station", pk=s.pk)
     papierkorb.loeschen(request.user, "Station", str(s), s, recht="touren.stationen_bearbeiten")
     messages.success(request, f"Station „{s}“ in den Papierkorb gelegt.")
     return redirect("touren:stationen")

@@ -102,6 +102,7 @@ def fristen():
     from apps.touren import (
         ablauf,
         anfahrten,
+        ausgabestellen,
         fahrten,
         lieferscheine,
         meldungen,
@@ -118,6 +119,7 @@ def fristen():
     lieferscheine.fristen_anwenden()
     start.fristen_anwenden()
     nachrichten.fristen_anwenden()
+    ausgabestellen.abgleichen()  # Ausgabestellen als Stationen aktuell halten (ADR 0171)
 
 
 def auskunft_mitarbeiter(benutzer, pdf):

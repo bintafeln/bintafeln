@@ -422,7 +422,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Marktliste/Lieferadressen im Exportformat der ECO-Plattform schreibt `listen_einlesen.py` vorher um,
   leere Zellen ändern nichts, nie löschen; einmaliges Übertragen ins Adressbuch in
   `apps/touren/adressbuch.py`; Navigation nur als Link zu Google Maps über `Station.navigation`,
-  kein API-Schlüssel, keine Karte. Abholtouren (ADR 0148): `touren.Tour` = Stationsfolge über
+  kein API-Schlüssel, keine Karte. Ausgabestellen der Tafel sind automatisch Stationen (ADR 0171):
+  `apps/touren/ausgabestellen.py` (`abgleichen()`, `Station.ausgabestelle`, Kennung `AS-…`); Name,
+  Anschrift, Telefon, E-Mail kommen von dort und sind an der Station gesperrt, nie löschen.
+  Abholtouren (ADR 0148): `touren.Tour` = Stationsfolge über
   `Halt`, `fahrdienst.Tour` bleibt der Personalplan; Regeln nur in `apps/touren/ablauf.py`
   (`faehrt_am()`, `halte()`, `besetzung()` – aus dem Fahrerplan, sonst `Tour.personen`; `routen()`
   höchstens zehn Stationen je Link; `senden()` über die Benachrichtigung `touren_tour`). Ansichten
