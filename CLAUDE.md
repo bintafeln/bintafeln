@@ -171,6 +171,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps/kunden/views_notizen.py`, aller Anmerkungen in `views_anmerkungen.py` (ADR 0143; dort auch „Angehakte in Notizen
   umwandeln“, `umwandeln()` – verschiebt, deshalb ohne Papierkorb); „Angehakte
   löschen“ über `static/js/liste_loeschen.js`.
+  Geplantes neues Maximum einer Kundengruppe (ADR 0174): `maximum_neu`/`maximum_ab`, am Tag
+  übernimmt `verlegung.maxima_anwenden()`; sonst überall `maximum`, nur wer vorausschaut (Vorschau
+  der Wochenübersicht) nimmt `maximum_am(datum)`.
   Wechselwunsch eines Kunden („Will wechseln“ bei den Notizen, ADR 0173): `Wechselwunsch` an der
   Kundennummer, Regeln nur in `apps/kunden/wechsel.py` (`moeglichkeiten()`, `eintragen()` – prüft
   die Erreichbarkeit, `genehmigen()`/`ablehnen()` mit Mail an den Kunden), Ansichten in

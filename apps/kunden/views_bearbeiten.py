@@ -363,7 +363,7 @@ LISTEN = {
 SPALTEN = {
     "kundengruppen": [("Kürzel", "kuerzel"), ("Name", "name"), ("Ausgabestelle", "ausgabestelle"),
                       ("Wochentage", "wochentage"), ("Uhrzeit", "uhrzeit"),
-                      ("Höchstzahl", "maximum"), ("Belegung", "belegt"),
+                      ("Höchstzahl", "maximum_anzeige"), ("Belegung", "belegt"),
                       ("Farbe", "get_farbe_display")],
     "dokumentarten": [("Bezeichnung", "__str__"), ("Aufbewahren (Monate)", "aufbewahren_monate")],
     "beitragsfrei": [("Bezeichnung", "bezeichnung"), ("von", "von"), ("bis", "bis"),

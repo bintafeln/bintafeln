@@ -349,10 +349,11 @@ class KundengruppeForm(forms.ModelForm):
     class Meta:
         model = Kundengruppe
         fields = [
-            "kuerzel", "name", "ausgabestelle", "wochentage", "uhrzeit", "maximum", "farbe",
-            "aktiv", "intern",
+            "kuerzel", "name", "ausgabestelle", "wochentage", "uhrzeit", "maximum",
+            "maximum_neu", "maximum_ab", "farbe", "aktiv", "intern",
         ]  # fmt: skip
-        widgets = {"uhrzeit": forms.TimeInput(attrs={"type": "time"}, format="%H:%M")}
+        widgets = {"uhrzeit": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
+                   "maximum_ab": DatumEingabe()}  # fmt: skip
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -362,6 +363,18 @@ class KundengruppeForm(forms.ModelForm):
 
     def clean_wochentage(self):
         return ", ".join(t for t in WOCHENTAGE if t in self.cleaned_data["wochentage"])
+
+    def clean(self):
+        daten = super().clean()
+        neu, ab = daten.get("maximum_neu"), daten.get("maximum_ab")
+        if neu is not None and not ab:
+            self.add_error("maximum_ab", "Bitte angeben, ab wann das neue Maximum gilt.")
+        elif ab and neu is None:
+            self.add_error("maximum_neu", "Bitte das neue Maximum angeben oder das Datum leeren.")
+        elif ab and ab <= timezone.localdate():
+            # schon fällig: gleich übernehmen statt bis zum nächsten Lauf zu warten
+            daten["maximum"], daten["maximum_neu"], daten["maximum_ab"] = neu, None, None
+        return daten
 
 
 class AusgabestelleForm(forms.ModelForm):

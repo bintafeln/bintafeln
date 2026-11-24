@@ -101,3 +101,19 @@ def stellen_schliessen(heute: dt.date | None = None) -> int:
         stelle.save(update_fields=["aktiv"])
         anzahl += 1
     return anzahl
+
+
+def maxima_anwenden(heute: dt.date | None = None) -> int:
+    """Geplante neue Maxima der Kundengruppen, deren Tag gekommen ist, werden zum Maximum
+    (ADR 0174). Liefert die Zahl der geänderten Gruppen."""
+    from apps.kunden.models import Kundengruppe
+
+    heute = heute or timezone.localdate()
+    anzahl = 0
+    for g in Kundengruppe.objects.filter(maximum_ab__isnull=False, maximum_ab__lte=heute):
+        if g.maximum_neu is not None:
+            g.maximum = g.maximum_neu
+        g.maximum_neu = g.maximum_ab = None
+        g.save(update_fields=["maximum", "maximum_neu", "maximum_ab"])
+        anzahl += 1
+    return anzahl

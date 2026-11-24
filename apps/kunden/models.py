@@ -451,6 +451,12 @@ class Kundengruppe(models.Model):
     wochentage = models.CharField("Wochentage", max_length=30, blank=True)
     uhrzeit = models.TimeField("Uhrzeit", null=True, blank=True)
     maximum = models.PositiveIntegerField("Maximum Haushalte", null=True, blank=True)
+    maximum_neu = models.PositiveIntegerField(
+        "Neues Maximum", null=True, blank=True,
+        help_text="Geplante Änderung: gilt ab dem Datum daneben von selbst und zählt schon in "
+        "der Vorschau der Wochenübersicht.",
+    )  # fmt: skip
+    maximum_ab = models.DateField("Neues Maximum gilt ab", null=True, blank=True)
     farbe = models.CharField(
         "Farbe", max_length=10, blank=True, choices=GRUPPENFARBEN,
         help_text="Zur schnellen Erkennung am Einlass.",
@@ -478,6 +484,20 @@ class Kundengruppe(models.Model):
 
     def __str__(self):
         return f"{self.kuerzel} – {self.name}" if self.kuerzel else self.name
+
+    @property
+    def maximum_anzeige(self) -> str:
+        """Maximum für Listen, mit der geplanten Änderung: „40 → 50 ab 01.12.2026“."""
+        jetzt = "" if self.maximum is None else str(self.maximum)
+        if self.maximum_ab and self.maximum_neu is not None:
+            return f"{jetzt or '–'} → {self.maximum_neu} ab {self.maximum_ab:%d.%m.%Y}"
+        return jetzt
+
+    def maximum_am(self, datum):
+        """Maximum an einem Tag: ab ``maximum_ab`` das geplante neue (ADR 0174)."""
+        if self.maximum_ab and self.maximum_neu is not None and datum >= self.maximum_ab:
+            return self.maximum_neu
+        return self.maximum
 
     @property
     def mit_stelle(self) -> str:
@@ -1414,6 +1434,7 @@ def fristen_anwenden() -> int:
         + alte_nachrichten_loeschen()
         + verlegung.anwenden()
         + verlegung.stellen_schliessen()
+        + verlegung.maxima_anwenden()
         + alte_wechselwuensche_loeschen()
         + _gruppenregel()
     )
