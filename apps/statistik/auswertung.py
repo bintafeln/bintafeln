@@ -34,7 +34,7 @@ ALTERSGRUPPEN = [
     (50, 64, "50–64"),
     (65, 200, "65 und älter"),
 ]
-MAX_SERIEN = 8  # mehr Ausgabestellen werden zu „Andere“ zusammengefasst
+MAX_SERIEN = 8  # so viele Farben gibt es; mehr Zwecke werden zu „Andere“ zusammengefasst
 
 
 @dataclass
@@ -133,10 +133,12 @@ class Serie:
     werte: list[float]
     summe: float = 0
     farbe: int = 0  # Platz in der festen Farbreihenfolge
+    gestrichelt: bool = False  # ab der neunten Reihe: dieselben Farben, gestrichelte Linie
 
 
 def verlauf_je_stelle(z: Zeitraum, stellen=None) -> list[Serie]:
-    """Abholungen je Ausgabestelle und Periode; mehr als MAX_SERIEN werden „Andere“."""
+    """Abholungen je Ausgabestelle und Periode – jede Ausgabestelle einzeln, nie „Andere“. Es gibt
+    acht Farben; ab der neunten Ausgabestelle beginnen sie von vorn, die Linie ist gestrichelt."""
     qs = abholungen(z, stellen)
     gruppiert = (
         qs.annotate(p=_trunc(z, "datum")).values("p", "ausgabestelle__name").annotate(n=Count("pk"))
@@ -150,21 +152,10 @@ def verlauf_je_stelle(z: Zeitraum, stellen=None) -> list[Serie]:
         if i is not None:
             werte[i] += g["n"]
     # Feste Farbe je Ausgabestelle nach Namen (Farbe folgt der Stelle, nicht dem Rang)
-    alle = sorted(serien)
-    liste = [Serie(n, serien[n], sum(serien[n]), alle.index(n)) for n in alle]
-    if len(liste) > MAX_SERIEN:
-        liste.sort(key=lambda s: -s.summe)
-        rest = liste[MAX_SERIEN - 1 :]
-        andere = Serie(
-            "Andere",
-            [sum(w) for w in zip(*(s.werte for s in rest), strict=True)],
-            sum(s.summe for s in rest),
-            MAX_SERIEN - 1,
-        )
-        liste = sorted(liste[: MAX_SERIEN - 1], key=lambda s: s.name) + [andere]
-        for i, s in enumerate(liste[:-1]):
-            s.farbe = i
-    return liste
+    return [
+        Serie(n, serien[n], sum(serien[n]), i % MAX_SERIEN, gestrichelt=i >= MAX_SERIEN)
+        for i, n in enumerate(sorted(serien))
+    ]
 
 
 def je_wochentag(z: Zeitraum, stellen=None) -> list[tuple[str, int]]:

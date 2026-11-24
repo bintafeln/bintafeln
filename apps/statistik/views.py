@@ -131,7 +131,7 @@ def _linien_quelle(kennung, z, stellen, benutzer):
             serien,
             f"Abholungen je Ausgabestelle und {einheit}",
             "Abholungen je Ausgabestelle",
-            "Jede Ausgabestelle behält ihre Farbe; mehr als acht werden zu „Andere“. "
+            "Jede Ausgabestelle behält ihre Farbe; ab der neunten ist die Linie gestrichelt. "
             "Ein Tippen auf die Legende blendet eine Ausgabestelle aus; die Achse passt sich an.",
         )
     if kennung == "neuaufnahmen":
@@ -169,6 +169,7 @@ def _linien_dict(kennung, serien, titel, diagramm_titel, beschriftung, einheit, 
             {
                 "name": s.name,
                 "farbe": s.farbe,
+                "gestrichelt": getattr(s, "gestrichelt", False),
                 "aus": i in aus,
                 "abfrage": _umschalten(get, kennung, aus, i),
             }
