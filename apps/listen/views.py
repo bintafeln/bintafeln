@@ -164,7 +164,7 @@ def liste(request, kennung):
         "gruppen_wahl": [(s.schluessel, s.titel) for s in erlaubte],
         "gruppe": p.get("gruppe", ""), "summen": p.get("summen", ""),
         "stellen": abfrage.stellen(request.user), "kundengruppen": abfrage.gruppen(request.user),
-        "status_wahl": abfrage.STATUS,
+        "status_wahl": abfrage.STATUS, "ausweis_wahl": abfrage.AUSWEIS,
         "tage": waehlbare_tage(abfrage.gruppen(request.user).filter(aktiv=True))
         if "tag" in liste.filter else [],
         "einkommensarten": abfrage.einkommensarten()
@@ -199,6 +199,8 @@ def _beschreibung(liste, p) -> str:
                         ("von", "von"), ("bis", "bis")):  # fmt: skip
         if p.get(name):
             teile.append(f"{titel}: {p[name]}")
+    if p.get("ausweis") in ("gueltig", "ungueltig"):
+        teile.append("Ausweis: " + dict(abfrage.AUSWEIS)[p["ausweis"]])
     if p.get("nur_abgeholt") and "nur_abgeholt" in liste.filter:
         teile.append("nur mit Abholungen im Zeitraum")
     if p.get("merkmal"):

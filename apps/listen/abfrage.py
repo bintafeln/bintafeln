@@ -26,6 +26,11 @@ from apps.listen.katalog import Liste
 
 STATUS = [("", "alle"), ("aktiv", "aktiv"), ("nicht_aktiv", "nicht aktiv (pausiert, gesperrt, "
           "beendet)"), *[(w, n) for w, n in Haushalt.Status.choices if w != "aktiv"]]  # fmt: skip
+AUSWEIS = [
+    ("", "alle"),
+    ("gueltig", "gültig"),
+    ("ungueltig", "nicht gültig (abgelaufen oder keiner)"),
+]
 
 
 def _datum(text):
@@ -121,6 +126,12 @@ def _haushalte(benutzer, p):
         qs = qs.filter(einkommensart__bezeichnung__icontains=p["einkommensart"])
     if (tag := _datum(p.get("ausweis_bis"))) is not None:
         qs = qs.filter(ausweis_gueltig_bis__lte=tag)
+    # Ausweis heute gültig oder nicht (abgelaufen oder gar keiner) – in jeder Liste wählbar
+    heute = timezone.localdate()
+    if p.get("ausweis") == "gueltig":
+        qs = qs.filter(ausweis_gueltig_bis__gte=heute)
+    elif p.get("ausweis") == "ungueltig":
+        qs = qs.filter(Q(ausweis_gueltig_bis__lt=heute) | Q(ausweis_gueltig_bis__isnull=True))
     if (tag := _datum(p.get("besuch_vor"))) is not None:
         qs = qs.filter(Q(letzter_besuch__lt=tag) | Q(letzter_besuch__isnull=True))
     if (tag := _datum(p.get("seit_ab"))) is not None:
