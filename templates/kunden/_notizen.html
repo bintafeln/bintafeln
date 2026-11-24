@@ -41,11 +41,8 @@
   </div>
   {% endif %}
 
-  {% if "kunden.notizen" in rechte %}<p class="wechsel-knopf"><a class="knopf knopf-vorlage" href="{% url 'kunden:wechselwunsch' h.kundennummer %}{% if notiz_htmx %}?von=einlass{% endif %}"><span aria-hidden="true">🔁 </span>Will wechseln …</a>
-    <small class="leise">andere Uhrzeit, anderer Tag oder andere Ausgabestelle</small></p>{% endif %}
-
   {% if krankmeldung %}
-  <details class="krank-melden">
+  <details class="krank-melden abwesend-melden">
     <summary class="knopf knopf-vorlage"><span aria-hidden="true">🤒 </span>Abwesend melden …</summary>
     {% if notiz_htmx %}
     <form method="post" action="{% url 'ausgabe:krank' h.kundennummer %}" hx-post="{% url 'ausgabe:krank' h.kundennummer %}" hx-target="#einlass">
@@ -88,6 +85,9 @@
   </details>
   <script src="{% static 'js/foto_sofort.js' %}" defer></script>
   {% endif %}
+
+  {% if "kunden.notizen" in rechte %}<p class="wechsel-knopf"><a href="{% url 'kunden:wechselwunsch' h.kundennummer %}{% if notiz_htmx %}?von=einlass{% endif %}">Will wechseln …</a>
+    <small class="leise">(andere Uhrzeit, anderer Tag oder andere Ausgabestelle)</small></p>{% endif %}
 
   {% if notiz_htmx %}
   <form method="post" action="{% url 'ausgabe:notiz' h.kundennummer %}" class="notiz-neu"
