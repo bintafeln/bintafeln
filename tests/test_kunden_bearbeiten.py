@@ -289,10 +289,18 @@ def test_abholer_sperren_anmerkungen_ausnahmen(admin_client, h):
     # Die aktive Sperre steht deutlich oben in den Angaben des Haushalts
     maske = admin_client.get(reverse("kunden:haushalt", args=["2001"])).content.decode()
     assert "sperre-hinweis" in maske and "<strong>Gesperrt</strong> seit 01.01.2026" in maske
+    # Neue Anmerkung: das heutige Datum ist vorbelegt; beim Ändern bleibt das gespeicherte
+    from django.utils import timezone
+
+    neu = admin_client.get(url("teil_neu", "2001", "anmerkung"))
+    assert neu.context["form"].initial["datum"] == timezone.localdate()
+    assert f'value="{timezone.localdate():%d.%m.%Y}"' in neu.content.decode()
     admin_client.post(url("teil_neu", "2001", "anmerkung"),
                       {"datum": "2026-03-01", "text": "Erfundene Anmerkung",
                        "verfasst_von": "chefin"})  # fmt: skip
     assert Bemerkung.objects.get().verfasst_von == "chefin"
+    vorhanden = admin_client.get(url("teil", "2001", "anmerkung", Bemerkung.objects.get().pk))
+    assert 'value="01.03.2026"' in vorhanden.content.decode()
     admin_client.post(url("teil_neu", "2001", "ausnahme"), {"datum": "2026-03-02"})
     a = Ausnahme.objects.get()
     assert a.erfasst_am  # in bintafeln erfasst
