@@ -122,7 +122,7 @@ def test_mehr_als_acht_stellen_bleiben_einzeln():
     # acht Farben; die neunte und zehnte beginnen von vorn, mit gestrichelter Linie
     assert [s.farbe for s in serien] == [*range(8), 0, 1]
     assert [s.gestrichelt for s in serien] == [False] * 8 + [True] * 2
-    svg = dg.linien(["Jan"], serien, "Titel")
+    svg = dg.linien([name for _, name in aw.perioden(Z)], serien, "Titel")
     assert svg.count("linie-gestrichelt") == 2 and "linie linie-0 linie-gestrichelt" in svg
 
 
