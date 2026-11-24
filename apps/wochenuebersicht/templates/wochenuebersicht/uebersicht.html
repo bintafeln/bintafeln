@@ -3,10 +3,17 @@
 {% block inhalt %}
 <section class="karte breit">
   <h1>Wochenübersicht der Ausgabestellen</h1>
+  {% if vorschau %}
+  <div class="sicherung update-warnung update-wichtig" role="status"><strong>Vorschau auf KW {{ vorschau|date:"W" }}</strong> – so sieht es nach heutigem Stand aus:
+    geplante Umzüge in andere Kundengruppen, Ausgabestellen mit Enddatum und Schließzeiten sind eingerechnet.
+    Neuaufnahmen und Abgänge bis dahin kennt das Programm nicht.
+    {% if hinweise %}<ul>{% for h in hinweise %}<li>{{ h }}</li>{% endfor %}</ul>{% endif %}</div>
+  {% else %}
   <p class="hinweis">Stand {{ stichtag|date:"d.m.Y" }}: Soll = „Maximum Haushalte“ der Kundengruppen, Ist = aktive Haushalte.
     Eine Kundengruppe zählt an jedem ihrer Wochentage.</p>
+  {% endif %}
   <form method="get" class="filter wochen-filter" data-sofort>
-    <label class="filter-haken"><input type="checkbox" name="abholungen" value="1"{% if woche %} checked{% endif %}> mit Abholungen der Woche</label>
+    <label class="filter-haken" title="Für vergangene Wochen und die laufende; eine kommende Woche ist immer eine Vorschau"><input type="checkbox" name="abholungen" value="1"{% if woche %} checked{% endif %}> mit Abholungen der Woche</label>
     <label>Kalenderwoche
       <select name="kw">
         {% for wert, bez in wochen %}<option value="{{ wert }}"{% if wert == kw %} selected{% endif %}>{{ bez }}</option>{% endfor %}
@@ -19,13 +26,14 @@
     <a class="knopf knopf-zweitrangig" href="{% url 'wochenuebersicht:pdf' 'quer' %}?{{ abfrage }}" target="_blank">Querformat</a></p>
 
   {% for tag in tage %}
-  <h2>{{ tag.name }}</h2>
+  <h2>{{ tag.name }}{% if tag.datum %} <small class="leise">{{ tag.datum|date:"d.m." }}</small>{% endif %}</h2>
   <div class="tabelle-rahmen">
     <table class="tabelle kompakt wochen-tabelle">
       <thead><tr><th>Ausgabestelle</th><th class="zahl">Soll HH</th><th class="zahl">Ist HH</th><th class="zahl">Erw.</th><th class="zahl">Kinder</th><th class="zahl">Gesamt</th>{% if woche %}<th class="zahl">Abgeholt</th>{% endif %}</tr></thead>
       <tbody>
         {% for z in tag.zeilen %}
-        <tr><td data-titel="Ausgabestelle" title="{{ z.gruppen|join:', ' }}">{{ z.name }}</td><td class="zahl" data-titel="Soll">{{ z.soll|default_if_none:"–" }}</td><td class="zahl" data-titel="Ist">{{ z.haushalte }}</td><td class="zahl" data-titel="Erw.">{{ z.erwachsene }}</td><td class="zahl" data-titel="Kinder">{{ z.kinder }}</td><td class="zahl" data-titel="Pers.">{{ z.personen }}</td>{% if woche %}<td class="zahl" data-titel="Abgeh.">{{ z.abgeholt|default_if_none:"–" }}</td>{% endif %}</tr>
+        {% if z.geschlossen %}<tr class="wochen-geschlossen"><td data-titel="Ausgabestelle" title="{{ z.gruppen|join:', ' }}">{{ z.name }}</td><td colspan="5"><span class="marke-warnung">{{ z.geschlossen }}</span> <small class="leise">sonst {{ z.haushalte }} Haushalt{{ z.haushalte|pluralize:"e" }}, {{ z.personen }} Person{{ z.personen|pluralize:"en" }}</small></td></tr>{% else %}
+        <tr><td data-titel="Ausgabestelle" title="{{ z.gruppen|join:', ' }}">{{ z.name }}</td><td class="zahl" data-titel="Soll">{{ z.soll|default_if_none:"–" }}</td><td class="zahl" data-titel="Ist">{{ z.haushalte }}</td><td class="zahl" data-titel="Erw.">{{ z.erwachsene }}</td><td class="zahl" data-titel="Kinder">{{ z.kinder }}</td><td class="zahl" data-titel="Pers.">{{ z.personen }}</td>{% if woche %}<td class="zahl" data-titel="Abgeh.">{{ z.abgeholt|default_if_none:"–" }}</td>{% endif %}</tr>{% endif %}
         {% empty %}
         <tr><td colspan="{% if woche %}7{% else %}6{% endif %}" class="hinweis">Keine Kundengruppe an diesem Tag.</td></tr>
         {% endfor %}

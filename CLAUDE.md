@@ -409,7 +409,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `Wartestand` je Antrag; Mails deutsch + Sprache aus `sprachen.mail_sprachen()`, Texte je
   Sprache in `apps/warteliste/uebersetzungen/` bzw. `WartelisteText`). `wetter` (ADR 0053, Abruf bei Open-Meteo nur im Server in
   `apps/wetter/wetter.py`, in Tests `wetter._json` ersetzen). `wochenuebersicht` (ADR 0054,
-  Rechnung in `apps/wochenuebersicht/auswertung.py`, PDF hoch/quer in `pdf.py`). `abrechnung`
+  Rechnung in `apps/wochenuebersicht/auswertung.py`, PDF hoch/quer in `pdf.py`; Vorschau auf
+  kommende Wochen über `uebersicht(..., vorschau=Montag)`: geplante Umzüge, `schliesst_am` und
+  Schließzeiten je Tag eingerechnet). `abrechnung`
   (ADR 0060, Regeln in `apps/abrechnung/ablauf.py`, Einnahmen aus der Kasse, beim Einreichen
   festgehalten; Quittungen über `privatdateien`; eine Abrechnung umfasst 1–6 Monate,
   `Monatsabrechnung.bis`, passende Abrechnung zu einem Monat nur über `ablauf.holen()`/`im_monat()`;

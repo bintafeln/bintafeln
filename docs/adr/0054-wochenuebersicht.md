@@ -26,3 +26,15 @@ Kundengruppe und speicherte Zugangsdaten im Klartext.
 
 Die Daten liegen schon in bintafeln; ein Abgleich mit dem Fremdsystem ist überflüssig und war
 fehleranfällig. Zuordnung über Felder statt Namen bleibt richtig, wenn Gruppen umbenannt werden.
+
+## Nachtrag (2026-11-24): Vorschau auf kommende Wochen
+
+Wichtiger als die Vergangenheit ist, wie es in den nächsten Wochen aussieht – etwa wenn eine
+Ausgabestelle schließt und ihre Kunden schon auf andere verteilt sind. Die Kalenderwoche lässt
+sich deshalb bis vier Wochen voraus wählen (`auswertung.uebersicht(..., vorschau=Montag)`). Jeder
+Tag wird auf sein Datum gerechnet: geplante Umzüge (`GeplanterWechsel`, ADR 0118) zählen ab ihrem
+Stichtag in der neuen Kundengruppe, eine Ausgabestelle mit `schliesst_am` fällt danach weg,
+Schließzeiten (ADR 0144) stehen als „geschlossen“ und zählen nicht in die Summe, das Alter gilt am
+Tag. Nicht eingerechnet wird, was niemand weiß (Neuaufnahmen, Abgänge) und was meist nicht
+eintritt (ablaufende Ausweise – sie werden nur gezählt). Die Vorschau speichert nichts; sie liest
+nur, was ohnehin geplant ist.
