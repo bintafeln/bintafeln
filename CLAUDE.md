@@ -452,7 +452,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Neuer Stopp vom Büro (ADR 0159): `apps/touren/heuler.py` – `Zusatzstopp.vom_buero` (wer einfügt,
   fährt nicht mit), Push an die Mannschaft über `apps.core.push`, roter Brief über jeder Seite
   (`Modul.kopfzeile`, `touren/_heuler.html`, `static/js/heuler.js`), bis jemand aus der Mannschaft
-  bestätigt (`heuler.gesehen()`); nichts bei Stopps der Mannschaft selbst.
+  bestätigt (`heuler.gesehen()`); nichts bei Stopps der Mannschaft selbst. Brief und Push – auch
+  für Nachrichten – erst, wenn die Fahrt begonnen hat (`heuler.unterwegs()`); `fahrten.beginnen()`
+  holt den Push nach (`heuler.nachholen()`, `nachrichten.nachholen()`).
   Nachricht der Fahrdienstleitung an die Mannschaft (ADR 0168): `Tournachricht` je Tour und Tag über
   `apps/touren/nachrichten.py` (`senden()` für heute oder einen kommenden Tag, auch an alle Touren; derselbe rote Brief und
   Push; `gesehen()`; fertige Texte `Kurztext` unter „Einrichten“); Stand je Nachricht unter „Touren heute“.

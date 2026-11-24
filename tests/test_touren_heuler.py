@@ -10,7 +10,7 @@ from django.urls import reverse
 
 from apps.core import push
 from apps.touren import heuler, zusatz
-from apps.touren.models import Zusatzstopp
+from apps.touren.models import Fahrt, Zusatzstopp
 from tests.test_aufruf_handy import _browser, _entschluesseln
 from tests.test_touren_zusatz import lage, module_an, station  # noqa: F401 (Fixtures)
 
@@ -37,9 +37,25 @@ def handys(lage, monkeypatch):
     return gesendet
 
 
+def fahrt_anlegen(tour, datum):
+    """Die Mannschaft hat „Fahrt beginnen“ getippt (ohne Fahrzeug und Regeln, nur der Eintrag)."""
+    from django.utils import timezone
+
+    return Fahrt.objects.create(
+        tour=tour, tour_name=tour.name, datum=datum, km_start=1000, begonnen_am=timezone.now()
+    )
+
+
+@pytest.fixture
+def unterwegs(lage):
+    """Beide Touren von heute sind unterwegs – erst dann gibt es Brief und Push."""
+    return [fahrt_anlegen(lage[t], lage["heute"]) for t in ("nord", "sued")]
+
+
 def test_buero_fuegt_ein_mannschaft_bekommt_nachricht(
     lage,
     handys,
+    unterwegs,
     django_capture_on_commit_callbacks,
 ):
     nord, heute = lage["nord"], lage["heute"]
@@ -57,6 +73,7 @@ def test_buero_fuegt_ein_mannschaft_bekommt_nachricht(
 def test_eigener_stopp_und_stopp_fuer_morgen_ohne_nachricht(
     lage,
     handys,
+    unterwegs,
     django_capture_on_commit_callbacks,
 ):
     nord, heute = lage["nord"], lage["heute"]
@@ -71,16 +88,21 @@ def test_eigener_stopp_und_stopp_fuer_morgen_ohne_nachricht(
         morgen = zusatz.einfuegen(nord, nord.datum, lage["buero"], station(21))
     assert morgen.vom_buero and handys == []
     assert heuler.offene(lage["fritz"]) == []
+    # am Tag selbst erst, wenn die Fahrt begonnen hat
+    assert heuler.offene(lage["fritz"], nord.datum) == []
+    fahrt_anlegen(nord, nord.datum)
     assert heuler.offene(lage["fritz"], nord.datum) == [morgen]
 
 
-def test_ohne_eingeschaltetes_handy_geht_nichts_schief(lage, django_capture_on_commit_callbacks):
+def test_ohne_eingeschaltetes_handy_geht_nichts_schief(
+    lage, unterwegs, django_capture_on_commit_callbacks
+):
     with django_capture_on_commit_callbacks(execute=True):
         z = zusatz.einfuegen(lage["nord"], lage["heute"], lage["buero"], station(20))
     assert heuler.offene(lage["fritz"]) == [z]
 
 
-def test_roter_brief_bis_jemand_aus_der_mannschaft_bestaetigt(client, anmelden, lage):
+def test_roter_brief_bis_jemand_aus_der_mannschaft_bestaetigt(client, anmelden, lage, unterwegs):
     nord, heute = lage["nord"], lage["heute"]
     erster = zusatz.einfuegen(nord, heute, lage["buero"], station(20, name="Hofladen"), "klingeln")
     zusatz.einfuegen(nord, heute, lage["buero"], station(21, name="Lager"))
@@ -119,3 +141,35 @@ def test_kopfzeile_fragt_nur_mit_recht(client, anmelden, benutzer_mit_rolle, lag
     anmelden(client, benutzer_mit_rolle("erna", rollen.AUSGABE))
     assert reverse("touren:heuler") not in client.get(reverse("core:start")).content.decode()
     assert client.get(reverse("touren:heuler")).status_code == 403
+
+
+def test_brief_und_push_erst_nach_fahrtbeginn(
+    client, anmelden, lage, handys, django_user_model, django_capture_on_commit_callbacks
+):
+    """Fügt das Büro den Stopp ein, bevor die Mannschaft „Fahrt beginnen“ getippt hat, wartet er
+    still: kein Push, kein roter Brief. Mit dem Beginn der Fahrt kommt beides."""
+    from apps.touren import fahrten
+
+    nord, heute = lage["nord"], lage["heute"]
+    with django_capture_on_commit_callbacks(execute=True):
+        stopp = zusatz.einfuegen(nord, heute, lage["buero"], station(40, name="Hofladen"))
+    assert stopp.vom_buero and handys == []
+    assert heuler.offene(lage["fritz"]) == [] and not heuler.unterwegs(nord, heute)
+    anmelden(client, lage["fritz"])
+    assert "heuler-brief" not in client.get(reverse("touren:heuler")).content.decode()
+    # in der Tour steht der Stopp trotzdem schon
+    assert "Hofladen" in client.get(reverse("touren:fahren", args=[nord.pk])).content.decode()
+    with django_capture_on_commit_callbacks(execute=True):
+        fahrten.beginnen(nord, lage["fritz"], "1000")
+    assert [wer for wer, _ in handys] == ["fritz"]
+    assert handys[0][1]["titel"] == "Neuer Stopp: Nordtour"
+    brief = client.get(reverse("touren:heuler")).content.decode()
+    assert "heuler-brief" in brief and "Hofladen" in brief
+    # die andere Tour ist nicht unterwegs: Klaus sieht weiter nichts
+    assert heuler.offene(lage["klaus"]) == []
+    # schon bestätigte Stopps werden beim Beginn nicht nachgeholt
+    heuler.gesehen(stopp, lage["fritz"])
+    handys.clear()
+    with django_capture_on_commit_callbacks(execute=True):
+        heuler.nachholen(nord, heute)
+    assert handys == []

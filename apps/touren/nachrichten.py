@@ -6,6 +6,9 @@ Text, für heute oder einen kommenden Tag. Die Mannschaft bekommt
 - in bintafeln denselben roten Brief wie bei einem neuen Stopp vom Büro (``heuler``), über jeder
   Seite, bis jemand aus der Mannschaft „Gelesen“ tippt.
 
+Beides erst, wenn die Mannschaft die Fahrt begonnen hat (``heuler.unterwegs()``); vorher wartet die
+Nachricht still, auch eine für einen kommenden Tag.
+
 Die Fahrdienstleitung sieht je Nachricht, ob und von wem sie bestätigt wurde: Bleibt sie offen,
 hilft nur der Anruf. Für vergangene Tage gibt es keine Nachrichten; nach 30 Tagen werden sie
 gelöscht."""
@@ -60,29 +63,45 @@ def senden(
     neu = [Tournachricht.objects.create(tour=t, datum=datum, text=text, von=benutzer, von_name=von)
            for t in fahren]  # fmt: skip
     for n in neu:
-        konten = heuler.mannschaft(n.tour, datum)
-        if konten:
-            tag = "" if datum == heute else f" am {datum:%d.%m.}"
-            titel, link, kennung = f"Nachricht: {n.tour.name}{tag}", adresse(n), f"nachricht-{n.pk}"
-            push.nach_speichern(
-                lambda k=konten, t=titel, x=n.text, li=link, ke=kennung: push.an_benutzer(
-                    k, t, x, li, ke))  # fmt: skip
+        # Brief und Push erst, wenn die Mannschaft die Fahrt begonnen hat; sonst beim Beginn
+        if heuler.unterwegs(n.tour, datum):
+            _push(n)
     return neu
 
 
+def nachholen(tour, datum: dt.date) -> None:
+    """Die Fahrt hat begonnen: Push für die Nachrichten, die bis dahin gewartet haben."""
+    for n in Tournachricht.objects.filter(tour=tour, datum=datum, gesehen_am=None).select_related(
+        "tour"
+    ):
+        _push(n)
+
+
+def _push(n: Tournachricht) -> None:
+    konten = heuler.mannschaft(n.tour, n.datum)
+    if konten:
+        titel, link, kennung = f"Nachricht: {n.tour.name}", adresse(n), f"nachricht-{n.pk}"
+        push.nach_speichern(
+            lambda k=konten, t=titel, x=n.text, li=link, ke=kennung: push.an_benutzer(
+                k, t, x, li, ke))  # fmt: skip
+
+
 def offene(benutzer, datum: dt.date | None = None) -> list[Tournachricht]:
-    """Nachrichten an die eigenen Touren von heute und den kommenden Tagen, die noch niemand
-    bestätigt hat – eine Nachricht für morgen sieht die Mannschaft von morgen also gleich."""
+    """Nachrichten von heute an die eigenen Touren, die noch niemand bestätigt hat – nur von
+    Touren, deren Fahrt begonnen hat. Eine Nachricht für einen kommenden Tag wartet bis dahin."""
     datum = datum or timezone.localdate()
     offen = (
-        Tournachricht.objects.filter(datum__gte=datum, gesehen_am=None)
+        Tournachricht.objects.filter(datum=datum, gesehen_am=None)
         .select_related("tour", "tour__fahrdienst_tour")
         .order_by("gesendet_am", "pk")
     )
     if not offen:
         return []
     person = ablauf.person_von(benutzer)
-    return [n for n in offen if ablauf.faehrt_mit(n.tour, n.datum, person)]
+    return [
+        n for n in offen
+        if ablauf.faehrt_mit(n.tour, datum, person) and heuler.unterwegs(n.tour, datum)
+    ]  # fmt: skip
 
 
 def gesehen(nachricht: Tournachricht, benutzer) -> bool:

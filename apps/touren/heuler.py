@@ -5,6 +5,10 @@ Fügt das Büro einer Tour einen Zusatzstopp ein, bekommt die Mannschaft
   die beim Antippen zur Tour führt, und
 - in bintafeln einen roten Brief über der Seite, bis jemand aus der Mannschaft „Gesehen“ tippt.
 
+Beides erst, wenn die Mannschaft die Fahrt begonnen hat („Fahrt beginnen“, ``unterwegs()``): Vorher
+wartet der Stopp still; mit dem Beginn der Fahrt holt ``nachholen()`` die Push-Nachricht nach, und
+der Brief erscheint.
+
 Stopps, die die Mannschaft selbst einfügt, lösen nichts aus. Das Büro sieht an der Tour, ob und von
 wem der Stopp gesehen wurde."""
 
@@ -15,7 +19,13 @@ from django.utils import timezone
 
 from apps.core import push
 from apps.touren import ablauf
-from apps.touren.models import Zusatzstopp
+from apps.touren.models import Fahrt, Zusatzstopp
+
+
+def unterwegs(tour, datum: dt.date) -> bool:
+    """Hat die Mannschaft die Fahrt an dem Tag begonnen? Erst dann gibt es Brief und Push –
+    für neue Stopps vom Büro wie für Nachrichten der Fahrdienstleitung (ADR 0159, 0168)."""
+    return Fahrt.objects.filter(tour=tour, datum=datum).exists()
 
 
 def mannschaft(tour, datum: dt.date) -> list:
@@ -30,9 +40,25 @@ def adresse(stopp: Zusatzstopp) -> str:
 
 
 def melden(stopp: Zusatzstopp) -> None:
-    """Push-Nachricht an die Mannschaft – nur bei Stopps vom Büro für heute."""
+    """Push-Nachricht an die Mannschaft – nur bei Stopps vom Büro für heute und erst, wenn die
+    Fahrt begonnen hat (sonst holt ``nachholen()`` sie beim Beginn nach)."""
     if not stopp.vom_buero or stopp.datum != timezone.localdate():
         return
+    if not unterwegs(stopp.tour, stopp.datum):
+        return
+    _push(stopp)
+
+
+def nachholen(tour, datum: dt.date) -> None:
+    """Die Fahrt hat begonnen: Push für alle Stopps vom Büro, die bis dahin gewartet haben."""
+    wartend = Zusatzstopp.objects.filter(
+        tour=tour, datum=datum, vom_buero=True, gesehen_am=None
+    ).select_related("tour", "station")
+    for stopp in wartend:
+        _push(stopp)
+
+
+def _push(stopp: Zusatzstopp) -> None:
     konten = mannschaft(stopp.tour, stopp.datum)
     if not konten:
         return
@@ -45,7 +71,8 @@ def melden(stopp: Zusatzstopp) -> None:
 
 
 def offene(benutzer, datum: dt.date | None = None) -> list[Zusatzstopp]:
-    """Stopps vom Büro auf den eigenen Touren von heute, die noch niemand bestätigt hat."""
+    """Stopps vom Büro auf den eigenen Touren von heute, die noch niemand bestätigt hat – nur
+    von Touren, deren Fahrt begonnen hat."""
     datum = datum or timezone.localdate()
     stopps = (
         Zusatzstopp.objects.filter(datum=datum, vom_buero=True, gesehen_am=None)
@@ -55,7 +82,9 @@ def offene(benutzer, datum: dt.date | None = None) -> list[Zusatzstopp]:
     if not stopps:
         return []
     person = ablauf.person_von(benutzer)
-    return [s for s in stopps if ablauf.faehrt_mit(s.tour, datum, person)]
+    return [
+        s for s in stopps if ablauf.faehrt_mit(s.tour, datum, person) and unterwegs(s.tour, datum)
+    ]
 
 
 def gesehen(stopp: Zusatzstopp, benutzer) -> bool:
