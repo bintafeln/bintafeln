@@ -273,3 +273,24 @@ def test_rechte(lage, admin, benutzer_mit_rolle, anmelden, recht_geben, pdf_text
     # steht in der Auskunft zum Kunden
     auskunft = pdf_text(admin_client.get(reverse("kunden:auskunft", args=["100"])))
     assert "Wechselwünsche" in auskunft and "andere Uhrzeit" in auskunft
+
+
+def test_am_einlass_ueber_die_notizen(admin_client, lage):
+    """Der Knopf steht am Einlass bei den Notizen, und nach dem Eintragen ist man wieder am
+    Einlass bei diesem Kunden."""
+    einlass = reverse("ausgabe:empfang")
+    weg = reverse("kunden:wechselwunsch", args=["100"])
+    seite = admin_client.get(einlass, {"nummer": "100"}, HTTP_HX_REQUEST="true").content.decode()
+    assert f'href="{weg}?von=einlass"' in seite and "Will wechseln" in seite
+
+    seite = admin_client.get(weg, {"von": "einlass", "was": "uhrzeit", "richtung": "frueher"})
+    assert f'href="{einlass}?nummer=100"' in seite.content.decode()  # „zurück zum Kunden“
+    antwort = admin_client.post(weg, {
+        "von": "einlass", "was": "uhrzeit", "richtung": "frueher",
+        "gruppe": str(lage["mi10"].pk), "email": "erika@example.org",
+    })  # fmt: skip
+    assert antwort.status_code == 302 and antwort["Location"] == f"{einlass}?nummer=100"
+    assert Wechselwunsch.objects.get(kundennummer="100").wunsch_gruppe == lage["mi10"]
+    # Zurück am Einlass steht der Wunsch als Notiz beim Kunden
+    seite = admin_client.get(einlass, {"nummer": "100"}, HTTP_HX_REQUEST="true").content.decode()
+    assert "Will wechseln:" in seite
