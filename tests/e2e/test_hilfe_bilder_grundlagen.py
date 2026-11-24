@@ -158,20 +158,40 @@ def test_hilfe_bild_zwei_faktor_code(seite, admin, muster):
 
 
 def test_hilfe_bild_papierkorb(angemeldet, admin, muster):
+    from apps.core.models import PapierkorbEintrag
     from apps.kunden.entfernen import haushalt_loeschen
 
     h = _haushalt("00057", "Jonas", "Probe", dt.date(1990, 2, 1))
     haushalt_loeschen(admin, h)
+    PapierkorbEintrag.objects.create(
+        art="Notiz", bezeichnung="Notiz zu 00012", recht="kunden.loeschen", geloescht_von="clara"
+    )
     seite = oeffnen(angemeldet, admin, reverse("core:start"))
     menue = seite.get_by_role("navigation", name="Hauptnavigation")
     eintrag = menue.get_by_role("link", name=re.compile("Papierkorb"))
     aufnehmen(seite, "papierkorb-menue", eintrag, Marke(eintrag, nummer=1, von="rechts"))
     eintrag.click()
+    # Filter „Art“ wirkt sofort, die Suche beim Tippen; „Zurücksetzen“ zeigt wieder alles
+    zeilen = seite.locator("#ergebnis table.tabelle tbody tr")
+    expect(zeilen).to_have_count(2)
+    seite.get_by_label("Art").select_option("Notiz")
+    expect(seite).to_have_url(re.compile(r"art=Notiz"))
+    expect(zeilen).to_have_count(1)
+    expect(zeilen).to_contain_text("Notiz zu 00012")
+    seite.locator("form.filter").get_by_text("Zurücksetzen").click()
+    expect(zeilen).to_have_count(2)
+    seite.locator("form.filter #q").press_sequentially("jonas")
+    expect(zeilen).to_have_count(1)
+    expect(zeilen).to_contain_text("00057")
+    seite.locator("form.filter #q").fill("gibtesnicht")
+    expect(seite.locator("#ergebnis")).to_contain_text("Dazu liegt nichts im Papierkorb")
+    seite.locator("form.filter").get_by_text("Zurücksetzen").click()
     tabelle = seite.locator("table.tabelle")
     link = tabelle.get_by_role("link", name=re.compile("00057"))
+    zeile = tabelle.locator("tr", has_text="00057")
     aufnehmen(seite, "papierkorb-liste", seite.locator("section.karte").first,
               Marke(link, nummer=1, von="unten", laenge=50),
-              Marke(tabelle.get_by_role("button", name="Wiederherstellen"), nummer=2,
+              Marke(zeile.get_by_role("button", name="Wiederherstellen"), nummer=2,
                     von="unten", laenge=50))  # fmt: skip
     link.click()
     karte = seite.locator("section.karte").first

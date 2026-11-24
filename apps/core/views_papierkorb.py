@@ -2,6 +2,7 @@
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
@@ -25,15 +26,24 @@ def _eintrag(request, pk):
 def liste(request):
     eintraege = papierkorb.sichtbar(request.user)
     arten = sorted(set(eintraege.values_list("art", flat=True)))
+    gesamt = eintraege.count()
     art = request.GET.get("art", "")
     if art:
         eintraege = eintraege.filter(art=art)
+    # Suche: jedes Wort muss in Art, Bezeichnung, Kundennummer oder „gelöscht von“ vorkommen
+    q = " ".join(request.GET.get("q", "").split())[:100]
+    for wort in q.split():
+        eintraege = eintraege.filter(
+            Q(bezeichnung__icontains=wort) | Q(art__icontains=wort)
+            | Q(kundennummer__icontains=wort) | Q(geloescht_von__icontains=wort)
+        )  # fmt: skip
     tage = TafelEinstellungen.laden().papierkorb_tage
     eintraege = list(eintraege.defer("daten", "verweise"))
     for e in eintraege:
         e.endgueltig_am = papierkorb.endgueltig_am(e, tage)
     return render(request, "core/papierkorb.html",
-                  {"eintraege": eintraege, "arten": arten, "art": art, "tage": tage})  # fmt: skip
+                  {"eintraege": eintraege, "arten": arten, "art": art, "q": q, "tage": tage,
+                   "gesamt": gesamt})  # fmt: skip
 
 
 @never_cache
