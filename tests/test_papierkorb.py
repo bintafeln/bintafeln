@@ -315,3 +315,36 @@ def test_notizen_still_im_papierkorb_auch_automatisch(admin, admin_client, stell
     assert set(eintraege.values_list("geloescht_von", flat=True)) == {admin.username, "automatisch"}
     papierkorb.wiederherstellen(eintraege.get(bezeichnung__startswith="krank"))
     assert Notiz.objects.filter(pk=krank.pk).exists()
+
+
+def test_liste_filter_nach_art_und_suche(admin, admin_client):
+    """Die Auswahl „Art“ wirkt sofort (data-sofort am Formular), die Suche findet nach
+    Bezeichnung, Kundennummer und „gelöscht von“."""
+    for art, was, nummer, von in (
+        ("Haushalt", "Familie Beispiel", "K-100", "erika"),
+        ("Notiz", "Notiz zu Probe", "K-200", "otto"),
+        ("Adresse", "Bäckerei Muster", "", "erika"),
+    ):
+        PapierkorbEintrag.objects.create(
+            art=art, bezeichnung=was, recht="kunden.loeschen", kundennummer=nummer,
+            geloescht_von=von,
+        )  # fmt: skip
+
+    def zeilen(**filter):
+        antwort = admin_client.get(KORB, filter)
+        return sorted(e.bezeichnung for e in antwort.context["eintraege"])
+
+    seite = admin_client.get(KORB).content.decode()
+    assert '<form method="get" class="filter" data-sofort>' in seite
+    assert 'name="q"' in seite and '<option value="Notiz">Notiz</option>' in seite
+    assert 'id="ergebnis"' in seite
+    assert zeilen() == ["Bäckerei Muster", "Familie Beispiel", "Notiz zu Probe"]
+    assert zeilen(art="Notiz") == ["Notiz zu Probe"]
+    assert zeilen(q="beispiel") == ["Familie Beispiel"]
+    assert zeilen(q="K-200") == ["Notiz zu Probe"]
+    assert zeilen(q="erika") == ["Bäckerei Muster", "Familie Beispiel"]
+    assert zeilen(q="erika bäck") == ["Bäckerei Muster"]  # jedes Wort muss vorkommen
+    assert zeilen(q="erika", art="Haushalt") == ["Familie Beispiel"]
+    leer = admin_client.get(KORB, {"q": "gibtesnicht"}).content.decode()
+    assert "Dazu liegt nichts im Papierkorb" in leer and "Der Papierkorb ist leer" not in leer
+    assert 'name="q"' in leer  # das Suchfeld bleibt, auch wenn nichts passt

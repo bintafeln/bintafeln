@@ -8,17 +8,22 @@
     Anträge haben ihren eigenen Papierkorb in der Antragsliste.
     {% if "einstellungen.tafel" in rechte %}Die Zahl der Tage stellen Sie unter
     <a href="{% url 'core:einstellungen' %}">Einstellungen → Tafel → Tafel und Module</a> ein („Papierkorb leeren nach“).{% endif %}</p>
-  {% if arten|length > 1 %}
-  <form method="get" class="filter">
-    <label for="art">Art</label>
-    <select name="art" id="art" data-sofort>
-      <option value="">Alle</option>
-      {% for a in arten %}<option{% if a == art %} selected{% endif %}>{{ a }}</option>{% endfor %}
-    </select>
-    <noscript><button type="submit" class="knopf knopf-zweitrangig">Anzeigen</button></noscript>
+  {% if gesamt %}
+  <form method="get" class="filter" data-sofort>
+    <div class="filter-feld" data-nicht-sofort><label for="q">Suche</label>
+      <input type="search" name="q" id="q" value="{{ q }}" placeholder="Bezeichnung, Kundennummer, gelöscht von" {% live_suche %}></div>
+    {% if arten|length > 1 %}
+    <div class="filter-feld"><label for="art">Art</label>
+      <select name="art" id="art">
+        <option value="">Alle</option>
+        {% for a in arten %}<option value="{{ a }}"{% if a == art %} selected{% endif %}>{{ a }}</option>{% endfor %}
+      </select></div>
+    {% endif %}
+    <button type="submit" class="knopf knopf-zweitrangig">Suchen</button>
     {% filter_zuruecksetzen %}
   </form>
   {% endif %}
+  <div id="ergebnis">
   {% if eintraege %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
@@ -44,8 +49,11 @@
     </tbody>
   </table>
   </div>
+  {% elif gesamt %}
+  <p class="hinweis">Dazu liegt nichts im Papierkorb. Mit „Zurücksetzen“ sehen Sie wieder alles.</p>
   {% else %}
   <p>Der Papierkorb ist leer.</p>
   {% endif %}
+  </div>
 </section>
 {% endblock %}
