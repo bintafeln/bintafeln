@@ -110,10 +110,13 @@ class Pdf:
                                      ("BOTTOMPADDING", (0, 0), (-1, -1), 2)]))  # fmt: skip
         self.inhalt.append(tabelle)
 
-    def tabelle(self, kopf, zeilen, breiten=None, rechts=(), summe=False, gitter=False) -> None:
+    def tabelle(self, kopf, zeilen, breiten=None, rechts=(), summe=False, gitter=False,
+                luft=False) -> None:  # fmt: skip
         """Tabelle mit Kopfzeile; ``rechts`` = Spaltennummern rechtsbündig (Beträge).
         ``gitter=True`` zieht ein vollständiges, dünnes Gitter (senkrechte und waagerechte
-        Linien an allen Zellen) – für Listen zum Ausdrucken und Von-Hand-Ausfüllen."""
+        Linien an allen Zellen) – für Listen zum Ausdrucken und Von-Hand-Ausfüllen.
+        ``luft=True`` macht die Zeilen höher, damit man in leere Spalten schreiben oder
+        unterschreiben kann."""
         if not zeilen:
             return self.absatz("Keine Einträge.")
 
@@ -139,6 +142,8 @@ class Pdf:
                 ("LINEBELOW", (0, 1), (-1, -1), 0.25, colors.lightgrey),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ]
+        if luft:
+            stil += [("TOPPADDING", (0, 1), (-1, -1), 7), ("BOTTOMPADDING", (0, 1), (-1, -1), 11)]
         for spalte in rechts:
             for zeile in daten:
                 z = zeile[spalte]

@@ -548,7 +548,10 @@ def druckliste(request):
         auswahl = list(adressen.filter(pk__in=ids) if ids else adressen)
         format_ = "a3" if request.GET.get("format") == "a3" else "a4"
         quer = request.GET.get("ausrichtung", "quer") != "hoch"
-        daten = dl.pdf("Mitarbeitende und Personen", spalten, auswahl, format_, quer)
+        from apps.core import listenexport
+
+        daten = dl.pdf("Mitarbeitende und Personen", spalten, auswahl, format_, quer,
+                       listenexport.leerspalten(request))  # fmt: skip
         return pdf_antwort(daten, f"liste-{timezone.localdate():%Y-%m-%d}.pdf")
 
     adressen = list(adressen)
@@ -568,4 +571,5 @@ def druckliste(request):
         "kategorien_wahl": list(AdressKategorie.objects.values_list("pk", "name")),
         "format": "a3" if request.GET.get("format") == "a3" else "a4",
         "ausrichtung": "hoch" if request.GET.get("ausrichtung") == "hoch" else "quer",
+        "leer": request.GET.get("leer", "0"), "leer_titel": request.GET.get("leer_titel", ""),
     })  # fmt: skip

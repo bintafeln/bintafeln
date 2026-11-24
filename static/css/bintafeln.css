@@ -1416,6 +1416,13 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .liste-aktionen { gap: .4rem .75rem; }
 .export-mail { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
 .export-mail-feld { min-height: 2rem; max-width: 15rem; }
+/* Leerspalten fürs PDF (includes/leerspalten.html) */
+.leerspalten { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
+.leerspalten label { display: inline-flex; align-items: center; gap: .35rem; margin: 0; font-weight: 400; }
+.leerspalten select, .leerspalten-titel { min-height: 2.3rem; padding: .25rem .5rem; font: inherit; font-size: .95rem;
+  border: 1px solid var(--rand); border-radius: var(--radius); background: var(--flaeche); color: var(--text); }
+.leerspalten select { width: auto; }
+.leerspalten-titel { width: 19rem; max-width: 100%; }
 .titel-knoepfe { display: flex; flex-wrap: wrap; gap: .5rem; }
 .querweg { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
 .querweg p { margin: 0; flex: 1 1 20rem; }
