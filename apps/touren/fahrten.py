@@ -99,6 +99,11 @@ def beginnen(tour: Tour, benutzer, km_start, fahrzeug_pk=None) -> Fahrt:
     except IntegrityError:  # zwei Handys gleichzeitig
         raise FahrtFehler("Die Fahrt ist schon begonnen.") from None
     _stand_merken(fahrzeug, km)
+    # Was das Büro vorher geschickt hat (neuer Stopp, Nachricht), kommt jetzt: Push und roter Brief
+    from apps.touren import heuler, nachrichten
+
+    heuler.nachholen(tour, datum)
+    nachrichten.nachholen(tour, datum)
     return fahrt
 
 

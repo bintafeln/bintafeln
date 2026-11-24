@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from apps.touren import heuler, nachrichten, tourtag, zusatz
 from apps.touren.models import Kurztext, Tour, Tournachricht
-from tests.test_touren_heuler import handys  # noqa: F401 (Fixture)
+from tests.test_touren_heuler import fahrt_anlegen, handys, unterwegs  # noqa: F401 (Fixtures)
 from tests.test_touren_zusatz import lage, module_an, station  # noqa: F401 (Fixtures)
 
 pytestmark = pytest.mark.django_db
@@ -40,7 +40,9 @@ def test_kurztexte_sind_vorbelegt_und_pflegbar(buero):
     assert nachrichten.kurztexte() == ["Glätte – bitte vorsichtig fahren"]
 
 
-def test_nachricht_an_eine_tour(lage, handys, buero, anmelden, django_capture_on_commit_callbacks):
+def test_nachricht_an_eine_tour(
+    lage, handys, unterwegs, buero, anmelden, django_capture_on_commit_callbacks
+):
     nord, heute = lage["nord"], lage["heute"]
     seite = buero.get(reverse("touren:heute")).content.decode()
     assert "Nachricht an die Mannschaft" in seite and "alle, die heute fahren" in seite
@@ -87,7 +89,7 @@ def test_nachricht_an_eine_tour(lage, handys, buero, anmelden, django_capture_on
 
 
 def test_nachricht_an_alle_und_reihenfolge_mit_neuem_stopp(
-    lage, handys, buero, anmelden, django_capture_on_commit_callbacks
+    lage, handys, unterwegs, buero, anmelden, django_capture_on_commit_callbacks
 ):
     nord, sued, heute = lage["nord"], lage["sued"], lage["heute"]
     Tour.objects.create(name="Morgen", datum=heute + dt.timedelta(days=1))  # fährt heute nicht
@@ -145,8 +147,8 @@ def test_fehler_und_grenzen(lage, buero):
 def test_nachricht_fuer_einen_kommenden_tag(
     lage, handys, buero, anmelden, django_capture_on_commit_callbacks
 ):
-    """Für morgen schicken: Die Mannschaft von morgen bekommt Push und roten Brief gleich, der
-    Brief nennt den Tag; für gestern geht nichts."""
+    """Für morgen schicken: Die Nachricht wartet, bis die Mannschaft an dem Tag die Fahrt beginnt –
+    vorher weder Push noch roter Brief; für gestern geht nichts."""
     heute = lage["heute"]
     morgen, gestern = heute + dt.timedelta(days=1), heute - dt.timedelta(days=1)
     fritz_person = Tour.objects.get(pk=lage["nord"].pk).personen.first()
@@ -155,6 +157,7 @@ def test_nachricht_fuer_einen_kommenden_tag(
     adresse = f"{reverse('touren:heute')}?tag={morgen:%Y-%m-%d}"
     seite = buero.get(adresse).content.decode()
     assert "Nachricht an die Mannschaft" in seite and "alle, die am " in seite
+    assert "sobald sie die Fahrt begonnen hat" in seite
     senden = f"{reverse('touren:nachricht_senden')}?tag={morgen:%Y-%m-%d}"
     assert f'action="{senden}"' in seite
     with django_capture_on_commit_callbacks(execute=True):
@@ -162,16 +165,21 @@ def test_nachricht_fuer_einen_kommenden_tag(
     assert antwort.url == f"{adresse}#nachrichten"
     n = Tournachricht.objects.get()
     assert (n.tour, n.datum) == (tour, morgen)  # die Touren von heute bekommen nichts
-    assert [wer for wer, _ in handys] == ["fritz"]
-    assert handys[0][1]["titel"] == f"Nachricht: Morgentour am {morgen:%d.%m.}"
-    # roter Brief schon heute, mit dem Tag; „Gelesen“ führt zur Tour an dem Tag
+    # heute: nichts aufs Handy, kein Brief
+    assert handys == []
     fritz = anmelden(Client(), lage["fritz"])
-    brief = fritz.get(reverse("touren:heuler")).content.decode()
-    assert "Bitte zuerst zum Lager" in brief and f"{morgen:%d.%m.}" in brief
-    assert fritz.post(reverse("touren:nachricht_gesehen", args=[n.pk])).url.endswith(
-        f"?tag={morgen:%Y-%m-%d}"
-    )
     assert "heuler-brief" not in fritz.get(reverse("touren:heuler")).content.decode()
+    assert nachrichten.offene(lage["fritz"]) == []
+    # am Tag selbst, vor „Fahrt beginnen“: immer noch nichts
+    assert nachrichten.offene(lage["fritz"], morgen) == []
+    # die Fahrt beginnt: Push wird nachgeholt, die Nachricht ist offen
+    fahrt_anlegen(tour, morgen)
+    with django_capture_on_commit_callbacks(execute=True):
+        nachrichten.nachholen(tour, morgen)
+    assert [wer for wer, _ in handys] == ["fritz"]
+    assert handys[0][1]["titel"] == "Nachricht: Morgentour"
+    assert nachrichten.offene(lage["fritz"], morgen) == [n]
+    assert nachrichten.gesehen(n, lage["fritz"])
     assert "von fritz" in buero.get(adresse).content.decode()
     # vergangener Tag: kein Formular, kein Schicken
     davor = buero.get(f"{reverse('touren:heute')}?tag={gestern:%Y-%m-%d}").content.decode()
@@ -181,3 +189,22 @@ def test_nachricht_fuer_einen_kommenden_tag(
     # an dem Tag fährt keine der Touren
     antwort = buero.post(senden, {"tour": lage["nord"].pk, "text": "Hallo"}, follow=True)
     assert f"Am {morgen:%d.%m.%Y} fährt keine" in antwort.content.decode()
+
+
+def test_nachricht_wartet_auf_fahrtbeginn(
+    lage, handys, buero, anmelden, django_capture_on_commit_callbacks
+):
+    """Heute geschickt, die Tour hat aber noch nicht begonnen: erst mit „Fahrt beginnen“ kommen
+    Push und roter Brief."""
+    from apps.touren import fahrten
+
+    nord = lage["nord"]
+    with django_capture_on_commit_callbacks(execute=True):
+        buero.post(reverse("touren:nachricht_senden"), {"tour": nord.pk, "text": "Bitte anrufen"})
+    assert Tournachricht.objects.count() == 1 and handys == []
+    fritz = anmelden(Client(), lage["fritz"])
+    assert "heuler-brief" not in fritz.get(reverse("touren:heuler")).content.decode()
+    with django_capture_on_commit_callbacks(execute=True):
+        fahrten.beginnen(nord, lage["fritz"], "1000")
+    assert [wer for wer, _ in handys] == ["fritz"]
+    assert "Bitte anrufen" in fritz.get(reverse("touren:heuler")).content.decode()

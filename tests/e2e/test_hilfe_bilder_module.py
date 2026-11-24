@@ -1306,7 +1306,7 @@ def test_hilfe_bild_touren_neuer_stopp(angemeldet, admin, muster, benutzer_mit_r
     from apps.adressen.models import Adresse
     from apps.core import demo_daten
     from apps.touren import ablauf, zusatz
-    from apps.touren.models import Station, Tour, Zusatzstopp
+    from apps.touren.models import Fahrt, Station, Tour, Zusatzstopp
 
     _module("touren")
     demo_daten.touren()
@@ -1322,7 +1322,15 @@ def test_hilfe_bild_touren_neuer_stopp(angemeldet, admin, muster, benutzer_mit_r
     buero.save()
     stopp = zusatz.einfuegen(tour, tour.datum, buero, Station.objects.get(kennung="S-3"),
                              "3 Kisten Brot vom Vortag, bitte an der Rampe klingeln")  # fmt: skip
+    # der Brief kommt erst, wenn die Mannschaft die Fahrt begonnen hat
     seite = oeffnen(angemeldet, admin, reverse("core:start"))
+    seite.wait_for_timeout(800)
+    expect(seite.locator("dialog.heuler-dialog")).to_have_count(0)
+    Fahrt.objects.create(
+        tour=tour, tour_name=tour.name, datum=tour.datum, km_start=48000,
+        begonnen_am=timezone.now(),
+    )  # fmt: skip
+    seite.reload()
     seite.set_viewport_size({"width": 400, "height": 900})
     brief = seite.locator("dialog.heuler-dialog")
     expect(brief).to_be_visible()
@@ -1478,7 +1486,7 @@ def test_hilfe_bild_touren_nachricht(angemeldet, admin, muster, benutzer_mit_rol
     from apps.adressen.models import Adresse
     from apps.core import demo_daten
     from apps.touren import ablauf
-    from apps.touren.models import Station, Tour, Tournachricht
+    from apps.touren.models import Fahrt, Station, Tour, Tournachricht
 
     _module("touren")
     demo_daten.touren()
@@ -1507,6 +1515,14 @@ def test_hilfe_bild_touren_nachricht(angemeldet, admin, muster, benutzer_mit_rol
     bereich.get_by_role("button", name="Schicken").click()
     expect(seite.locator("#nachrichten-tabelle")).to_contain_text("noch nicht bestätigt")
     nachricht = Tournachricht.objects.get()
+    # der Brief kommt erst, wenn die Mannschaft die Fahrt begonnen hat
+    seite.wait_for_timeout(800)
+    expect(seite.locator("dialog.heuler-dialog")).to_have_count(0)
+    Fahrt.objects.create(
+        tour=tour, tour_name=tour.name, datum=tour.datum, km_start=48000,
+        begonnen_am=timezone.now(),
+    )  # fmt: skip
+    seite.reload()
     seite.set_viewport_size({"width": 400, "height": 900})
     brief = seite.locator("dialog.heuler-dialog")
     expect(brief).to_be_visible()

@@ -42,7 +42,7 @@
       {% if kurztexte %}<p class="tour-kurztexte">{% for k in kurztexte %}<button type="button" class="knopf knopf-zweitrangig knopf-klein" data-kurztext="{{ k }}" onclick="document.getElementById('nachricht-text').value = this.dataset.kurztext; document.getElementById('nachricht-text').focus()">{{ k }}</button>{% endfor %}</p>{% endif %}
       <button type="submit" class="knopf">Schicken</button>
     </form>
-    <p class="hinweis">{% if not ist_heute %}Die Nachricht gilt für <strong>{{ tag|date:"l, d.m.Y" }}</strong> und geht gleich an die Mannschaft dieses Tages. {% endif %}Die Mannschaft bekommt die Nachricht aufs Handy (wenn dort Benachrichtigungen eingeschaltet sind) und
+    <p class="hinweis">{% if not ist_heute %}Die Nachricht gilt für <strong>{{ tag|date:"l, d.m.Y" }}</strong>. {% endif %}Die Mannschaft bekommt die Nachricht, <strong>sobald sie die Fahrt begonnen hat</strong> – vorher wartet sie. Sie kommt aufs Handy (wenn dort Benachrichtigungen eingeschaltet sind) und
       als roten Brief über jeder Seite, bis jemand „Gelesen“ tippt. Bleibt eine Nachricht unten „noch nicht bestätigt“, bitte anrufen.</p>
     {% endif %}
     {% if nachrichten %}

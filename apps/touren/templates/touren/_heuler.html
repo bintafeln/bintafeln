@@ -11,7 +11,7 @@
 </template>{% elif nachricht %}
 <template class="heuler-brief" data-schluessel="n{{ nachricht.pk }}" data-titel="Nachricht für Ihre Tour">
   <div class="heuler-umschlag" aria-hidden="true"><svg viewBox="0 0 64 44" width="96" height="66"><rect x="2" y="2" width="60" height="40" rx="4" class="heuler-papier"/><path d="M2 6 32 26 62 6" class="heuler-klappe"/><circle cx="32" cy="27" r="6" class="heuler-siegel"/></svg></div>
-  <h2>Nachricht für die Tour {{ nachricht.tour.name }}{% if nachricht.datum != heute %} am {{ nachricht.datum|date:"D d.m." }}{% endif %}</h2>
+  <h2>Nachricht für die Tour {{ nachricht.tour.name }}</h2>
   <p class="heuler-station heuler-text"><strong>{{ nachricht.text }}</strong></p>
   <p class="hinweis">geschickt {% if nachricht.gesendet_am|date:"Ymd" != heute|date:"Ymd" %}{{ nachricht.gesendet_am|date:"d.m." }} {% endif %}{{ nachricht.gesendet_am|date:"H:i" }} Uhr von {{ nachricht.von_name }}{% if weitere %} · danach noch {{ weitere }} weitere{{ weitere|pluralize:"r," }}{% endif %}</p>
   <form method="post" action="{% url 'touren:nachricht_gesehen' nachricht.pk %}">{% csrf_token %}

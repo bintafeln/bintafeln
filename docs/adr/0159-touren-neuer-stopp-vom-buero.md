@@ -24,6 +24,10 @@ Büro muss wissen, ob er angekommen ist.
   zählt, `gesehen_am`, `gesehen_von_name`) und führt zum Stopp. Bestätigen kann nur, wer mitfährt.
 - **Das Büro sieht den Stand** an der Tour: „gesehen 10:12 Uhr von …“ oder „von der Mannschaft
   noch nicht gesehen“.
+- **Erst nach „Fahrt beginnen“** (ergänzt): Brief und Push kommen erst, wenn die Mannschaft die
+  Fahrt begonnen hat (`heuler.unterwegs()`). Fügt das Büro den Stopp vorher ein, wartet er still
+  – in der Tour steht er schon –, und mit dem Beginn der Fahrt holt `heuler.nachholen()` den Push
+  nach. Wer noch zu Hause oder im Lager ist, wird nicht mit einem Alarm gestört.
 
 ## Begründung
 
