@@ -8,9 +8,12 @@ Telefon stehen; fehlendes wird beim Eintragen nachgetragen.
 """
 
 import datetime as dt
+import hashlib
+import secrets
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.html import escape
 
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.core import mail
@@ -260,9 +263,10 @@ def _umziehen(h: Haushalt, gruppe: Kundengruppe, von: str) -> None:
 
 @transaction.atomic
 def genehmigen(wunsch: Wechselwunsch, benutzer, gruppe: Kundengruppe, ab: dt.date | None = None,
-               antwort: str = "") -> Wechselwunsch:  # fmt: skip
+               antwort: str = "", von: str = "") -> Wechselwunsch:  # fmt: skip
     """Verlegt den Kunden in ``gruppe`` – sofort oder, mit späterem ``ab``, als geplanten Wechsel
-    zum Stichtag – und schreibt ihm."""
+    zum Stichtag – und schreibt ihm. Ohne ``benutzer`` (der Kunde hat ein Angebot selbst
+    bestätigt) steht ``von`` als Name da."""
     if wunsch.status != Wechselwunsch.Status.OFFEN:
         raise WechselFehler("Dieser Wunsch ist schon entschieden.")
     h = Haushalt.objects.select_for_update().filter(kundennummer=wunsch.kundennummer).first()
@@ -274,7 +278,7 @@ def genehmigen(wunsch: Wechselwunsch, benutzer, gruppe: Kundengruppe, ab: dt.dat
     ab = ab or heute
     if ab < heute:
         raise WechselFehler("Der Wechsel kann nicht in der Vergangenheit liegen.")
-    von = _name(benutzer)
+    von = von or _name(benutzer)
     if ab > heute:
         verlegung.planen(h, gruppe, ab, von)
     else:
@@ -317,3 +321,123 @@ def ablehnen(wunsch: Wechselwunsch, benutzer, antwort: str = "") -> Wechselwunsc
             text=("Wechselwunsch abgelehnt" + (f": {antwort}" if antwort else "."))[:1000],
         )  # fmt: skip
     return wunsch
+
+
+# --- Platz per E-Mail anbieten, der Kunde bestätigt über einen Link (ADR 0175) -----------------
+
+ANGEBOT_TAGE = 7
+
+
+def _pruefsumme(schluessel: str) -> str:
+    return hashlib.sha256(schluessel.encode()).hexdigest()
+
+
+def _angebot_mail(tafel: str, ziel: str, ab: dt.date, bis: dt.date, zusatz: str,
+                  link: str) -> tuple[str, str]:  # fmt: skip
+    """Text- und HTML-Fassung der Mail mit dem Angebot."""
+    kopf = f"wir können Ihnen einen Platz anbieten: {ziel}, ab dem {ab:%d.%m.%Y}."
+    bitte = (f"Bitte bestätigen Sie bis zum {bis:%d.%m.%Y}, dass Sie wechseln möchten. Erst mit "
+             "Ihrer Bestätigung gilt der Wechsel; bis dahin bleibt alles, wie es ist.")  # fmt: skip
+    gruss = "Mit freundlichen Grüßen" + (f"\nIhre {tafel}" if tafel else "")
+    text = "\n\n".join(x for x in (
+        "Guten Tag,", kopf, bitte, f"Ja, ich möchte wechseln:\n{link}?antwort=ja",
+        f"Nein, ich bleibe:\n{link}?antwort=nein", zusatz, gruss) if x)  # fmt: skip
+    knopf = ("display:inline-block;padding:12px 22px;margin:6px 8px 6px 0;border-radius:8px;"
+             "font-weight:bold;text-decoration:none;")  # fmt: skip
+    adresse = escape(link)
+    html = "".join([
+        f"<p>Guten Tag,</p><p>{escape(kopf)}</p><p>{escape(bitte)}</p><p>",
+        f'<a href="{adresse}?antwort=ja" style="{knopf}background:#1a7f37;color:#ffffff">',
+        "Ja, ich möchte wechseln</a>",
+        f'<a href="{adresse}?antwort=nein" style="{knopf}background:#eeeeee;color:#222222">',
+        "Nein, ich bleibe</a></p>",
+        f"<p>{escape(zusatz)}</p>" if zusatz else "",
+        "<p>Mit freundlichen Grüßen", f"<br>Ihre {escape(tafel)}" if tafel else "", "</p>",
+    ])  # fmt: skip
+    return text, html
+
+
+@transaction.atomic
+def anbieten(wunsch: Wechselwunsch, benutzer, gruppe: Kundengruppe, ab: dt.date | None,
+             zusatz: str, link_bauen) -> Wechselwunsch:  # fmt: skip
+    """Bietet dem Kunden per E-Mail einen Platz in ``gruppe`` an. ``link_bauen(schluessel)``
+    liefert die vollständige Adresse der Bestätigungsseite. Der Platz ist reserviert, solange
+    das Angebot läuft (``gruppen.reservierte_zugaenge``). Geht die Mail nicht hinaus, bleibt
+    alles, wie es war."""
+    from apps.core.models import TafelEinstellungen
+
+    if wunsch.status != Wechselwunsch.Status.OFFEN:
+        raise WechselFehler("Dieser Wunsch ist schon entschieden.")
+    if wunsch.angebot_laeuft:
+        raise WechselFehler("Zu diesem Wunsch läuft schon ein Angebot.")
+    h = Haushalt.objects.filter(kundennummer=wunsch.kundennummer).first()
+    if h is None:
+        raise WechselFehler("Diesen Kunden gibt es nicht mehr.")
+    if not h.email.strip():
+        raise WechselFehler("Bei diesem Kunden steht keine E-Mail-Adresse – ein Angebot per "
+                            "E-Mail geht nicht. Bitte anrufen.")  # fmt: skip
+    if not gruppe.aktiv:
+        raise WechselFehler("Diese Kundengruppe gibt es nicht mehr.")
+    heute = timezone.localdate()
+    ab = ab or heute
+    if ab < heute:
+        raise WechselFehler("Der Wechsel kann nicht in der Vergangenheit liegen.")
+    schluessel = secrets.token_urlsafe(32)
+    von, ziel = _name(benutzer), gruppe_text(gruppe)
+    bis = heute + dt.timedelta(days=ANGEBOT_TAGE)
+    zusatz = " ".join(zusatz.split())[:500]
+    tafel = TafelEinstellungen.laden().name
+    text, html = _angebot_mail(tafel, ziel, ab, bis, zusatz, link_bauen(schluessel))
+    betreff = "Wir können Ihnen einen Platz anbieten"
+    try:
+        # vertraulich: Der Link in der Mail ist der Schlüssel, er gehört nicht ins Mail-Archiv
+        mail.senden(f"{betreff} – {tafel}" if tafel else betreff, text, [h.email.strip()],
+                    html=html, art="kunde", vertraulich=True)  # fmt: skip
+    except mail.MailFehler as fehler:
+        raise WechselFehler(f"Die E-Mail ging nicht hinaus: {fehler}") from None
+    wunsch.angebot_gruppe, wunsch.angebot_text, wunsch.angebot_ab = gruppe, ziel[:150], ab
+    wunsch.angebot_am, wunsch.angebot_von, wunsch.angebot_bis = timezone.now(), von, bis
+    wunsch.angebot_zusatz, wunsch.angebot_schluessel = zusatz, _pruefsumme(schluessel)
+    wunsch.angebot_antwort, wunsch.angebot_antwort_am = "", None
+    wunsch.save()
+    Notiz.objects.create(
+        kundennummer=h.kundennummer, benutzer=benutzer, verfasst_von=von[:100],
+        text=(f"Platz angeboten: {ziel}, ab {ab:%d.%m.%Y}. Der Kunde soll bis "
+              f"{bis:%d.%m.%Y} per E-Mail bestätigen.")[:1000],
+    )  # fmt: skip
+    return wunsch
+
+
+def angebot_finden(schluessel: str) -> Wechselwunsch | None:
+    """Der Wunsch zu einem Schlüssel aus dem Link – auch wenn das Angebot schon beantwortet oder
+    abgelaufen ist (die Seite sagt das dann)."""
+    if not schluessel or len(schluessel) > 100:
+        return None
+    return (
+        Wechselwunsch.objects.filter(angebot_schluessel=_pruefsumme(schluessel))
+        .select_related("angebot_gruppe__ausgabestelle")
+        .first()
+    )
+
+
+@transaction.atomic
+def angebot_beantworten(wunsch: Wechselwunsch, ja: bool) -> Wechselwunsch:
+    """Der Kunde hat über den Link geantwortet. „Ja“ führt den Wechsel aus (wie genehmigt, zum
+    angebotenen Datum); „Nein“ lässt den Wunsch offen, die Verwaltung sieht die Antwort."""
+    wunsch = Wechselwunsch.objects.select_for_update().get(pk=wunsch.pk)
+    if not wunsch.angebot_laeuft:
+        raise WechselFehler("Dieses Angebot gilt nicht mehr.")
+    wunsch.angebot_antwort, wunsch.angebot_antwort_am = ("ja" if ja else "nein"), timezone.now()
+    wunsch.save(update_fields=["angebot_antwort", "angebot_antwort_am"])
+    if not ja:
+        Notiz.objects.create(
+            kundennummer=wunsch.kundennummer, verfasst_von="Kunde (per E-Mail)",
+            text=f"Angebotenen Platz abgelehnt: {wunsch.angebot_text}."[:1000],
+        )  # fmt: skip
+        return wunsch
+    gruppe = wunsch.angebot_gruppe
+    if gruppe is None:
+        raise WechselFehler("Die angebotene Kundengruppe gibt es nicht mehr.")
+    ab = max(wunsch.angebot_ab or timezone.localdate(), timezone.localdate())
+    return genehmigen(wunsch, None, gruppe, ab, wunsch.angebot_zusatz,
+                      von=f"{wunsch.angebot_von} (vom Kunden bestätigt)"[:150])  # fmt: skip

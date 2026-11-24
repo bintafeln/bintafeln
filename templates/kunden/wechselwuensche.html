@@ -5,7 +5,7 @@
   <h1>Wechselwünsche der Kunden</h1>
   <p class="hinweis">Möchte ein Kunde Uhrzeit, Tag oder Ausgabestelle wechseln, trägt der Einlass das beim Kunden unter
     „Will wechseln“ ein. Hier entscheiden Sie. Der Kunde bekommt die Antwort per E-Mail; steht keine Adresse bei ihm,
-    sagt das Programm das. Entschiedene Wünsche werden nach {{ tage }} Tagen gelöscht.</p>
+    sagt das Programm das. Mit „Platz anbieten“ bekommt der Kunde eine E-Mail und bestätigt selbst über einen Link ({{ angebot_tage }} Tage Zeit; bei „Ja“ zieht er von selbst um). Entschiedene Wünsche werden nach {{ tage }} Tagen gelöscht.</p>
 
   <h2>Offen{% if offene %} ({{ offene|length }}){% endif %}</h2>
   {% for w in offene %}
@@ -15,7 +15,8 @@
       <dt>Jetzt</dt><dd>{{ w.jetzt }}</dd>
       <dt>Wunsch</dt><dd><strong>{{ w.wunsch }}</strong>{% if w.anmerkung %}<br><small>{{ w.anmerkung }}</small>{% endif %}</dd>
       <dt>Eingetragen</dt><dd>{{ w.erstellt_am|date:"d.m.Y H:i" }} von {{ w.von }}{% if w.stelle %} ({{ w.stelle.name }}){% endif %}</dd>
-      <dt>Erreichbar</dt><dd>{% if w.kontakt.email %}<span class="marke-ok">E-Mail</span>{% else %}<span class="marke-warnung">keine E-Mail – kein Rückschreiben möglich</span>{% endif %}
+{% if w.angebot_stand %}      <dt>Angebot</dt><dd>{% if w.angebot_laeuft %}<span class="marke-ok">läuft</span>{% elif w.angebot_antwort == "nein" %}<span class="marke-warnung">abgelehnt</span>{% else %}<span class="marke-warnung">keine Antwort</span>{% endif %} {{ w.angebot_stand }}{% if w.angebot_laeuft %}<br><small class="leise">Der Platz ist so lange reserviert. Bestätigt der Kunde, zieht er von selbst um.</small>{% endif %}</dd>
+{% endif %}      <dt>Erreichbar</dt><dd>{% if w.kontakt.email %}<span class="marke-ok">E-Mail</span>{% else %}<span class="marke-warnung">keine E-Mail – kein Rückschreiben möglich</span>{% endif %}
         {% if w.kontakt.telefon %}<span class="marke-ok">Telefon</span>{% else %}<span class="marke-warnung">kein Telefon</span>{% endif %}</dd>
     </dl>
     <form method="post" action="{% url 'kunden:wechsel_entscheiden' w.pk %}" class="wechsel-entscheiden">
@@ -33,6 +34,9 @@
         <input type="text" name="antwort" id="antwort-{{ w.pk }}" maxlength="500"></div>
       <div class="aktionsleiste">
         <button type="submit" name="genehmigen" value="1" class="knopf">✓ Genehmigen</button>
+        {% if w.angebot_laeuft %}{# läuft schon #}
+        {% elif w.kontakt.email %}<button type="submit" name="anbieten" value="1" class="knopf knopf-zweitrangig" title="E-Mail mit dem Angebot; der Kunde bestätigt über einen Link">✉ Platz anbieten</button>
+        {% else %}<button type="button" class="knopf knopf-zweitrangig" disabled title="Ohne E-Mail-Adresse geht kein Angebot per E-Mail">✉ Platz anbieten</button>{% endif %}
         <button type="submit" name="ablehnen" value="1" class="knopf knopf-zweitrangig" formnovalidate
                 onclick="return confirm('Den Wechselwunsch zu {{ w.kundennummer|escapejs }} ablehnen?')">✕ Ablehnen</button>
       </div>

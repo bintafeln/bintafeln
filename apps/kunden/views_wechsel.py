@@ -5,6 +5,7 @@ import datetime as dt
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -135,7 +136,7 @@ def liste(request):
             erledigte.append(w)
     return render(request, "kunden/wechselwuensche.html", {
         "offene": offene, "erledigte": erledigte[:50], "heute": timezone.localdate(),
-        "tage": Wechselwunsch.AUFBEWAHREN_TAGE,
+        "tage": Wechselwunsch.AUFBEWAHREN_TAGE, "angebot_tage": wechsel.ANGEBOT_TAGE,
     })  # fmt: skip
 
 
@@ -158,9 +159,44 @@ def entscheiden(request, pk):
                 ab = dt.date.fromisoformat(request.POST.get("ab", ""))
             except ValueError:
                 ab = None
+            if "anbieten" in request.POST:
+                w = wechsel.anbieten(
+                    w, request.user, gruppe, ab, antwort,
+                    lambda schluessel: request.build_absolute_uri(
+                        reverse("kunden:wechsel_angebot", args=[schluessel])),
+                )  # fmt: skip
+                messages.success(request, f"Platz angeboten ({w.angebot_text}). Der Kunde "
+                                 f"{w.kundennummer} hat eine E-Mail bekommen und kann bis "
+                                 f"{w.angebot_bis:%d.%m.%Y} bestätigen; so lange ist der Platz "
+                                 "reserviert.")  # fmt: skip
+                return redirect("kunden:wechselwuensche")
             w = wechsel.genehmigen(w, request.user, gruppe, ab, antwort)
             messages.success(request, f"Wechselwunsch zu {w.kundennummer} genehmigt: "
                              f"{w.neue_gruppe}. E-Mail an den Kunden: {w.mail_stand}.")  # fmt: skip
     except wechsel.WechselFehler as grund:
         messages.error(request, str(grund))
     return redirect("kunden:wechselwuensche")
+
+
+@never_cache
+def angebot(request, schluessel):
+    """Öffentliche Seite hinter dem Link aus der Mail (ADR 0175): zeigt nur das Angebot – keinen
+    Namen, keine Kundennummer – und nimmt „Ja“ oder „Nein“ entgegen. Bestätigt wird erst mit
+    dem Knopf (POST): Mailprogramme, die Links von selbst öffnen, lösen so nichts aus."""
+    from apps.core.models import TafelEinstellungen
+
+    w = wechsel.angebot_finden(schluessel)
+    if w is None:
+        raise Http404
+    fehler = ""
+    if request.method == "POST" and w.angebot_laeuft:
+        try:
+            w = wechsel.angebot_beantworten(w, request.POST.get("antwort") == "ja")
+        except wechsel.WechselFehler as grund:
+            fehler = str(grund)
+        else:
+            return redirect("kunden:wechsel_angebot", schluessel)
+    tafel = TafelEinstellungen.laden()
+    return render(request, "kunden/wechsel_angebot.html", {
+        "w": w, "tafel": tafel, "fehler": fehler, "vorwahl": request.GET.get("antwort", ""),
+    })  # fmt: skip

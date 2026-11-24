@@ -40,6 +40,7 @@ OEFFENTLICH = {
     "warten:sw",  # Service Worker und Manifest der Wartezeit, öffentlich
     "warten:manifest",
     "warten:code",  # Empfang der Verzeichnis-Meldungen, nur beim Herausgeber (ADR 0089)
+    "kunden:wechsel_angebot",  # Link aus der Mail, der Schlüssel ist der Zugang (ADR 0175)
     "antrag:start",  # Online-Antrag (ADR 0024)
     "antrag:formular",
     "antrag:nachweis_entfernen",  # hochgeladenen Nachweis vor dem Absenden wegnehmen (ADR 0105)

@@ -294,3 +294,137 @@ def test_am_einlass_ueber_die_notizen(admin_client, lage):
     # Zurück am Einlass steht der Wunsch als Notiz beim Kunden
     seite = admin_client.get(einlass, {"nummer": "100"}, HTTP_HX_REQUEST="true").content.decode()
     assert "Will wechseln:" in seite
+
+
+def _angebot(admin_client, admin, lage, **mehr):
+    """Legt einen Wunsch an, bietet den Platz „Mi 14:00“ (Maximum 1) an und liefert Wunsch und
+    Schlüssel aus dem Link der Mail."""
+    import re
+
+    h = lage["h"]
+    Haushalt.objects.filter(pk=h.pk).update(email="erika@example.org")
+    h.refresh_from_db()
+    Kundengruppe.objects.filter(pk=lage["mi14"].pk).update(maximum=2)  # genau ein Platz frei
+    w = wechsel.eintragen(h, admin, "uhrzeit", "spaeter", gruppe=lage["mi14"])
+    antwort = admin_client.post(
+        reverse("kunden:wechsel_entscheiden", args=[w.pk]),
+        {"anbieten": "1", "gruppe": lage["mi14"].pk, "antwort": "Bitte Tasche mitbringen.", **mehr},
+        follow=True,
+    )
+    assert "Platz angeboten" in antwort.content.decode()
+    (post,) = django_mail.outbox
+    schluessel = re.search(r"/kunden/wechsel/([\w-]+)/\?antwort=ja", post.body).group(1)
+    w.refresh_from_db()
+    return w, schluessel, post
+
+
+def test_platz_anbieten_und_kunde_bestaetigt(admin_client, admin, lage):
+    """Angebot per Mail mit Link: Der Platz ist reserviert, ein bloßer Aufruf ändert nichts,
+    erst der Knopf bestätigt – dann zieht der Kunde von selbst um (ADR 0175)."""
+    from apps.kunden import gruppen
+
+    w, schluessel, post = _angebot(admin_client, admin, lage)
+    assert post.to == ["erika@example.org"] and "Platz anbieten" in post.subject
+    assert "Mi 14:00" in post.body and "Bitte Tasche mitbringen." in post.body
+    html = post.alternatives[0][0]
+    assert (
+        "Ja, ich möchte wechseln" in html and f"/kunden/wechsel/{schluessel}/?antwort=nein" in html
+    )
+    # gespeichert ist nur die Prüfsumme; im Mail-Archiv steht der Link nicht
+    from apps.core.models import GesendeteMail
+
+    assert schluessel not in w.angebot_schluessel and len(w.angebot_schluessel) == 64
+    assert not GesendeteMail.objects.filter(text__contains=schluessel).exists()
+    assert w.status == "offen" and w.angebot_laeuft
+    assert w.angebot_bis == timezone.localdate() + dt.timedelta(days=wechsel.ANGEBOT_TAGE)
+    # reserviert: Die Gruppe mit einem Platz ist für andere nicht mehr frei
+    assert gruppen.reservierte_zugaenge()[lage["mi14"].pk] == 1
+    anderer = haushalt("200", lage["mi12"])
+    assert "Mi 14:00" not in namen(wechsel.moeglichkeiten(anderer, "uhrzeit", "spaeter"))
+    liste = admin_client.get(LISTE).content.decode()
+    assert "Antwort bis" in liste and 'name="anbieten"' not in liste  # läuft: kein zweites
+    # ein zweites Angebot geht nicht, solange eines läuft
+    with pytest.raises(wechsel.WechselFehler):
+        wechsel.anbieten(w, admin, lage["mi10"], None, "", lambda s: s)
+
+    # Die Seite ist ohne Anmeldung erreichbar und zeigt nur das Angebot, keinen Namen
+    kunde = Client()
+    seite = reverse("kunden:wechsel_angebot", args=[schluessel])
+    inhalt = kunde.get(seite + "?antwort=ja").content.decode()
+    assert "Mi 14:00" in inhalt and "Ja, verbindlich wechseln" in inhalt
+    assert "Muster100" not in inhalt and "Erika" not in inhalt and ">100<" not in inhalt
+    lage["h"].refresh_from_db()
+    assert lage["h"].kundengruppe == lage["mi12"]  # der bloße Aufruf hat nichts geändert
+    assert kunde.get(reverse("kunden:wechsel_angebot", args=["falsch"])).status_code == 404
+
+    django_mail.outbox.clear()
+    antwort = kunde.post(seite, {"antwort": "ja"}, follow=True).content.decode()
+    assert "der Wechsel ist eingetragen" in antwort
+    lage["h"].refresh_from_db()
+    w.refresh_from_db()
+    assert lage["h"].kundengruppe == lage["mi14"]
+    assert w.status == "genehmigt" and w.angebot_antwort == "ja"
+    assert w.entschieden_von == "chefin (vom Kunden bestätigt)"
+    assert "genehmigt" in django_mail.outbox[0].subject  # Bestätigung an den Kunden
+    # ein zweiter Klick ändert nichts mehr
+    assert "der Wechsel ist eingetragen" in kunde.post(seite, {"antwort": "nein"},
+                                                       follow=True).content.decode()  # fmt: skip
+    w.refresh_from_db()
+    assert w.angebot_antwort == "ja"
+    assert gruppen.reservierte_zugaenge().get(lage["mi14"].pk, 0) == 0
+
+
+def test_angebot_spaeter_abgelehnt_abgelaufen(admin_client, admin, lage):
+    kunde = Client()
+    spaeter = timezone.localdate() + dt.timedelta(days=20)
+    w, schluessel, _ = _angebot(admin_client, admin, lage, ab=spaeter.isoformat())
+    seite = reverse("kunden:wechsel_angebot", args=[schluessel])
+    # „Nein“: nichts ändert sich, der Wunsch bleibt offen, die Verwaltung sieht die Antwort
+    assert "Sie möchten nicht wechseln" in kunde.post(seite, {"antwort": "nein"},
+                                                     follow=True).content.decode()  # fmt: skip
+    w.refresh_from_db()
+    lage["h"].refresh_from_db()
+    assert w.status == "offen" and w.angebot_antwort == "nein" and not w.angebot_laeuft
+    assert lage["h"].kundengruppe == lage["mi12"]
+    liste = admin_client.get(LISTE).content.decode()
+    assert "vom Kunden abgelehnt" in liste and 'name="anbieten"' in liste  # neu anbieten geht
+    assert Notiz.objects.filter(kundennummer="100", text__startswith="Angebotenen Platz").exists()
+    # neues Angebot mit späterem Datum: „Ja“ plant den Wechsel zum Stichtag
+    django_mail.outbox.clear()
+    import re
+
+    ziel = reverse("kunden:wechsel_entscheiden", args=[w.pk])
+    admin_client.post(ziel, {"anbieten": "1", "gruppe": lage["mi14"].pk,
+                             "ab": spaeter.isoformat()})  # fmt: skip
+    neu = re.search(r"/kunden/wechsel/([\w-]+)/", django_mail.outbox[0].body).group(1)
+    assert neu != schluessel
+    assert kunde.get(seite).status_code == 404  # der alte Link gilt nicht mehr
+    seite = reverse("kunden:wechsel_angebot", args=[neu])
+    # abgelaufen: die Seite sagt es, nichts passiert, der Platz ist wieder frei
+    Wechselwunsch.objects.filter(pk=w.pk).update(
+        angebot_bis=timezone.localdate() - dt.timedelta(days=1))  # fmt: skip
+    assert "gilt nicht mehr" in kunde.post(seite, {"antwort": "ja"},
+                                          follow=True).content.decode()  # fmt: skip
+    assert "keine Antwort" in admin_client.get(LISTE).content.decode()
+    from apps.kunden import gruppen
+
+    assert gruppen.reservierte_zugaenge().get(lage["mi14"].pk, 0) == 0
+    Wechselwunsch.objects.filter(pk=w.pk).update(angebot_bis=timezone.localdate())
+    kunde.post(seite, {"antwort": "ja"})
+    w.refresh_from_db()
+    lage["h"].refresh_from_db()
+    assert w.status == "genehmigt" and w.ab == spaeter
+    assert lage["h"].kundengruppe == lage["mi12"]  # erst zum Stichtag
+    assert GeplanterWechsel.objects.get(haushalt=lage["h"]).ab == spaeter
+
+
+def test_angebot_ohne_email_geht_nicht(admin_client, admin, lage):
+    w = wechsel.eintragen(lage["h"], admin, "uhrzeit", "frueher", gruppe=lage["mi10"],
+                          ohne_email=True)  # fmt: skip
+    liste = admin_client.get(LISTE).content.decode()
+    assert "Ohne E-Mail-Adresse geht kein Angebot" in liste
+    ziel = reverse("kunden:wechsel_entscheiden", args=[w.pk])
+    antwort = admin_client.post(ziel, {"anbieten": "1", "gruppe": lage["mi10"].pk}, follow=True)
+    assert "keine E-Mail-Adresse" in antwort.content.decode()
+    w.refresh_from_db()
+    assert not w.angebot_am and not django_mail.outbox

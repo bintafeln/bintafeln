@@ -43,6 +43,11 @@ KERN = (
          "senden“ wählt.",
          "Die dabei gewählte Adresse: die E-Mail der Ausgabestelle, die eigene oder die der "
          "Tafel."),
+    Mail("Angebot eines Platzes",
+         "Wenn jemand bei einem Wechselwunsch „Platz anbieten“ wählt. Die Mail enthält den Link, "
+         "über den der Kunde bestätigt oder ablehnt.",
+         "Der Kunde, wenn bei ihm eine E-Mail-Adresse steht.",
+         ("Wechselwünsche", "kunden:wechselwuensche", "kunden.wechsel_entscheiden")),
     Mail("Antwort auf einen Wechselwunsch",
          "Wenn jemand den Wunsch eines Kunden, Uhrzeit, Tag oder Ausgabestelle zu wechseln, "
          "genehmigt oder ablehnt.",
