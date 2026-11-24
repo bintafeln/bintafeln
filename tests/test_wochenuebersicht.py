@@ -218,3 +218,115 @@ def test_rechte_und_modulschalter(admin, benutzer_mit_rolle, anmelden, daten):
     b = anmelden(Client(), benutzer_mit_rolle("berta", rollen.BUERO))
     assert b.get(url).status_code == 200
     assert "Soll und Ist je Tag" in b.get(reverse("core:start")).content.decode()
+
+
+# --- Vorschau auf eine kommende Woche -----------------------------------------------------------
+
+
+def test_vorschau_umzug_schliessung_und_schliesszeit(daten):
+    """Kommende Woche: geplante Umzüge zählen ab ihrem Stichtag in der neuen Gruppe, eine
+    Ausgabestelle mit Enddatum fällt danach weg, eine Schließzeit steht als „geschlossen“ und
+    zählt nicht in die Summe."""
+    from apps.ausgabe.models import Schliesszeit
+    from apps.kunden.models import GeplanterWechsel
+
+    zentrale, nord = daten
+    montag = auswertung.montag(STICHTAG) + dt.timedelta(weeks=1)  # Mo 26.10.2026
+    mittwoch, donnerstag = montag + dt.timedelta(days=2), montag + dt.timedelta(days=3)
+    # ohne Besonderheiten: dieselben Zahlen wie heute, mit Datum je Tag
+    d = auswertung.uebersicht(STICHTAG, vorschau=montag)
+    tage = {t.kurz: t for t in d["tage"]}
+    assert d["vorschau"] == montag and d["woche"] is None and d["hinweise"] == []
+    assert tage["Mi"].datum == mittwoch and tage["Mi"].summe.haushalte == 4
+    assert tage["Mo"].zeilen[0].name == "Nord" and tage["Mo"].summe.personen == 2
+    # Haushalt 5 (Nord, Mo/Do) zieht ab Donnerstag in die Zentrale (Mi 12:30) um
+    ziel = Kundengruppe.objects.get(name="Zentrale Mi 12:30")
+    h5 = Haushalt.objects.get(kundennummer="5")
+    GeplanterWechsel.objects.create(haushalt=h5, ziel_gruppe=ziel, ab=donnerstag)
+    d = auswertung.uebersicht(STICHTAG, vorschau=montag)
+    tage = {t.kurz: t for t in d["tage"]}
+    assert tage["Mo"].summe.haushalte == 1  # Montag noch in Nord
+    assert tage["Mi"].summe.haushalte == 4  # Mittwoch noch nicht in der Zentrale
+    assert tage["Do"].summe.haushalte == 0  # Donnerstag nicht mehr in Nord
+    assert "1 geplanter Umzug" in d["hinweise"][0]
+    # eine Woche später ist er mittwochs in der Zentrale
+    spaeter = auswertung.uebersicht(STICHTAG, vorschau=montag + dt.timedelta(weeks=1))
+    mi = next(t for t in spaeter["tage"] if t.kurz == "Mi")
+    assert mi.zeilen[0].haushalte == 4 and mi.summe.haushalte == 5
+    # schon ausgeführte Umzüge zählen nicht doppelt
+    GeplanterWechsel.objects.update(erledigt_am=STICHTAG)
+    assert auswertung.uebersicht(STICHTAG, vorschau=montag)["hinweise"] == []
+    # Nord schließt am Montag der Woche: Montag noch da, Donnerstag weg; Hinweis auf Haushalt 5
+    nord.schliesst_am = montag
+    nord.save()
+    d = auswertung.uebersicht(STICHTAG, vorschau=montag)
+    tage = {t.kurz: t for t in d["tage"]}
+    assert [z.name for z in tage["Mo"].zeilen] == ["Nord"] and tage["Do"].zeilen == []
+    assert any("„Nord“ schließt bis dahin: 1 Haushalt" in h for h in d["hinweise"])
+    # Schließzeit der Zentrale am Mittwoch: Zeile bleibt als „geschlossen“, Summe ohne sie
+    Schliesszeit.objects.create(ausgabestelle=zentrale, bezeichnung="Betriebsferien",
+                                von=mittwoch, bis=mittwoch)  # fmt: skip
+    d = auswertung.uebersicht(STICHTAG, vorschau=montag)
+    mi = next(t for t in d["tage"] if t.kurz == "Mi")
+    assert mi.zeilen[0].geschlossen == "Betriebsferien" and mi.zeilen[0].haushalte == 3
+    assert mi.summe.haushalte == 1  # nur die Sondergruppe
+    # die Übersicht von heute rechnet davon nichts ein
+    heute = auswertung.uebersicht(STICHTAG)
+    mi = next(t for t in heute["tage"] if t.kurz == "Mi")
+    assert mi.zeilen[0].geschlossen == "" and mi.datum is None and heute["hinweise"] == []
+    # Ausweis läuft vor der Woche ab: Hinweis, aber mitgezählt
+    Haushalt.objects.filter(kundennummer="1").update(
+        ausweis_gueltig_bis=montag - dt.timedelta(days=2)
+    )
+    d = auswertung.uebersicht(STICHTAG, vorschau=montag)
+    assert any("läuft der Ausweis vor dieser Woche ab" in h for h in d["hinweise"])
+
+
+def test_vorschau_kind_wird_erwachsen(daten):
+    """Gerechnet wird auf den Tag: Ein Kind, das in der Woche die Altersgrenze erreicht, zählt
+    ab dem Geburtstag als erwachsen."""
+    from apps.kunden.models import KundenEinstellungen
+
+    grenze = KundenEinstellungen.laden().kind_bis_alter
+    montag = auswertung.montag(STICHTAG) + dt.timedelta(weeks=1)
+    mittwoch = montag + dt.timedelta(days=2)
+    kind = Person.objects.filter(haushalt__kundennummer="3", vorname="Kim").get()
+    kind.geburtsdatum = mittwoch.replace(year=mittwoch.year - grenze)
+    kind.save()
+    heute = next(t for t in auswertung.uebersicht(STICHTAG)["tage"] if t.kurz == "Mi")
+    dann = next(
+        t for t in auswertung.uebersicht(STICHTAG, vorschau=montag)["tage"] if t.kurz == "Mi"
+    )
+    assert heute.zeilen[0].kinder == dann.zeilen[0].kinder + 1
+    assert heute.zeilen[0].personen == dann.zeilen[0].personen
+
+
+def test_vorschau_seite_auswahl_und_pdf(modul_an, admin_client, daten, pdf_text):
+    from django.utils import timezone
+
+    from apps.ausgabe.models import Schliesszeit
+
+    zentrale, _ = daten
+    diese = auswertung.montag(timezone.localdate())
+    naechste = diese + dt.timedelta(weeks=1)
+    ziel = reverse("wochenuebersicht:uebersicht")
+    seite = admin_client.get(ziel).content.decode()
+    # Auswahl: vier kommende Wochen als Vorschau, die laufende ist vorgewählt
+    assert seite.count("– Vorschau</option>") == 4 and "Vorschau auf KW" not in seite
+    assert f'<option value="{diese:%G-W%V}" selected>' in seite and "– diese Woche" in seite
+    kw = naechste.strftime("%G-W%V")
+    Schliesszeit.objects.create(ausgabestelle=zentrale, von=naechste,
+                                bis=naechste + dt.timedelta(days=6))  # fmt: skip
+    seite = admin_client.get(ziel, {"kw": kw, "abholungen": "1"}).content.decode()
+    assert f"Vorschau auf KW {naechste:%V}" in seite and "Abgeholt" not in seite
+    assert "wochen-geschlossen" in seite and ">geschlossen<" in seite
+    assert f'<option value="{kw}" selected>' in seite and f"{naechste:%d.%m.}" in seite
+    assert f"kw={kw}" in seite  # die PDF-Knöpfe nehmen die Woche mit
+    hoch = pdf_text(admin_client.get(reverse("wochenuebersicht:pdf", args=["hoch"]), {"kw": kw}))
+    assert f"Vorschau KW {naechste:%V}" in hoch and "Zentrale – geschlossen" in hoch
+    antwort = admin_client.get(reverse("wochenuebersicht:pdf", args=["quer"]), {"kw": kw})
+    assert f"vorschau-kw{naechste:%V}" in antwort["Content-Disposition"]
+    assert f"Vorschau KW {naechste:%V}" in pdf_text(antwort)
+    # eine vergangene Woche ohne Haken bleibt die Übersicht von heute
+    alt = (diese - dt.timedelta(weeks=2)).strftime("%G-W%V")
+    assert "Vorschau auf KW" not in admin_client.get(ziel, {"kw": alt}).content.decode()

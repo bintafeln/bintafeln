@@ -20,26 +20,39 @@ sehen = rollen.recht_erforderlich("wochenuebersicht.sehen")
 bearbeiten = rollen.recht_erforderlich("wochenuebersicht.bearbeiten")
 
 
-def _woche(request) -> dt.date | None:
-    """Montag der gewählten Kalenderwoche (Feld ``kw`` im Format JJJJ-Www) oder None."""
-    if not request.GET.get("abholungen"):
-        return None
+VORSCHAU_WOCHEN = 4  # so viele kommende Wochen stehen zur Wahl
+
+
+def _gewaehlt(request) -> dt.date:
+    """Montag der gewählten Kalenderwoche (Feld ``kw`` im Format JJJJ-Www), sonst der dieser
+    Woche."""
     try:
         return dt.datetime.strptime(request.GET.get("kw", "") + "-1", "%G-W%V-%u").date()
     except ValueError:
         return auswertung.montag(timezone.localdate())
 
 
+def _woche(request) -> tuple[dt.date | None, dt.date | None]:
+    """(Woche für „mit Abholungen“, Woche für die Vorschau) – höchstens eines davon. Eine
+    kommende Woche ist immer Vorschau; eine vergangene oder die laufende zeigt mit dem Haken
+    die Abholungen dazu."""
+    gewaehlt, diese = _gewaehlt(request), auswertung.montag(timezone.localdate())
+    if diese < gewaehlt <= diese + dt.timedelta(weeks=52):
+        return None, gewaehlt
+    return (min(gewaehlt, diese) if request.GET.get("abholungen") else None), None
+
+
 def _wochen_auswahl(heute: dt.date) -> list[tuple[str, str]]:
-    """Die letzten 8 Kalenderwochen (aktuelle zuerst) als (Wert ``JJJJ-Www``, Beschriftung mit
-    Zeitraum) für das Auswahlmenü."""
+    """Die nächsten Wochen (Vorschau), die laufende und die letzten 7 Kalenderwochen als (Wert
+    ``JJJJ-Www``, Beschriftung mit Zeitraum) für das Auswahlmenü, die späteste zuerst."""
     mo = auswertung.montag(heute)
     auswahl = []
-    for i in range(8):
-        anfang = mo - dt.timedelta(weeks=i)
+    for i in range(VORSCHAU_WOCHEN, -8, -1):
+        anfang = mo + dt.timedelta(weeks=i)
         ende = anfang + dt.timedelta(days=6)
+        zusatz = " – Vorschau" if i > 0 else (" – diese Woche" if i == 0 else "")
         auswahl.append((anfang.strftime("%G-W%V"),
-                        f"KW {anfang:%V} ({anfang:%d.%m.}–{ende:%d.%m.%Y})"))  # fmt: skip
+                        f"KW {anfang:%V} ({anfang:%d.%m.}–{ende:%d.%m.%Y}){zusatz}"))  # fmt: skip
     return auswahl
 
 
@@ -47,9 +60,9 @@ def _wochen_auswahl(heute: dt.date) -> list[tuple[str, str]]:
 @sehen
 def uebersicht(request):
     heute = timezone.localdate()
-    woche = _woche(request)
-    daten = auswertung.uebersicht(heute, woche)
-    kw = (woche or auswertung.montag(heute)).strftime("%G-W%V")
+    woche, vorschau = _woche(request)
+    daten = auswertung.uebersicht(heute, woche, vorschau)
+    kw = (vorschau or woche or auswertung.montag(heute)).strftime("%G-W%V")
     return render(request, "wochenuebersicht/uebersicht.html", {**daten, "kw": kw,
                   "wochen": _wochen_auswahl(heute),
                   "abfrage": request.GET.urlencode()})  # fmt: skip
@@ -58,9 +71,11 @@ def uebersicht(request):
 @never_cache
 @sehen
 def als_pdf(request, art):
-    daten = auswertung.uebersicht(timezone.localdate(), _woche(request))
+    woche, vorschau = _woche(request)
+    daten = auswertung.uebersicht(timezone.localdate(), woche, vorschau)
     inhalt = pdf.querformat(daten) if art == "quer" else pdf.hochformat(daten)
-    return pdf_antwort(inhalt, f"wochenuebersicht-{art}-{timezone.localdate():%Y-%m-%d}.pdf")
+    wann = f"vorschau-kw{vorschau:%V}" if vorschau else f"{timezone.localdate():%Y-%m-%d}"
+    return pdf_antwort(inhalt, f"wochenuebersicht-{art}-{wann}.pdf")
 
 
 @never_cache
