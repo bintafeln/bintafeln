@@ -454,7 +454,7 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   (`Modul.kopfzeile`, `touren/_heuler.html`, `static/js/heuler.js`), bis jemand aus der Mannschaft
   bestätigt (`heuler.gesehen()`); nichts bei Stopps der Mannschaft selbst.
   Nachricht der Fahrdienstleitung an die Mannschaft (ADR 0168): `Tournachricht` je Tour und Tag über
-  `apps/touren/nachrichten.py` (`senden()` nur heute, auch an alle Touren; derselbe rote Brief und
+  `apps/touren/nachrichten.py` (`senden()` für heute oder einen kommenden Tag, auch an alle Touren; derselbe rote Brief und
   Push; `gesehen()`; fertige Texte `Kurztext` unter „Einrichten“); Stand je Nachricht unter „Touren heute“.
   Statistik der Touren (ADR 0157): `apps/touren/statistik.py` (`Daten(jahr)`, Abschnitte für
   `statistik/_abschnitt.html`), Kisten → kg über `Gewichte` (`Warengruppe.kiste_kg`, sonst

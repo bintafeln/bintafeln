@@ -20,7 +20,10 @@ vom Büro (ADR 0159) oder per Telefon. Eine Nachricht, die im Programm untergeht
   Schicken.
 - **Fertige Texte** (`Kurztext`) pflegt die Tafel unter „Touren → Einrichten“; drei sind
   vorgegeben. Sie stehen beim Schicken zum Antippen bereit, freier Text geht immer.
-- Nur für heute, höchstens 300 Zeichen, keine Antwort der Mannschaft außer „Gelesen“. Nach 30
+- Für heute oder einen **kommenden Tag** (ergänzt): „Touren heute“ auf den Tag blättern und dort
+  schicken. Die Nachricht geht gleich an die Mannschaft, die für den Tag eingetragen ist; der rote
+  Brief nennt den Tag und bleibt, bis jemand „Gelesen“ tippt. Nie für vergangene Tage.
+- Höchstens 300 Zeichen, keine Antwort der Mannschaft außer „Gelesen“. Nach 30
   Tagen gelöscht; „Tourtag zurücksetzen“ nimmt die Nachrichten des Tages mit.
 - Regeln nur in `apps/touren/nachrichten.py`.
 

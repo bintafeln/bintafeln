@@ -140,3 +140,44 @@ def test_fehler_und_grenzen(lage, buero):
     assert nachrichten.fristen_anwenden() == 1
     assert not Tournachricht.objects.filter(pk=alt.pk).exists() and Tournachricht.objects.exists()
     assert timezone.localdate() == heute
+
+
+def test_nachricht_fuer_einen_kommenden_tag(
+    lage, handys, buero, anmelden, django_capture_on_commit_callbacks
+):
+    """Für morgen schicken: Die Mannschaft von morgen bekommt Push und roten Brief gleich, der
+    Brief nennt den Tag; für gestern geht nichts."""
+    heute = lage["heute"]
+    morgen, gestern = heute + dt.timedelta(days=1), heute - dt.timedelta(days=1)
+    fritz_person = Tour.objects.get(pk=lage["nord"].pk).personen.first()
+    tour = Tour.objects.create(name="Morgentour", datum=morgen, fahrer=fritz_person)
+    tour.personen.add(fritz_person)
+    adresse = f"{reverse('touren:heute')}?tag={morgen:%Y-%m-%d}"
+    seite = buero.get(adresse).content.decode()
+    assert "Nachricht an die Mannschaft" in seite and "alle, die am " in seite
+    senden = f"{reverse('touren:nachricht_senden')}?tag={morgen:%Y-%m-%d}"
+    assert f'action="{senden}"' in seite
+    with django_capture_on_commit_callbacks(execute=True):
+        antwort = buero.post(senden, {"tour": "alle", "text": "Bitte zuerst zum Lager"})
+    assert antwort.url == f"{adresse}#nachrichten"
+    n = Tournachricht.objects.get()
+    assert (n.tour, n.datum) == (tour, morgen)  # die Touren von heute bekommen nichts
+    assert [wer for wer, _ in handys] == ["fritz"]
+    assert handys[0][1]["titel"] == f"Nachricht: Morgentour am {morgen:%d.%m.}"
+    # roter Brief schon heute, mit dem Tag; „Gelesen“ führt zur Tour an dem Tag
+    fritz = anmelden(Client(), lage["fritz"])
+    brief = fritz.get(reverse("touren:heuler")).content.decode()
+    assert "Bitte zuerst zum Lager" in brief and f"{morgen:%d.%m.}" in brief
+    assert fritz.post(reverse("touren:nachricht_gesehen", args=[n.pk])).url.endswith(
+        f"?tag={morgen:%Y-%m-%d}"
+    )
+    assert "heuler-brief" not in fritz.get(reverse("touren:heuler")).content.decode()
+    assert "von fritz" in buero.get(adresse).content.decode()
+    # vergangener Tag: kein Formular, kein Schicken
+    davor = buero.get(f"{reverse('touren:heute')}?tag={gestern:%Y-%m-%d}").content.decode()
+    assert "nachricht-text" not in davor
+    with pytest.raises(nachrichten.NachrichtFehler, match="vergangenen"):
+        nachrichten.senden([tour], "Hallo", lage["buero"], gestern)
+    # an dem Tag fährt keine der Touren
+    antwort = buero.post(senden, {"tour": lage["nord"].pk, "text": "Hallo"}, follow=True)
+    assert f"Am {morgen:%d.%m.%Y} fährt keine" in antwort.content.decode()

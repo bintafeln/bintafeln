@@ -1,13 +1,14 @@
 """Nachricht der Fahrdienstleitung an die Mannschaft einer Tour (ADR 0168).
 
-Wer Touren plant, schickt der Mannschaft einer Tour von heute – oder allen Touren von heute – einen
-kurzen Text. Die Mannschaft bekommt
+Wer Touren plant, schickt der Mannschaft einer Tour – oder allen Touren des Tages – einen kurzen
+Text, für heute oder einen kommenden Tag. Die Mannschaft bekommt
 - eine Push-Nachricht aufs Handy (wer das auf „Mein Konto“ eingeschaltet hat) und
 - in bintafeln denselben roten Brief wie bei einem neuen Stopp vom Büro (``heuler``), über jeder
   Seite, bis jemand aus der Mannschaft „Gelesen“ tippt.
 
 Die Fahrdienstleitung sieht je Nachricht, ob und von wem sie bestätigt wurde: Bleibt sie offen,
-hilft nur der Anruf. Nachrichten gibt es nur für heute; sie werden nach 30 Tagen gelöscht."""
+hilft nur der Anruf. Für vergangene Tage gibt es keine Nachrichten; nach 30 Tagen werden sie
+gelöscht."""
 
 import datetime as dt
 
@@ -39,23 +40,30 @@ def adresse(nachricht: Tournachricht) -> str:
     return f"{reverse('touren:fahren', args=[nachricht.tour_id])}?tag={nachricht.datum:%Y-%m-%d}"
 
 
-def senden(touren_: list[Tour], text: str, benutzer) -> list[Tournachricht]:
-    """Schickt den Text an die Mannschaft jeder der Touren – nur für heute und nur an Touren, die
-    heute fahren. Liefert die angelegten Nachrichten."""
+def senden(
+    touren_: list[Tour], text: str, benutzer, datum: dt.date | None = None
+) -> list[Tournachricht]:
+    """Schickt den Text an die Mannschaft jeder der Touren – für heute oder einen kommenden Tag und
+    nur an Touren, die an dem Tag fahren. Liefert die angelegten Nachrichten."""
     text = " ".join((text or "").split())[:300]
     if not text:
         raise NachrichtFehler("Bitte einen Text eingeben.")
     heute = timezone.localdate()
-    fahren = [t for t in touren_ if ablauf.faehrt_am(t, heute)]
+    datum = datum or heute
+    if datum < heute:
+        raise NachrichtFehler("Für einen vergangenen Tag lässt sich keine Nachricht schicken.")
+    fahren = [t for t in touren_ if ablauf.faehrt_am(t, datum)]
     if not fahren:
-        raise NachrichtFehler("Heute fährt keine der gewählten Touren.")
+        wann = "Heute" if datum == heute else f"Am {datum:%d.%m.%Y}"
+        raise NachrichtFehler(f"{wann} fährt keine der gewählten Touren.")
     von = (benutzer.get_full_name() or benutzer.get_username())[:150]
-    neu = [Tournachricht.objects.create(tour=t, datum=heute, text=text, von=benutzer, von_name=von)
+    neu = [Tournachricht.objects.create(tour=t, datum=datum, text=text, von=benutzer, von_name=von)
            for t in fahren]  # fmt: skip
     for n in neu:
-        konten = heuler.mannschaft(n.tour, heute)
+        konten = heuler.mannschaft(n.tour, datum)
         if konten:
-            titel, link, kennung = f"Nachricht: {n.tour.name}", adresse(n), f"nachricht-{n.pk}"
+            tag = "" if datum == heute else f" am {datum:%d.%m.}"
+            titel, link, kennung = f"Nachricht: {n.tour.name}{tag}", adresse(n), f"nachricht-{n.pk}"
             push.nach_speichern(
                 lambda k=konten, t=titel, x=n.text, li=link, ke=kennung: push.an_benutzer(
                     k, t, x, li, ke))  # fmt: skip
@@ -63,17 +71,18 @@ def senden(touren_: list[Tour], text: str, benutzer) -> list[Tournachricht]:
 
 
 def offene(benutzer, datum: dt.date | None = None) -> list[Tournachricht]:
-    """Nachrichten von heute an die eigenen Touren, die noch niemand bestätigt hat."""
+    """Nachrichten an die eigenen Touren von heute und den kommenden Tagen, die noch niemand
+    bestätigt hat – eine Nachricht für morgen sieht die Mannschaft von morgen also gleich."""
     datum = datum or timezone.localdate()
     offen = (
-        Tournachricht.objects.filter(datum=datum, gesehen_am=None)
+        Tournachricht.objects.filter(datum__gte=datum, gesehen_am=None)
         .select_related("tour", "tour__fahrdienst_tour")
         .order_by("gesendet_am", "pk")
     )
     if not offen:
         return []
     person = ablauf.person_von(benutzer)
-    return [n for n in offen if ablauf.faehrt_mit(n.tour, datum, person)]
+    return [n for n in offen if ablauf.faehrt_mit(n.tour, n.datum, person)]
 
 
 def gesehen(nachricht: Tournachricht, benutzer) -> bool:
