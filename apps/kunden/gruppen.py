@@ -24,7 +24,8 @@ from apps.kunden.models import (
     Kundengruppe,
 )
 
-RAUS = {Haushalt.Status.PAUSIERT, Haushalt.Status.GESPERRT, Haushalt.Status.BEENDET}
+RAUS = {Haushalt.Status.PAUSIERT, Haushalt.Status.GESPERRT, Haushalt.Status.BEENDET,
+        Haushalt.Status.VERSTORBEN}  # fmt: skip
 
 
 def grund(h: Haushalt, heute: dt.date) -> str:
@@ -43,22 +44,28 @@ def _aktiv() -> bool:
 def pruefen(h: Haushalt, heute: dt.date | None = None) -> str:
     """Nach einer Änderung im Programm: nimmt die Gruppe sofort weg. Liefert den Grund (für eine
     Meldung) oder leer. Die Historie hält der Aufrufer wie bei jeder Änderung fest."""
+    from apps.kunden import status
+
     heute = heute or timezone.localdate()
+    status_text = status.pruefen(h, heute)  # abgelaufen → pausiert, verlängert → aktiv (ADR 0176)
     text = grund(h, heute) if h.kundengruppe_id and _aktiv() else ""
     if text:
         Haushalt.objects.filter(pk=h.pk).update(kundengruppe=None)
         h.kundengruppe = None
     zeiten_abgleichen([h.kundennummer], heute, text)
-    return text
+    return text or status_text
 
 
 def regel_anwenden(heute: dt.date | None = None, ereignisse: bool = True) -> int:
     """Täglich (Fristen) und beim Import: alle, die keine Gruppe haben dürfen. Der Import hält
     die Historie selbst fest (``ereignisse=False``), sonst stünde jede Änderung doppelt da."""
+    from apps.kunden import status
+
     heute = heute or timezone.localdate()
+    umgestellt = status.regel_anwenden(heute, ereignisse)  # erst der Status, dann die Gruppe
     if not _aktiv():
         zeiten_abgleichen(heute=heute)
-        return 0
+        return umgestellt
     betroffen = [h for h in Haushalt.objects.filter(kundengruppe__isnull=False)
                  .select_related("kundengruppe") if grund(h, heute)]  # fmt: skip
     with transaction.atomic():
@@ -72,7 +79,7 @@ def regel_anwenden(heute: dt.date | None = None, ereignisse: bool = True) -> int
             Haushalt.objects.filter(pk=h.pk).update(kundengruppe=None)
             zeiten_abgleichen([h.kundennummer], heute, text)
         zeiten_abgleichen(heute=heute)
-    return len(betroffen)
+    return len(betroffen) + umgestellt
 
 
 def zeiten_abgleichen(kundennummern=None, heute: dt.date | None = None, ende: str = "") -> int:
@@ -147,7 +154,7 @@ def mit_plaetzen(haushalt: Haushalt | None = None) -> list[dict]:
     Haushalts. ``reserviert`` zählt geplante Zuzüge, die den Platz schon belegen (ADR 0118); sie
     zählen bei ``frei`` mit. Anders als ``aufnahme.freie_gruppen`` werden auch volle Gruppen
     gezeigt."""
-    belegt = Count("haushalte", filter=~Q(haushalte__status=Haushalt.Status.BEENDET))
+    belegt = Count("haushalte", filter=~Q(haushalte__status__in=Haushalt.NICHT_MEHR))
     reserviert = reservierte_zugaenge()
     ergebnis = []
     for g in (

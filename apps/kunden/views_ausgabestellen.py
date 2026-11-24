@@ -47,7 +47,7 @@ def ausgabestelle(request, pk):
     stelle = get_object_or_404(
         Ausgabestelle.objects.prefetch_related("zeiten", "kontakte__benutzer"), pk=pk
     )
-    aktiv = Count("haushalte", filter=~Q(haushalte__status=Haushalt.Status.BEENDET))
+    aktiv = Count("haushalte", filter=~Q(haushalte__status__in=Haushalt.NICHT_MEHR))
     gruppen = stelle.kundengruppe_set.filter(aktiv=True).annotate(belegt=aktiv).order_by("name")
     return render(request, "kunden/ausgabestelle.html", {
         "s": stelle, "gruppen": gruppen, "karte": karten_links(stelle),

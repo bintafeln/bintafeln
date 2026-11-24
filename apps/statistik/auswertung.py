@@ -215,7 +215,7 @@ def je_stelle(z: Zeitraum, stellen=None) -> list[tuple[str, int]]:
 
 def bestand(stellen=None):
     """Haushalte (ohne beendete) der gewählten Ausgabestellen; interne Park-Gruppen außen vor."""
-    qs = Haushalt.objects.exclude(status=Haushalt.Status.BEENDET).exclude(kundengruppe__intern=True)
+    qs = Haushalt.objects.exclude(status__in=Haushalt.NICHT_MEHR).exclude(kundengruppe__intern=True)
     if stellen is not None:
         qs = qs.filter(kundengruppe__ausgabestelle__in=stellen)
     return qs
@@ -324,7 +324,7 @@ class Auslastung:
 
 
 def auslastung(stellen=None) -> list[Auslastung]:
-    belegt = Count("haushalte", filter=~Q(haushalte__status=Haushalt.Status.BEENDET))
+    belegt = Count("haushalte", filter=~Q(haushalte__status__in=Haushalt.NICHT_MEHR))
     gruppen = (
         Kundengruppe.objects.filter(aktiv=True)
         .exclude(intern=True)

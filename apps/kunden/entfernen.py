@@ -3,7 +3,7 @@
 from apps.core import papierkorb
 
 
-def haushalt_loeschen(benutzer, h):
+def haushalt_loeschen(benutzer, h, still: bool = False, von: str = ""):
     """Wie „Haushalt löschen“ in der Oberfläche (ADR 0073); Kontobuchungen bleiben ohne Haushalt,
     aber mit Kundennummer für die Kasse."""
     from apps.ausgabe.models import Teilnahme
@@ -17,5 +17,5 @@ def haushalt_loeschen(benutzer, h):
         HaushaltEreignis.objects.filter(kundennummer=nummer),
         Teilnahme.objects.filter(kundennummer=nummer),
         HaushaltDokument.objects.filter(kundennummer=nummer),
-        recht="kunden.loeschen", kundennummer=nummer,
+        recht="kunden.loeschen", kundennummer=nummer, still=still, von=von,
     )  # fmt: skip

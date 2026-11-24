@@ -36,6 +36,8 @@ class KundenEinstellungenForm(forms.ModelForm):
             "historie_aufbewahren_jahre",
             "selbst_gefuehrt",
             "gruppe_behalten",
+            "status_nach_ausweis",
+            "verstorben_loeschen_monate",
             "verlegung_vorlauf_wochen",
             "nachfrist_sichtbar_tage",
             "export_felder",
@@ -64,6 +66,15 @@ class KundenEinstellungenForm(forms.ModelForm):
         self.fields["sb_merkzeichen"].choices = [(c, f"{c} ({b})") for c, b in MERKZEICHEN]
         self.initial["sb_merkzeichen"] = merkzeichen_liste(self.instance.sb_merkzeichen)
         self.initial["export_felder"] = self.instance.export_felder or export.VORGABE
+        if not self.instance.status_nach_ausweis:
+            from apps.kunden import status
+
+            n = status.betroffene().count()
+            self.fields[
+                "status_nach_ausweis"
+            ].help_text += (
+                f" Das beträfe heute {n} Kunde{'n' if n != 1 else ''} (aktiv, Ausweis abgelaufen)."
+            )
 
     def clean_sb_merkzeichen(self):
         return ", ".join(merkzeichen_liste(", ".join(self.cleaned_data["sb_merkzeichen"])))

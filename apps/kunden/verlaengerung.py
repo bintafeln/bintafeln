@@ -195,7 +195,7 @@ def gemeldete_notizen_streichen(p: Pruefung) -> int:
 
 def pruefen(h: Haushalt, heute: dt.date, monate: int, e: KundenEinstellungen) -> Pruefung:
     p = Pruefung(haushalt=h, ergebnis=OK, neu_bis=neues_datum(h, heute, monate, e))
-    if h.status in (Haushalt.Status.GESPERRT, Haushalt.Status.BEENDET):
+    if h.status in (Haushalt.Status.GESPERRT, *Haushalt.NICHT_MEHR):
         p.ergebnis = NEIN
         p.gruende.append(f"Status „{h.get_status_display()}“")
     if any(s.ist_aktiv(heute) for s in h.sperren.all()):

@@ -404,7 +404,7 @@ def liste(request, art):
     eintraege = modell.objects.all()
     if art == "kundengruppen":  # aktuelle Belegung (ohne beendete Haushalte) nur zur Anzeige
         eintraege = eintraege.annotate(
-            belegt=Count("haushalte", filter=~Q(haushalte__status=Haushalt.Status.BEENDET))
+            belegt=Count("haushalte", filter=~Q(haushalte__status__in=Haushalt.NICHT_MEHR))
         )
     zeilen = [
         (e.pk, [(t, _zelle(e, a)) for t, a in spalten], getattr(e, "aktiv", True))

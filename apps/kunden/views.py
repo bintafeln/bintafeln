@@ -63,6 +63,11 @@ def einstellungen(request):
     if request.method == "POST" and form.is_valid():
         form.save()
         text = "Einstellungen des Kundenstamms gespeichert."
+        if "status_nach_ausweis" in form.changed_data and form.cleaned_data["status_nach_ausweis"]:
+            from apps.kunden import gruppen
+
+            n = gruppen.regel_anwenden()
+            text += f" Status nach dem Ausweis umgestellt: {n} Kunde{'n' if n != 1 else ''}."
         if {"sb_ab_gdb", "sb_merkzeichen", "sb_ausweis_vorgelegt"} & set(form.changed_data):
             n = merkmale.neu_bewerten()
             text += f" „Schwerbehindert“ bei {n} Person{'en' if n != 1 else ''} neu gesetzt."
@@ -122,6 +127,7 @@ STATUS_FILTER = [
     (Haushalt.Status.PAUSIERT, "pausiert"),
     (Haushalt.Status.GESPERRT, "gesperrt"),
     (Haushalt.Status.BEENDET, "beendet"),
+    (Haushalt.Status.VERSTORBEN, "verstorben"),
 ]
 
 

@@ -74,6 +74,20 @@ class KundenEinstellungen(models.Model):
         help_text="Aus: Wer pausiert, gesperrt oder beendet ist oder keinen gültigen Ausweis mehr "
         "hat, fällt sofort aus der Kundengruppe, damit das Maximum der Gruppe stimmt.",
     )  # fmt: skip
+    status_nach_ausweis = models.BooleanField(
+        "Kunden mit abgelaufenem Ausweis auf „pausiert“ setzen", default=False,
+        help_text="An: Läuft ein Ausweis ab, steht der Kunde ab dem nächsten Tag von selbst auf "
+        "„pausiert“; wird der Ausweis verlängert, ist er wieder „aktiv“. Wer von Hand pausiert, "
+        "gesperrt, beendet oder als verstorben eingetragen ist, bleibt, wie er ist. Kunden ohne "
+        "eingetragenes Ablaufdatum bleiben aktiv. Beim Einschalten werden alle Kunden mit "
+        "abgelaufenem Ausweis sofort umgestellt.",
+    )  # fmt: skip
+    verstorben_loeschen_monate = models.PositiveSmallIntegerField(
+        "Verstorbene Kunden löschen nach (Monaten)", default=3,
+        validators=[MaxValueValidator(120)],
+        help_text="Kunden mit dem Status „verstorben“ wandern so viele Monate danach von selbst "
+        "in den Papierkorb (von dort wiederherstellbar, bis er geleert wird). 0 = nie automatisch.",
+    )  # fmt: skip
     verlegung_vorlauf_wochen = models.PositiveSmallIntegerField(
         "Platz bei geplantem Umzug reservieren (Wochen vorher)", default=6,
         validators=[MaxValueValidator(52)],
@@ -532,9 +546,17 @@ class Haushalt(models.Model):
         PAUSIERT = "pausiert", "pausiert"
         GESPERRT = "gesperrt", "gesperrt"
         BEENDET = "beendet", "beendet"
+        VERSTORBEN = "verstorben", "verstorben"
+
+    # zählen nirgends mehr mit (Belegung der Kundengruppen, Statistik)
+    NICHT_MEHR = (Status.BEENDET, Status.VERSTORBEN)
 
     kundennummer = models.CharField("Kundennummer", max_length=20, unique=True)
     status = models.CharField("Status", max_length=10, choices=Status.choices, default=Status.AKTIV)
+    # „pausiert“, weil der Ausweis abgelaufen ist (ADR 0176): Nur dann macht eine Verlängerung
+    # den Kunden von selbst wieder aktiv. Von Hand gesetzte Status fasst die Automatik nie an.
+    status_automatisch = models.BooleanField(default=False, editable=False)
+    status_seit = models.DateField("Status seit", null=True, blank=True, editable=False)
     kundengruppe = models.ForeignKey(
         Kundengruppe,
         verbose_name="Kundengruppe",
@@ -587,6 +609,18 @@ class Haushalt(models.Model):
     def __str__(self):
         return f"Haushalt {self.kundennummer}"
 
+    def save(self, *args, **kwargs):
+        """Hält fest, seit wann der Status gilt (für die Frist bei „verstorben“)."""
+        if self.status != getattr(self, "_status_geladen", None):
+            self.status_seit = timezone.localdate()
+            if self.status != self.Status.PAUSIERT:
+                self.status_automatisch = False
+            felder = kwargs.get("update_fields")
+            if felder is not None and "status" in felder:
+                kwargs["update_fields"] = [*felder, "status_seit", "status_automatisch"]
+        super().save(*args, **kwargs)
+        self._status_geladen = self.status
+
     def besuch_uhrzeit(self):
         """Uhrzeit der letzten Abholung am Tag des letzten Besuchs, falls bekannt."""
         if not self.letzter_besuch:
@@ -632,6 +666,13 @@ class Haushalt(models.Model):
             return ""
         zeit = self.besuch_uhrzeit()
         return f"{self.letzter_besuch:%d.%m.%Y}" + (f" {zeit:%H:%M}" if zeit else "")
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        h = super().from_db(db, field_names, values)
+        if "status" in field_names:
+            h._status_geladen = h.status
+        return h
 
     @property
     def hauptperson(self):
@@ -1479,6 +1520,7 @@ def fristen_anwenden() -> int:
         + verlegung.maxima_anwenden()
         + alte_wechselwuensche_loeschen()
         + _gruppenregel()
+        + _verstorbene()
     )
 
 
@@ -1507,6 +1549,12 @@ def _gruppenregel() -> int:
     from apps.kunden import gruppen
 
     return gruppen.regel_anwenden()
+
+
+def _verstorbene() -> int:
+    from apps.kunden import status
+
+    return status.verstorbene_entfernen()
 
 
 class ImportVorbereitung(models.Model):
