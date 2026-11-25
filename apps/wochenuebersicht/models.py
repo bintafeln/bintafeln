@@ -89,6 +89,33 @@ class StellenReihenfolge(models.Model):
         return f"{self.ausgabestelle} ({self.reihenfolge})"
 
 
+class EigeneListe(models.Model):
+    """Eigene Fassung der Wochenübersicht im Querformat: eigener Name, eigene Reihenfolge der Tage
+    und eine kurze Adresse (``/liste/<kurz>/``), z. B. für die Person, die die Waren zusammenstellt
+    und dabei mit dem Mittwoch anfängt."""
+
+    name = models.CharField("Name der Liste", max_length=100,
+                            help_text="Steht als Überschrift auf dem Blatt.")  # fmt: skip
+    kurz = models.SlugField(
+        "Kurze Adresse", max_length=40, unique=True,
+        help_text="Ein Wort aus Kleinbuchstaben, Ziffern und Bindestrichen, z. B. „packliste“.",
+    )  # fmt: skip
+    tage = models.CharField("Reihenfolge der Tage", max_length=30, blank=True)
+
+    class Meta:
+        verbose_name = "Eigene Liste der Wochenübersicht"
+        verbose_name_plural = "Eigene Listen der Wochenübersicht"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def tage_liste(self) -> list[str]:
+        return [t.strip() for t in self.tage.split(",") if t.strip()]
+
+
 auditlog.register(Selbstabholer)
+auditlog.register(EigeneListe)
 auditlog.register(SelbstabholerKontakt)
 auditlog.register(SelbstabholerNotiz)

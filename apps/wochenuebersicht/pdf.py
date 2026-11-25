@@ -101,8 +101,11 @@ def _masse(zeilen_zahl: int, hinweise: int) -> tuple[float, float, float]:
     return schrift, max(schrift * 1.75, min(hoehe, schrift * 2.3)), gedreht
 
 
-def querformat(daten) -> bytes:
-    doc = Pdf("Wochenübersicht der Ausgabestellen", _untertitel(daten), landscape(A4))
+TITEL = "Wochenübersicht der Ausgabestellen"
+
+
+def querformat(daten, titel: str = TITEL) -> bytes:
+    doc = Pdf(titel, _untertitel(daten), landscape(A4))
     tage = daten["tage"]
     namen: list[str] = []
     for tag in tage:

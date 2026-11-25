@@ -83,6 +83,12 @@ def tage_von(text: str) -> list[int]:
     return [i for i, k in enumerate(WOCHENTAGE) if k in kuerzel]
 
 
+def ordnen(tage: list, folge: list[str]) -> list:
+    """Die Tage in eigener Reihenfolge (Kürzel wie „Mi“); nicht genannte folgen wie gewohnt."""
+    platz = {kurz: i for i, kurz in enumerate(folge)}
+    return sorted(tage, key=lambda t: (platz.get(t.kurz, len(platz)), t.nummer))
+
+
 def montag(datum: dt.date) -> dt.date:
     return datum - dt.timedelta(days=datum.weekday())
 

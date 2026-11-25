@@ -12,7 +12,7 @@ from apps.core.models import TafelEinstellungen
 from apps.konten import rollen
 from apps.kunden.models import Abholung, Ausgabestelle, Haushalt, Kundengruppe, Person
 from apps.wochenuebersicht import auswertung
-from apps.wochenuebersicht.models import Selbstabholer, StellenReihenfolge
+from apps.wochenuebersicht.models import EigeneListe, Selbstabholer, StellenReihenfolge
 
 pytestmark = pytest.mark.django_db
 STICHTAG = dt.date(2026, 10, 21)  # Mittwoch
@@ -388,3 +388,64 @@ def test_querformat_fuellt_das_blatt():
     assert len(PdfReader(io.BytesIO(pdf.querformat(woche(11, 7)))).pages) == 1
     assert len(PdfReader(io.BytesIO(pdf.querformat(woche(3, 0)))).pages) == 1
     assert len(PdfReader(io.BytesIO(pdf.querformat(woche(40, 10)))).pages) == 2
+
+
+# --- Eigene Listen: andere Reihenfolge der Tage, kurze Adresse ----------------------------------
+
+
+def test_tage_in_eigener_reihenfolge(daten):
+    tage = auswertung.uebersicht(STICHTAG)["tage"]
+    assert [t.kurz for t in tage] == ["Mo", "Di", "Mi", "Do", "Fr"]
+    folge = auswertung.ordnen(tage, ["Mi", "Di", "Mo", "Fr", "Do"])
+    assert [t.kurz for t in folge] == ["Mi", "Di", "Mo", "Fr", "Do"]
+    # nicht genannte Tage folgen wie gewohnt
+    assert [t.kurz for t in auswertung.ordnen(tage, ["Mi"])] == ["Mi", "Mo", "Di", "Do", "Fr"]
+    assert auswertung.ordnen(tage, []) == tage
+
+
+def test_eigene_liste_anlegen_und_unter_kurzer_adresse_drucken(
+    modul_an, admin_client, daten, pdf_text
+):
+    neu = reverse("wochenuebersicht:eigene_neu")
+    felder = {"name": "Packliste Lager", "kurz": "packliste", "platz_6": "", "platz_7": ""}
+    felder |= {f"platz_{i}": tag for i, tag in enumerate(["Mi", "Di", "Mo", "Fr", "Do"], 1)}
+    doppelt = admin_client.post(neu, {**felder, "platz_2": "Mi"})
+    assert "nur einmal" in doppelt.content.decode() and not EigeneListe.objects.exists()
+    antwort = admin_client.post(neu, felder)
+    e = EigeneListe.objects.get()
+    assert antwort.status_code == 302 and e.tage == "Mi,Di,Mo,Fr,Do"
+    adresse = reverse("wochenliste:liste", args=["packliste"])
+    assert adresse == "/liste/packliste/"
+    seite = admin_client.get(reverse("wochenuebersicht:eigene_bearbeiten", args=[e.pk]))
+    assert adresse in seite.content.decode()
+    assert adresse in admin_client.get(reverse("wochenuebersicht:eigene")).content.decode()
+    # Knopf neben Hoch- und Querformat
+    assert adresse in admin_client.get(reverse("wochenuebersicht:uebersicht")).content.decode()
+    text = pdf_text(admin_client.get(adresse))
+    assert "Packliste Lager" in text and "Verteilstelle" in text
+    assert text.index("Mittwoch") < text.index("Dienstag") < text.index("Montag")
+    assert text.index("Montag") < text.index("Freitag") < text.index("Donnerstag")
+    # das gewohnte Querformat bleibt, wie es ist
+    quer = pdf_text(admin_client.get(reverse("wochenuebersicht:pdf", args=["quer"])))
+    assert quer.index("Montag") < quer.index("Dienstag") < quer.index("Mittwoch")
+    assert admin_client.get("/liste/gibt-es-nicht/").status_code == 404
+    # dieselbe kurze Adresse nicht zweimal
+    assert admin_client.post(neu, {**felder, "name": "Zweite"}).status_code == 200
+    assert EigeneListe.objects.count() == 1
+    admin_client.post(reverse("wochenuebersicht:eigene_loeschen", args=[e.pk]))
+    assert not EigeneListe.objects.exists()
+
+
+def test_eigene_liste_nur_mit_anmeldung_und_recht(admin, benutzer_mit_rolle, anmelden, daten):
+    t = TafelEinstellungen.laden()
+    t.module = ["wochenuebersicht"]
+    t.save()
+    EigeneListe.objects.create(name="Packliste Lager", kurz="packliste", tage="Mi")
+    adresse = reverse("wochenliste:liste", args=["packliste"])
+    ohne = Client().get(adresse)
+    assert ohne.status_code == 302 and "anmelden" in ohne["Location"]
+    assert adresse in ohne["Location"]  # nach dem Anmelden geht es zur Liste
+    c = anmelden(Client(), benutzer_mit_rolle("anton", rollen.AUSGABE))
+    assert c.get(adresse).status_code == 403
+    b = anmelden(Client(), benutzer_mit_rolle("berta", rollen.BUERO))
+    assert b.get(adresse).status_code == 200

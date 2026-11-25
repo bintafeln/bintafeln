@@ -23,5 +23,9 @@ urlpatterns = [
         views.selbstabholer_notiz_loeschen,
         name="selbstabholer_notiz_loeschen",
     ),
+    path("eigene/", views.eigene, name="eigene"),
+    path("eigene/neu/", views.eigene_bearbeiten, name="eigene_neu"),
+    path("eigene/<int:pk>/", views.eigene_bearbeiten, name="eigene_bearbeiten"),
+    path("eigene/<int:pk>/loeschen/", views.eigene_loeschen, name="eigene_loeschen"),
     path("reihenfolge/", views.reihenfolge, name="reihenfolge"),
 ]

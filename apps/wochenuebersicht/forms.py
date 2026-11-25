@@ -1,7 +1,13 @@
 from django import forms
 
 from apps.ausgabe.ampel import WOCHENTAGE
-from apps.wochenuebersicht.models import Selbstabholer, SelbstabholerKontakt, SelbstabholerNotiz
+from apps.wochenuebersicht.auswertung import TAGNAMEN
+from apps.wochenuebersicht.models import (
+    EigeneListe,
+    Selbstabholer,
+    SelbstabholerKontakt,
+    SelbstabholerNotiz,
+)
 
 
 class SelbstabholerForm(forms.ModelForm):
@@ -52,3 +58,37 @@ class NotizForm(forms.ModelForm):
         widgets = {"text": forms.Textarea(attrs={"rows": 3})}
         labels = {"text": "Neue Notiz"}
         help_texts = {"text": "Was wurde besprochen? Datum und Ihr Name werden gespeichert."}
+
+
+class EigeneListeForm(forms.ModelForm):
+    """Name, kurze Adresse und die Tage in der gewünschten Reihenfolge (je Platz ein Auswahlmenü).
+    Nicht genannte Tage folgen danach in der gewohnten Reihenfolge."""
+
+    PLAETZE = [f"platz_{i}" for i in range(1, 8)]
+
+    class Meta:
+        model = EigeneListe
+        fields = ["name", "kurz"]
+        widgets = {"kurz": forms.TextInput(attrs={"data-autosave-spaet": ""})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        bisher = self.instance.tage_liste
+        wahl = [("", "–"), *zip(WOCHENTAGE, TAGNAMEN, strict=True)]
+        for i, feld in enumerate(self.PLAETZE):
+            self.fields[feld] = forms.ChoiceField(
+                label=f"{i + 1}. Tag", choices=wahl, required=False,
+                initial=bisher[i] if i < len(bisher) else "",
+            )  # fmt: skip
+
+    def abschnitte(self):
+        return [("Liste", [self["name"], self["kurz"]]),
+                ("Reihenfolge der Tage", [self[f] for f in self.PLAETZE])]  # fmt: skip
+
+    def clean(self):
+        daten = super().clean()
+        tage = [daten[f] for f in self.PLAETZE if daten.get(f)]
+        if len(tage) != len(set(tage)):
+            raise forms.ValidationError("Jeder Tag darf in der Reihenfolge nur einmal stehen.")
+        self.instance.tage = ",".join(tage)
+        return daten

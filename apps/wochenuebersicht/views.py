@@ -13,8 +13,18 @@ from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden.models import Ausgabestelle
 from apps.wochenuebersicht import auswertung, pdf
-from apps.wochenuebersicht.forms import KontakteFormset, NotizForm, SelbstabholerForm
-from apps.wochenuebersicht.models import Selbstabholer, SelbstabholerNotiz, StellenReihenfolge
+from apps.wochenuebersicht.forms import (
+    EigeneListeForm,
+    KontakteFormset,
+    NotizForm,
+    SelbstabholerForm,
+)
+from apps.wochenuebersicht.models import (
+    EigeneListe,
+    Selbstabholer,
+    SelbstabholerNotiz,
+    StellenReihenfolge,
+)
 
 sehen = rollen.recht_erforderlich("wochenuebersicht.sehen")
 bearbeiten = rollen.recht_erforderlich("wochenuebersicht.bearbeiten")
@@ -64,7 +74,7 @@ def uebersicht(request):
     daten = auswertung.uebersicht(heute, woche, vorschau)
     kw = (vorschau or woche or auswertung.montag(heute)).strftime("%G-W%V")
     return render(request, "wochenuebersicht/uebersicht.html", {**daten, "kw": kw,
-                  "wochen": _wochen_auswahl(heute),
+                  "wochen": _wochen_auswahl(heute), "eigene": EigeneListe.objects.all(),
                   "abfrage": request.GET.urlencode()})  # fmt: skip
 
 
@@ -76,6 +86,52 @@ def als_pdf(request, art):
     inhalt = pdf.querformat(daten) if art == "quer" else pdf.hochformat(daten)
     wann = f"vorschau-kw{vorschau:%V}" if vorschau else f"{timezone.localdate():%Y-%m-%d}"
     return pdf_antwort(inhalt, f"wochenuebersicht-{art}-{wann}.pdf")
+
+
+@never_cache
+@sehen
+def eigene_pdf(request, kurz):
+    """Eigene Liste unter ihrer kurzen Adresse: das Querformat mit eigenem Namen und eigener
+    Reihenfolge der Tage (ohne Angabe die laufende Woche)."""
+    liste = get_object_or_404(EigeneListe, kurz=kurz)
+    woche, vorschau = _woche(request)
+    daten = auswertung.uebersicht(timezone.localdate(), woche, vorschau)
+    daten["tage"] = auswertung.ordnen(daten["tage"], liste.tage_liste)
+    wann = f"vorschau-kw{vorschau:%V}" if vorschau else f"{timezone.localdate():%Y-%m-%d}"
+    return pdf_antwort(pdf.querformat(daten, liste.name), f"{liste.kurz}-{wann}.pdf")
+
+
+@never_cache
+@bearbeiten
+def eigene(request):
+    return render(request, "wochenuebersicht/eigene.html", {
+        "liste": [(e, request.build_absolute_uri(reverse("wochenliste:liste", args=[e.kurz])))
+                  for e in EigeneListe.objects.all()],
+    })  # fmt: skip
+
+
+@never_cache
+@bearbeiten
+def eigene_bearbeiten(request, pk=None):
+    e = get_object_or_404(EigeneListe, pk=pk) if pk else EigeneListe()
+    form = EigeneListeForm(request.POST if request.method == "POST" else None, instance=e)
+    if request.method == "POST" and form.is_valid():
+        e = form.save()
+        messages.success(request, f"„{e.name}“ gespeichert.")
+        return redirect("wochenuebersicht:eigene_bearbeiten", pk=e.pk)
+    adresse = request.build_absolute_uri(reverse("wochenliste:liste", args=[e.kurz])) if pk else ""
+    return render(request, "wochenuebersicht/eigene_bearbeiten.html",
+                  {"form": form, "e": e if pk else None, "adresse": adresse})  # fmt: skip
+
+
+@require_POST
+@bearbeiten
+def eigene_loeschen(request, pk):
+    e = get_object_or_404(EigeneListe, pk=pk)
+    papierkorb.loeschen(request.user, "Eigene Liste der Wochenübersicht", e.name, e,
+                        recht="wochenuebersicht.bearbeiten")  # fmt: skip
+    messages.success(request, f"„{e.name}“ in den Papierkorb gelegt.")
+    return redirect("wochenuebersicht:eigene")
 
 
 @never_cache
