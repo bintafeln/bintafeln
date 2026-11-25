@@ -18,6 +18,7 @@ from apps.kunden.models import (
     Haushalt,
     KundenEinstellungen,
     Kundengruppe,
+    Notiz,
     Person,
     Zusatzfeld,
 )
@@ -172,7 +173,22 @@ def _ohne_stelle(haushalte, p) -> dict:
     return ergebnis
 
 
-def objekte(liste: Liste, benutzer, p, mit_abholungen=False) -> tuple[list, dict]:
+def _notizen(haushalte) -> dict:
+    """Je Kundennummer alle Notizen als ein Text, neueste zuerst: „24.11.2026: Text · …“."""
+    nummern = [h.kundennummer for h in haushalte]
+    ergebnis = {}
+    for nummer, am, text in (
+        Notiz.objects.filter(kundennummer__in=nummern)
+        .order_by("-erstellt_am")
+        .values_list("kundennummer", "erstellt_am", "text")
+    ):
+        zeile = f"{timezone.localtime(am):%d.%m.%Y}: {' '.join(text.split())}"
+        ergebnis[nummer] = f"{ergebnis[nummer]} · {zeile}" if nummer in ergebnis else zeile
+    return ergebnis
+
+
+def objekte(liste: Liste, benutzer, p, mit_abholungen=False,
+            mit_notizen=False) -> tuple[list, dict]:  # fmt: skip
     """Haushalte bzw. Personen nach den Filtern, dazu der Rechenkontext."""
     heute = timezone.localdate()
     haushalte = _haushalte(benutzer, p)
@@ -192,6 +208,8 @@ def objekte(liste: Liste, benutzer, p, mit_abholungen=False) -> tuple[list, dict
     if p.get("kinder_unter_6"):
         hh = [h for h in hh if any((a := q.alter(heute)) is not None and a < 6
                                    for q in h.personen.all())]  # fmt: skip
+    if mit_notizen:
+        k["notizen"] = _notizen(hh)
     if liste.basis == "haushalt":
         return hh, k
     von, bis = _zahl(p.get("alter_von")), _zahl(p.get("alter_bis"))
@@ -227,7 +245,8 @@ def rechnen(liste: Liste, benutzer, p, auswahl=None) -> Ergebnis:
     sort = p.get("sort") or liste.sort
     sort_spalte = erlaubt.get(sort.lstrip("-"))
     gebraucht = {s.schluessel for s in sichtbar} | {sort.lstrip("-"), gruppe_key}
-    objs, k = objekte(liste, benutzer, p, mit_abholungen="abholungen" in gebraucht)
+    objs, k = objekte(liste, benutzer, p, mit_abholungen="abholungen" in gebraucht,
+                      mit_notizen="notizen" in gebraucht)  # fmt: skip
     if auswahl is not None:
         objs = [o for o in objs if o.pk in auswahl]
     benoetigt = {s.schluessel: s for s in [*sichtbar, *(x for x in (gruppe, sort_spalte) if x)]}
