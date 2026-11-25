@@ -11,6 +11,7 @@ from apps.kunden.models import Zusatzfeld
 STAMMDATEN = "kunden.stammdaten"
 KONTAKT = "kunden.kontakt"
 KONTO = "kunden.konto"
+NOTIZEN = "kunden.notizen"
 
 # Altersgruppen für Zählungen und Gruppierung: (bis einschließlich, Titel)
 ALTERSGRUPPEN = [(2, "0–2"), (5, "3–5"), (13, "6–13"), (17, "14–17"), (24, "18–24"),
@@ -80,6 +81,9 @@ HAUSHALT = [
            zahl=True),
     Spalte("ohne_stelle", "Abholungen ohne Ausgabestelle",
            lambda h, k: "; ".join(k.get("ohne_stelle", {}).get(h.pk, []))),
+    # alle Notizen zum Kunden, neueste zuerst – z. B. Krankmeldungen bei „Lange nicht gekommen“
+    Spalte("notizen", "Notizen", lambda h, k: k.get("notizen", {}).get(h.kundennummer, ""),
+           NOTIZEN),
     Spalte("kunde_seit", "Kunde seit", lambda h, k: h.kunde_seit, STAMMDATEN),
     Spalte("seit_monat", "Kunde seit (Monat)",
            lambda h, k: f"{h.kunde_seit:%Y-%m}" if h.kunde_seit else "", STAMMDATEN),

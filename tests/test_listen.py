@@ -463,3 +463,33 @@ def test_filter_ausweis_gueltig_oder_nicht(admin_client, daten):
     liste = katalog.NACH_KENNUNG["alle_kunden"]
     assert "Ausweis: gültig" in views._beschreibung(liste, {"ausweis": "gueltig"})
     assert "Ausweis" not in views._beschreibung(liste, {"ausweis": "quatsch"})
+
+
+def test_spalte_notizen(admin_client, daten, benutzer_mit_rolle, anmelden, recht_nehmen):
+    """Wählbare Spalte „Notizen“: alle Notizen zum Kunden, neueste zuerst – z. B. um in „Lange
+    nicht gekommen“ Krankgemeldete von denen zu unterscheiden, die sich nicht gemeldet haben."""
+    from apps.kunden.models import Notiz
+
+    alt = timezone.now() - dt.timedelta(days=10)
+    Notiz.objects.create(kundennummer="1", text="Bringt eigene\nTaschen mit.", erstellt_am=alt)
+    Notiz.objects.create(kundennummer="1", text="Abwesend (krank) bis Ende des Monats.")
+    antwort = admin_client.get(
+        *url("lange_nicht", status="", s=["kundennummer", "nachname", "notizen"])
+    )
+    werte = {z["nummer"]: z["werte"]["notizen"] for g in antwort.context["e"].gruppen
+             for z in g["zeilen"]}  # fmt: skip
+    heute = timezone.localdate()
+    frueher = timezone.localtime(alt)
+    assert werte["1"] == (f"{heute:%d.%m.%Y}: Abwesend (krank) bis Ende des Monats. · "
+                          f"{frueher:%d.%m.%Y}: Bringt eigene Taschen mit.")  # fmt: skip
+    assert werte["2"] == "" and "Notizen" in antwort.text
+    # ohne Auswahl der Spalte wird nichts geladen und nichts gezeigt
+    ohne = admin_client.get(*url("lange_nicht", status=""))
+    assert "Abwesend (krank)" not in ohne.text
+    # im Export steht sie auch
+    q = "geladen=1&status=&s=kundennummer&s=notizen"
+    datei = admin_client.post(reverse("listen:export", args=["lange_nicht", "csv"]), {"abfrage": q})
+    assert "Abwesend (krank) bis Ende des Monats." in datei.content.decode("utf-8-sig")
+    # nur mit dem Recht, Notizen zu sehen
+    assert "notizen" in {s.schluessel for s in spalten.erlaubte("haushalt", {"kunden.notizen"})}
+    assert "notizen" not in {s.schluessel for s in spalten.erlaubte("haushalt", set())}
