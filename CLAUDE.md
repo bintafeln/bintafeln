@@ -191,6 +191,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `KundenEinstellungen.status_nach_ausweis` (Vorgabe aus); `Haushalt.save()` führt `status_seit`.
   Status „verstorben“: zählt wie „beendet“ nicht mit (`Haushalt.NICHT_MEHR` statt nur BEENDET
   ausschließen), nach `verstorben_loeschen_monate` in den Papierkorb.
+  Kunden herausnehmen (ADR 0177): `apps/kunden/herausnehmen.py` – Knopf auf der Kundenseite nur mit
+  `kunden.herausnehmen` und wenn `faellig()` (wie die Liste „Lange nicht gekommen“,
+  `KundenEinstellungen.herausnehmen_nach_tagen`); Ausweis bis gestern + `Sperre(herausnahme=True,
+  ausweis_vorher=…)`, `zuruecknehmen()` stellt das Datum wieder her.
   Einkommensart vieler Haushalte auf einmal ändern (nach Alter der Hauptperson, erst ansehen, dann
   ändern, in Portionen) in `apps/kunden/views_einkommensart.py` (ADR 0146).
   Notizen an die Ausgabestelle (`Notiz.an_stelle`, Startseite, Antwort beim Ausweisdruck) in

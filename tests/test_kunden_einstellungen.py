@@ -44,6 +44,8 @@ def test_einstellungen_speichern(admin_client):
             "zugriffe_aufbewahren_tage": "90",
             "nachfrist_sichtbar_tage": "30",
             "verstorben_loeschen_monate": "3",
+            "herausnehmen_nach_tagen": "56",
+            "herausnehmen_sperre_monate": "12",
             "verlegung_vorlauf_wochen": "6",
             "historie_aufbewahren_jahre": "5",
             "verlaengern_regel": "alle",

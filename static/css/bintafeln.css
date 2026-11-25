@@ -1526,6 +1526,8 @@ a.fd-ich { font-weight: 600; text-decoration: underline dotted; }
 /* Krankmeldung eines Kunden (ADR 0075) */
 .notiz-krank { border-left: 4px solid var(--akzent); padding-left: .5rem; }
 .krank-hinweis { margin: 0 0 1rem; padding: .6rem .9rem; border-left: 4px solid var(--akzent); }
+/* Knopf oben rechts in einer Karte, z. B. „Kunden herausnehmen“ (ADR 0177) */
+.karte-knopf-rechts { float: right; margin: 0 0 .5rem .75rem; }
 /* „Will wechseln“ bei den Notizen und die Seiten dazu (ADR 0173) */
 /* bewusst zurückhaltend: ein kleiner Link unter den Knöpfen, kein Knopf */
 .wechsel-knopf { margin: .9rem 0 .5rem; font-size: .9rem; }

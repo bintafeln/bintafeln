@@ -7,6 +7,7 @@ from apps.kunden import (
     views_bearbeiten,
     views_dokumente,
     views_einkommensart,
+    views_herausnehmen,
     views_nachrichten,
     views_notizen,
     views_post,
@@ -82,6 +83,16 @@ urlpatterns = [
         "haushalt/<path:kundennummer>/platz-anbieten/",
         views_wechsel.platz_anbieten,
         name="platz_anbieten",
+    ),  # fmt: skip
+    path(
+        "haushalt/<path:kundennummer>/herausnehmen/",
+        views_herausnehmen.herausnehmen,
+        name="herausnehmen",
+    ),  # fmt: skip
+    path(
+        "haushalt/<path:kundennummer>/herausnahme-zurueck/",
+        views_herausnehmen.zuruecknehmen,
+        name="herausnahme_zurueck",
     ),  # fmt: skip
     path("haushalt/<path:kundennummer>/wechseln/", views_wechsel.wunsch, name="wechselwunsch"),
     path("haushalt/<path:kundennummer>/notiz/", views.notiz_neu, name="notiz_neu"),

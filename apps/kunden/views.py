@@ -24,6 +24,7 @@ from apps.kunden import (
     an_stelle,
     export,
     gruppen,
+    herausnehmen,
     importieren,
     merkmale,
     verlaengerung,
@@ -571,6 +572,10 @@ def haushalt(request, kundennummer):
             "erwachsene": erwachsene,
             "kinder": kinder,
             "sperren": sperren,
+            "herausnehmen": "kunden.herausnehmen" in darf and herausnehmen.faellig(h, heute),
+            "herausnahme": herausnehmen.laufende(h, heute)
+            if "kunden.herausnehmen" in darf
+            else None,
             "ausnahmen": h.ausnahmen.all()[
                 : None if "kunden.sperren_alle" in darf else ABHOLUNGEN_AUSGABE
             ],

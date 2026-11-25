@@ -89,6 +89,19 @@ class KundenEinstellungen(models.Model):
         help_text="Kunden mit dem Status „verstorben“ wandern so viele Monate danach von selbst "
         "in den Papierkorb (von dort wiederherstellbar, bis er geleert wird). 0 = nie automatisch.",
     )  # fmt: skip
+    herausnehmen_nach_tagen = models.PositiveSmallIntegerField(
+        "Lange nicht gekommen: nach (Tagen) ohne Abholung", default=56,
+        validators=[MaxValueValidator(3650)],
+        help_text="Ab so vielen Tagen ohne Abholung (oder wenn noch nie abgeholt wurde) gilt ein "
+        "Kunde als lange nicht gekommen: Auf seiner Seite erscheint dann der Knopf „Kunden "
+        "herausnehmen“, und die Liste „Lange nicht gekommen“ nimmt denselben Wert als Vorgabe.",
+    )  # fmt: skip
+    herausnehmen_sperre_monate = models.PositiveSmallIntegerField(
+        "Herausgenommene Kunden sperren für (Monate)", default=12,
+        validators=[MinValueValidator(1), MaxValueValidator(120)],
+        help_text="„Kunden herausnehmen“ setzt den Ausweis auf gestern und sperrt ab heute für "
+        "so viele Monate. Erst danach kann sich der Kunde wieder anmelden.",
+    )  # fmt: skip
     verlegung_vorlauf_wochen = models.PositiveSmallIntegerField(
         "Platz bei geplantem Umzug reservieren (Wochen vorher)", default=6,
         validators=[MaxValueValidator(52)],
@@ -775,6 +788,10 @@ class Sperre(models.Model):
     bis = models.DateField("Bis", null=True, blank=True)
     begruendung = models.TextField("Begründung", blank=True)
     eingetragen_von = models.CharField("Eingetragen von", max_length=100, blank=True)
+    # „Kunden herausnehmen“ (ADR 0177): Diese Sperre gehört zu einer Herausnahme; das Ausweisdatum
+    # von vorher steht hier, damit sich die Herausnahme zurücknehmen lässt.
+    herausnahme = models.BooleanField(default=False, editable=False)
+    ausweis_vorher = models.DateField(null=True, blank=True, editable=False)
 
     class Meta:
         verbose_name = "Sperre"
