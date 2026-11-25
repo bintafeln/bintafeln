@@ -874,7 +874,7 @@ def geburtstagsmail(request, pk, tag):
     from apps.core.html import bereinigen
     from apps.konten import geburtstagsmail as gm
     from apps.konten.models import GeburtstagMail
-    from apps.serienbriefe import gestaltung
+    from apps.serienbriefe import frei, gestaltung
 
     heute = timezone.localdate()
     try:
@@ -933,6 +933,8 @@ def geburtstagsmail(request, pk, tag):
         "vorgemerkt": vorgemerkt, "uhrzeit": uhrzeit,
         "alter": tag.year - a.geburtsdatum.year,
         "fuss": bereinigen(gestaltung.als_html(v.fusszeile)),
+        # frei gesetzte Grafiken der Vorlage (Unterschrift): hängen beim Senden unter dem Text
+        "grafiken": frei.fuer_mail(v),
         "gesendet": GeburtstagMail.objects.filter(adresse=a, tag=tag).first(),
         "mail_bereit": mail.eingerichtet(),
     })  # fmt: skip
