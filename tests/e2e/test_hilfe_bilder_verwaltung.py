@@ -411,6 +411,53 @@ def test_hilfe_bild_geburtstagsmail(angemeldet, admin, muster, django_user_model
     assert gesendet.subject == "Alles Gute, lieber Otto!" and "Lieber Otto," in gesendet.body
 
 
+def test_hilfe_bild_geburtstagsmail_vormerken(angemeldet, admin, muster, django_user_model):
+    """Glückwunsch vormerken (ADR 0179): vom Kalender aus vorbereiten, Uhrzeit wählen; danach
+    steht „vorgemerkt“ im Kalender, gesendet ist noch nichts."""
+    from django.core import mail as postfach
+
+    from apps.adressen.models import Adresse
+    from apps.core import geheimnis
+    from apps.core.models import MailEinstellungen
+    from apps.konten.models import GeburtstagVormerkung
+    from apps.serienbriefe.models import GEBURTSTAG, Vorlage
+
+    m = MailEinstellungen.laden()
+    m.server, m.port, m.benutzer, m.absender = "mail.example.org", 587, "tafel", "t@example.org"
+    m.passwort_verschluesselt = geheimnis.verschluesseln("erfunden")
+    m.save()
+    tag = timezone.localdate() + dt.timedelta(days=4)
+    konto = django_user_model.objects.create_user(username="paula")
+    Adresse.objects.create(
+        art=Adresse.Art.PERSON, anrede="Frau", vorname="Paula", nachname="Probe", konto=konto,
+        email="paula@example.org",
+        geburtsdatum=dt.date(1975, tag.month, 28 if (tag.month, tag.day) == (2, 29) else tag.day),
+    )  # fmt: skip
+    Vorlage.objects.create(
+        name="Geburtstag",
+        betreff="Alles Gute zum Geburtstag, {vorname}!",
+        verwendung=GEBURTSTAG,
+        text="<p>{anrede_du}</p><p>zu deinem {alter}. Geburtstag gratulieren wir dir herzlich!</p>"
+        "<p>Dein Team der Tafel</p>",
+    )
+    seite = oeffnen(angemeldet, admin, reverse("konten:geburtstage"))
+    seite.get_by_role("link", name="Glückwunsch vorbereiten").click()
+    karte = seite.locator("section.karte").first
+    expect(karte).to_contain_text("Liebe Paula,")
+    karte.locator("#gm-uhrzeit").fill("07:30")
+    aufnehmen(
+        seite,
+        "geburtstagsmail-vormerken",
+        karte,
+        Marke(karte.locator("#gm-uhrzeit"), "rahmen", 1),
+        Marke(karte.locator(".aktionsleiste"), "rahmen", 2),
+    )
+    karte.get_by_role("button", name="Am Geburtstag senden").click()
+    expect(seite.locator("body")).to_contain_text("vorgemerkt für")
+    expect(seite.locator("body")).to_contain_text("07:30 Uhr")
+    assert GeburtstagVormerkung.objects.get().uhrzeit == dt.time(7, 30) and not postfach.outbox
+
+
 def test_hilfe_bild_geburtstagsbrief(angemeldet, admin, muster, django_user_model):
     """Geburtstagsbrief auf der Startseite (ADR 0170): legt sich als Dialog über die Seite,
     „Später“ schließt ihn nur, „Gratuliert“ merkt es – danach kommt er nicht wieder."""

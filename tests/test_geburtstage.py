@@ -417,3 +417,161 @@ def test_je_verwendung_nur_eine_vorlage(db):
     assert alt.verwendung == "" and geburtstagsmail.vorlage() == neu
     # ohne eigene Vorlage „nachträglich“ gilt die erste
     assert geburtstagsmail.vorlage(nachtraeglich=True) == neu
+
+
+# --- Glückwunsch vormerken: der Server schickt am Geburtstag (ADR 0179) --------------------------
+
+
+def _in(tage, jahr=1980) -> dt.date:
+    """Ein Geburtsdatum, dessen Geburtstag in ``tage`` Tagen ist."""
+    from django.utils import timezone
+
+    tag = timezone.localdate() + dt.timedelta(days=tage)
+    return dt.date(jahr, tag.month, 28 if (tag.month, tag.day) == (2, 29) else tag.day)
+
+
+def _zeitpunkt(tag, stunde, minute=0):
+    from django.utils import timezone
+
+    return timezone.make_aware(dt.datetime.combine(tag, dt.time(stunde, minute)))
+
+
+def test_glueckwunsch_vormerken_aendern_und_server_sendet(
+    admin, admin_client, django_user_model, mailserver
+):
+    from django.core import mail as postfach
+    from django.utils import timezone
+
+    from apps.konten import geburtstagsmail
+    from apps.konten.models import GeburtstagMail, GeburtstagVormerkung
+
+    django_user_model.objects.filter(pk=admin.pk).update(email="chef@example.org")
+    heute = timezone.localdate()
+    _vorlagen()
+    _person(django_user_model, "Otto", "Bald", _in(5, 1976))
+    otto = Adresse.objects.get(nachname="Bald")
+    Adresse.objects.filter(pk=otto.pk).update(email="otto@example.org", anrede="Herr")
+    tag = heute + dt.timedelta(days=5)
+    adresse = _mail_adresse(otto.pk, tag)
+    kalender = admin_client.get(GEB).content.decode()
+    assert adresse in kalender and "Glückwunsch vorbereiten" in kalender
+    seite = admin_client.get(adresse).content.decode()
+    assert "Am Geburtstag senden" in seite and 'name="uhrzeit"' in seite and "08:00" in seite
+    assert f"zum {tag.year - 1976}. Geburtstag" in seite  # nicht die nachträgliche Vorlage
+    # vormerken: nichts geht hinaus
+    antwort = admin_client.post(adresse, {
+        "betreff": "Alles Gute, Otto!", "text": "<p>Lieber Otto, alles Gute!</p>",
+        "uhrzeit": "07:30",
+    })  # fmt: skip
+    assert antwort["Location"] == GEB and not postfach.outbox
+    m = GeburtstagVormerkung.objects.get()
+    assert (m.tag, m.uhrzeit, m.von) == (tag, dt.time(7, 30), admin)
+    kalender = admin_client.get(GEB).content.decode()
+    assert "vorgemerkt für" in kalender and "07:30 Uhr" in kalender
+    # ändern: Text und Uhrzeit, die zuletzt gewählte Uhrzeit ist der nächste Vorschlag
+    seite = admin_client.get(adresse).content.decode()
+    assert "Änderung speichern" in seite and "Vormerkung löschen" in seite and "07:30" in seite
+    admin_client.post(adresse, {
+        "betreff": "Alles Gute, Otto!", "text": "<p>Lieber Otto, bleib gesund!</p>",
+        "uhrzeit": "09:15",
+    })  # fmt: skip
+    m = GeburtstagVormerkung.objects.get()
+    assert m.uhrzeit == dt.time(9, 15) and "bleib gesund" in m.text
+    assert geburtstagsmail.uhrzeit_vorschlag(admin) == dt.time(9, 15)
+    # vor dem Tag und vor der Uhrzeit sendet der Server nichts
+    assert geburtstagsmail.faellige_senden(_zeitpunkt(tag - dt.timedelta(days=1), 12)) == 0
+    assert geburtstagsmail.faellige_senden(_zeitpunkt(tag, 9, 10)) == 0
+    assert not postfach.outbox
+    # zur Uhrzeit: Mail ans Geburtstagskind, Meldung an die Person, die vorgemerkt hat
+    assert geburtstagsmail.faellige_senden(_zeitpunkt(tag, 9, 15)) == 1
+    an_otto, meldung = postfach.outbox
+    assert an_otto.to == ["otto@example.org"] and "bleib gesund" in an_otto.body
+    assert meldung.to == ["chef@example.org"] and "Otto Bald" in meldung.subject
+    assert "gesendet" in meldung.subject
+    assert not GeburtstagVormerkung.objects.exists()
+    assert GeburtstagMail.objects.get().von
+    # ein zweiter Lauf sendet nicht noch einmal
+    assert geburtstagsmail.faellige_senden(_zeitpunkt(tag, 9, 20)) == 0
+    assert len(postfach.outbox) == 2
+
+
+def test_vormerkung_loeschen_grenzen_und_jahreskalender(
+    admin, admin_client, django_user_model, mailserver
+):
+    from django.utils import timezone
+
+    from apps.core.models import PapierkorbEintrag
+    from apps.konten.models import GeburtstagVormerkung
+
+    heute = timezone.localdate()
+    _vorlagen()
+    _person(django_user_model, "Paula", "Spaeter", _in(100))
+    paula = Adresse.objects.get(nachname="Spaeter")
+    Adresse.objects.filter(pk=paula.pk).update(email="paula@example.org")
+    tag = heute + dt.timedelta(days=100)
+    adresse = _mail_adresse(paula.pk, tag)
+    # nicht in den nächsten 14 Tagen, aber im Jahreskalender mit kleinem Link
+    kalender = admin_client.get(GEB).content.decode()
+    assert adresse in kalender and "✉ vorbereiten" in kalender
+    daten = {"betreff": "Alles Gute!", "text": "<p>Alles Gute!</p>", "uhrzeit": "08:00"}
+    assert "Uhrzeit" in admin_client.post(adresse, daten | {"uhrzeit": "25:99"}).content.decode()
+    assert not GeburtstagVormerkung.objects.exists()
+    admin_client.post(adresse, daten)
+    assert GeburtstagVormerkung.objects.count() == 1
+    admin_client.post(adresse, {"aktion": "loeschen"})
+    assert not GeburtstagVormerkung.objects.exists() and PapierkorbEintrag.objects.count() == 1
+    # falscher Tag und mehr als ein Jahr voraus: nichts
+    assert admin_client.get(_mail_adresse(paula.pk, tag + dt.timedelta(days=1))).status_code == 404
+    weit = dt.date(tag.year + 1, tag.month, tag.day)
+    assert admin_client.get(_mail_adresse(paula.pk, weit)).status_code == 404
+
+
+def test_vorgemerkt_aber_versand_scheitert(admin, admin_client, django_user_model, mailserver):
+    from django.core import mail as postfach
+    from django.utils import timezone
+
+    from apps.konten import geburtstagsmail
+    from apps.konten.models import GeburtstagVormerkung
+
+    django_user_model.objects.filter(pk=admin.pk).update(email="chef@example.org")
+    admin.refresh_from_db()
+    heute = timezone.localdate()
+    _vorlagen()
+    konto = _person(django_user_model, "Karl", "Weg", _geb(0))
+    karl = Adresse.objects.get(nachname="Weg")
+    Adresse.objects.filter(pk=karl.pk).update(email="karl@example.org")
+    karl.refresh_from_db()
+    from apps.serienbriefe.models import Vorlage
+
+    v = Vorlage.objects.get(name="Geburtstag")
+    geburtstagsmail.vormerken(admin, karl, heute, dt.time(8, 0), v, "Alles Gute", "<p>Hallo</p>")
+    # die Adresse wurde inzwischen gelöscht: nicht senden, Fehler merken, weiter vorgemerkt
+    Adresse.objects.filter(pk=karl.pk).update(email="")
+    assert geburtstagsmail.faellige_senden(_zeitpunkt(heute, 8, 5)) == 0
+    m = GeburtstagVormerkung.objects.get()
+    assert "keine E-Mail-Adresse" in m.fehler and not postfach.outbox
+    # Adresse nachgetragen: der nächste Lauf am selben Tag schickt
+    Adresse.objects.filter(pk=karl.pk).update(email="karl@example.org")
+    assert geburtstagsmail.faellige_senden(_zeitpunkt(heute, 8, 10)) == 1
+    postfach.outbox.clear()
+    # gesperrtes Konto bis zum Tagesende: am Tag danach einmal die Meldung, Vormerkung bleibt
+    geburtstagsmail.vormerken(admin, karl, heute, dt.time(8, 0), v, "Alles Gute", "<p>Hallo</p>")
+    django_user_model.objects.filter(pk=konto.pk).update(is_active=False)
+    assert geburtstagsmail.faellige_senden(_zeitpunkt(heute, 23, 55)) == 0
+    morgen = heute + dt.timedelta(days=1)
+    assert geburtstagsmail.faellige_senden(_zeitpunkt(morgen, 0, 5)) == 0
+    (meldung,) = postfach.outbox
+    assert meldung.to == ["chef@example.org"] and "nicht gesendet" in meldung.subject
+    assert geburtstagsmail.faellige_senden(_zeitpunkt(morgen, 0, 10)) == 0
+    assert len(postfach.outbox) == 1 and GeburtstagVormerkung.objects.count() == 1
+
+
+def test_befehl_schickt_vorgemerkte(db, monkeypatch):
+    from django.core.management import call_command
+
+    from apps.konten import geburtstagsmail
+
+    gerufen = []
+    monkeypatch.setattr(geburtstagsmail, "faellige_senden", lambda: gerufen.append(1) or 0)
+    call_command("benachrichtigungen_senden")
+    assert gerufen == [1]

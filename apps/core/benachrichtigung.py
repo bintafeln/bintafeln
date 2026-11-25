@@ -252,6 +252,12 @@ KERN = (
         wann="Einmal je Sicherheitsupdate, sobald bintafeln davon erfährt.",
         wahl=Empfaengerwahl(lambda: mit_recht("system.update"),
                             "alle, die das Programm aktualisieren dürfen")),
+    Art("geburtstagsmail", "Vorgemerkter Glückwunsch zum Geburtstag wurde gesendet",
+        "Auch wenn der Versand gescheitert ist.",
+        fuer=_recht("mitarbeitende.geburtstagsbrief"),
+        wann="Am Geburtstag, sobald der Server eine vorgemerkte Glückwunsch-Mail verschickt hat "
+             "(oder am Tag danach, wenn das nicht ging).",
+        an="Die Person, die den Glückwunsch vorgemerkt hat."),
     Art("speicher_knapp", "Festplatte des Servers wird voll",
         "Die einzelne Person kann sie nicht abschalten, höchstens täglich sammeln.",
         fuer=_recht("einstellungen.tafel"), nie_erlaubt=False,
