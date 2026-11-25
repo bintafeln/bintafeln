@@ -15,6 +15,7 @@
       <span class="geb-datum">{{ g.naechster|date:"d.m." }}</span>
       <span class="geb-name">{{ g.name }}</span>
       <span class="geb-wann">{% if g.ist_heute %}heute{% elif g.in_tagen == 1 %}morgen{% else %}in {{ g.in_tagen }} Tagen{% endif %} · wird {{ g.wird }}</span>
+      {% if g.mail %}<span class="geb-mail">{% if g.mail.gesendet %}Mail gesendet am {{ g.mail.gesendet.am|date:"d.m." }} von {{ g.mail.gesendet.von }}{% elif g.mail.ohne_email %}keine E-Mail-Adresse{% else %}<a href="{% url 'konten:geburtstagsmail' g.mail.adresse g.mail.tag|date:'Y-m-d' %}?von=kalender">Glückwunsch per E-Mail</a>{% endif %}</span>{% endif %}
     </li>
     {% endfor %}
   </ul>
@@ -27,6 +28,7 @@
       <span class="geb-datum">{{ g.letzter|date:"d.m." }}</span>
       <span class="geb-name">{{ g.name }}</span>
       <span class="geb-wann">{% if g.vor_tagen == 1 %}gestern{% else %}vor {{ g.vor_tagen }} Tagen{% endif %} · wurde {{ g.wurde }}</span>
+      {% if g.mail %}<span class="geb-mail">{% if g.mail.gesendet %}Mail gesendet am {{ g.mail.gesendet.am|date:"d.m." }} von {{ g.mail.gesendet.von }}{% elif g.mail.ohne_email %}keine E-Mail-Adresse{% else %}<a href="{% url 'konten:geburtstagsmail' g.mail.adresse g.mail.tag|date:'Y-m-d' %}?von=kalender">Glückwunsch per E-Mail</a>{% endif %}</span>{% endif %}
     </li>
     {% endfor %}
   </ul>

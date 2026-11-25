@@ -32,6 +32,7 @@
       <legend>Seite</legend>
       {% include "includes/feld.html" with feld=form.briefkopf %}
       {% include "includes/feld.html" with feld=form.fusszeile %}
+      {% include "includes/feld.html" with feld=form.verwendung %}
     </fieldset>
     <fieldset class="vorlage-seite frei-grafiken" data-brief-frei="{% url 'serienbriefe:grafiken' %}"
               data-feld="{{ form.freie_grafiken.id_for_label }}">

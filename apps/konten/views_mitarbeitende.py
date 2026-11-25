@@ -846,11 +846,78 @@ def geburtstage(request):
     """Geburtstagskalender des Teams: die nächsten 14 und die letzten 7 Tage oben, darunter alle
     Mitarbeitenden mit Geburtstag nach Monaten."""
     from apps.konten import geburtstage as geb
+    from apps.konten import geburtstagsmail
 
     heute = timezone.localdate()
     return render(request, "konten/geburtstage.html", {
-        "naechste": geb.naechste(14, heute),
-        "letzte": geb.letzte(7, heute),
+        "naechste": geburtstagsmail.ergaenzen(request.user, geb.naechste(14, heute), heute,
+                                              "naechster"),
+        "letzte": geburtstagsmail.ergaenzen(request.user, geb.letzte(7, heute), heute, "letzter"),
         "monate": [m for m in geb.kalender(heute) if m["eintraege"]],
         "heute": heute,
     })  # fmt: skip
+
+
+@never_cache
+@rollen.recht_erforderlich("mitarbeitende.geburtstagsbrief")
+@rollen.recht_erforderlich("serienbriefe.erstellen")
+def geburtstagsmail(request, pk, tag):
+    """Glückwunsch-Mail an ein Geburtstagskind (ADR 0178): zeigt die fertige Mail aus der Vorlage
+    zum Ändern; erst „Senden“ schickt sie, „Abbrechen“ führt zurück."""
+    import datetime as dt
+
+    from apps.core.html import bereinigen
+    from apps.konten import geburtstagsmail as gm
+    from apps.konten.models import GeburtstagMail
+    from apps.serienbriefe import gestaltung
+
+    heute = timezone.localdate()
+    try:
+        tag = dt.date.fromisoformat(tag)
+    except ValueError:
+        raise Http404 from None
+    a = gm.geburtstagskind(pk, tag, heute)
+    if a is None or a.konto_id == request.user.pk:
+        raise Http404
+    zurueck = "konten:geburtstage" if request.GET.get("von") == "kalender" else "core:start"
+    entwurf = gm.entwurf(a, tag, heute)
+    if entwurf is None:
+        messages.error(request, "Es gibt noch keine Vorlage für den Glückwunsch zum Geburtstag "
+                                "(Serienbriefe → Vorlage → Verwendung).")  # fmt: skip
+        return redirect(zurueck)
+    v, betreff, html = entwurf
+    fehler = ""
+    if request.method == "POST":
+        betreff = request.POST.get("betreff", "").strip()
+        html = gestaltung.speichern(request.POST.get("text", ""))
+        if not betreff or not gestaltung.mail_text(html).strip():
+            fehler = "Bitte Betreff und Text angeben."
+        elif not a.email:
+            fehler = "Für diese Person ist keine E-Mail-Adresse hinterlegt."
+        else:
+            return _geburtstagsmail_senden(request, a, tag, v, betreff, html, zurueck)
+    return render(request, "konten/geburtstagsmail.html", {
+        "a": a, "tag": tag, "nachtraeglich": tag < heute, "v": v, "betreff": betreff,
+        "text": html, "fehler": fehler, "zurueck": zurueck,
+        "alter": tag.year - a.geburtsdatum.year,
+        "fuss": bereinigen(gestaltung.als_html(v.fusszeile)),
+        "gesendet": GeburtstagMail.objects.filter(adresse=a, tag=tag).first(),
+        "mail_bereit": mail.eingerichtet(),
+    })  # fmt: skip
+
+
+def _geburtstagsmail_senden(request, a, tag, v, betreff, html, zurueck):
+    from django.conf import settings
+
+    from apps.konten import geburtstagsmail as gm
+
+    if settings.DEMO:
+        messages.error(request, "In der Demoversion nicht möglich.")
+        return redirect(zurueck)
+    try:
+        gm.senden(request.user, a, tag, v, betreff, html)
+    except mail.MailFehler as grund:
+        messages.error(request, f"Nicht gesendet: {grund}")
+        return redirect(request.get_full_path())
+    messages.success(request, f"Glückwunsch an {a.name} gesendet.")
+    return redirect(zurueck)

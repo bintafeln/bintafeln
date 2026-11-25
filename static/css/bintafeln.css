@@ -2527,6 +2527,8 @@ details.tour-vorzeitig[open] { padding: .75rem 1rem 1rem; }
 .gb-flamme { fill: #eda100; animation: gb-flackern 1.1s ease-in-out infinite alternate; transform-origin: 50% 20%; }
 .gb-liste { list-style: none; padding: 0; margin: .2rem 0 .8rem; font-size: 1.15rem; }
 .gb-liste li { margin: .35rem 0; }
+.gb-mail { font-size: .85rem; color: var(--leise); }
+.geburtstage-naechste .geb-mail { flex-basis: 100%; font-size: .9rem; }
 .geburtstagsbrief-dialog form { display: flex; flex-direction: column; gap: .5rem; position: relative; }
 .geburtstagsbrief-dialog .knopf { width: 100%; min-height: 3rem; font-size: 1.1rem; }
 .gb-konfetti { position: absolute; inset: 0; pointer-events: none; }

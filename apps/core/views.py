@@ -112,7 +112,13 @@ def start(request):
         from apps.konten import geburtstage
 
         geburtstage.fristen_anwenden(timezone.localdate())
-        kontext["geburtstagsbrief"] = geburtstage.brief(request.user, timezone.localdate())
+        from apps.konten import geburtstagsmail
+
+        kontext["geburtstagsbrief"] = geburtstagsmail.ergaenzen(
+            request.user,
+            geburtstage.brief(request.user, timezone.localdate()),
+            timezone.localdate(),
+        )
     kontext["modul_startseite"] = module.startseite(request)
     return render(request, "core/start.html", kontext)
 

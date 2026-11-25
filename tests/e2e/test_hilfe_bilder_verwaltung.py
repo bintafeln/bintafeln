@@ -350,6 +350,67 @@ def test_hilfe_bild_update(angemeldet, admin, muster, settings, tmp_path):
                     laenge=50))  # fmt: skip
 
 
+def test_hilfe_bild_geburtstagsmail(angemeldet, admin, muster, django_user_model):
+    """Glückwunsch per E-Mail (ADR 0178): Knopf im Geburtstagsbrief, die fertige Mail zum Ändern,
+    „Abbrechen“ sendet nichts, „Senden“ schickt sie."""
+    from django.core import mail as postfach
+
+    from apps.adressen.models import Adresse
+    from apps.core import geheimnis
+    from apps.core.models import MailEinstellungen
+    from apps.serienbriefe.models import GEBURTSTAG, Vorlage
+
+    m = MailEinstellungen.laden()
+    m.server, m.port, m.benutzer, m.absender = "mail.example.org", 587, "tafel", "t@example.org"
+    m.passwort_verschluesselt = geheimnis.verschluesseln("erfunden")
+    m.save()
+    heute = timezone.localdate()
+    konto = django_user_model.objects.create_user(username="otto")
+    Adresse.objects.create(
+        art=Adresse.Art.PERSON, anrede="Herr", vorname="Otto", nachname="Beispiel", konto=konto,
+        email="otto@example.org",
+        geburtsdatum=dt.date(1961, heute.month, 28 if (heute.month, heute.day) == (2, 29)
+                             else heute.day),
+    )  # fmt: skip
+    Vorlage.objects.create(
+        name="Geburtstag",
+        betreff="Alles Gute zum Geburtstag, {vorname}!",
+        verwendung=GEBURTSTAG,
+        text="<p>{anrede_du}</p><p>zu deinem {alter}. Geburtstag gratulieren wir dir herzlich und "
+        "wünschen dir Gesundheit, Freude und viele schöne Stunden.</p><p>Danke, dass du bei uns "
+        "mitmachst!</p><p>Dein Team der Tafel</p>",
+    )
+    seite = oeffnen(angemeldet, admin, reverse("core:start"))
+    brief = seite.locator("dialog.geburtstagsbrief-dialog")
+    knopf = brief.get_by_role("link", name="Glückwunsch per E-Mail")
+    expect(knopf).to_be_visible()
+    knopf.click()
+    karte = seite.locator("section.karte").first
+    expect(karte.locator("#gm-betreff")).to_have_value("Alles Gute zum Geburtstag, Otto!")
+    expect(karte).to_contain_text("Lieber Otto,")
+    aufnehmen(
+        seite,
+        "geburtstagsmail",
+        karte,
+        Marke(karte.locator("#gm-an"), "rahmen", 1),
+        Marke(karte.locator("#gm-betreff"), "rahmen", 2),
+        Marke(karte.locator(".editor-flaeche, [contenteditable]").first, "rahmen", 3),
+        Marke(karte.locator(".aktionsleiste"), "rahmen", 4),
+    )
+    # „Abbrechen“ sendet nichts
+    karte.get_by_role("link", name="Abbrechen").click()
+    expect(seite).to_have_url(re.compile(r"/$"))
+    assert not postfach.outbox
+    seite.locator("dialog.geburtstagsbrief-dialog").get_by_role(
+        "link", name="Glückwunsch per E-Mail"
+    ).click()
+    seite.locator("#gm-betreff").fill("Alles Gute, lieber Otto!")
+    seite.get_by_role("button", name="Senden").click()
+    expect(seite.locator("body")).to_contain_text("Glückwunsch an Otto Beispiel gesendet")
+    (gesendet,) = postfach.outbox
+    assert gesendet.subject == "Alles Gute, lieber Otto!" and "Lieber Otto," in gesendet.body
+
+
 def test_hilfe_bild_geburtstagsbrief(angemeldet, admin, muster, django_user_model):
     """Geburtstagsbrief auf der Startseite (ADR 0170): legt sich als Dialog über die Seite,
     „Später“ schließt ihn nur, „Gratuliert“ merkt es – danach kommt er nicht wieder."""

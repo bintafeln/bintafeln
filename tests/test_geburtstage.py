@@ -261,3 +261,159 @@ def test_schalttag_im_brief(django_user_model, admin):
     _person(django_user_model, "Sil", "Vester", dt.date(1990, 12, 31))
     (eintrag,) = geburtstage.brief(admin, dt.date(2027, 1, 1))
     assert (eintrag["name"], eintrag["gestern"], eintrag["alter"]) == ("Sil Vester", True, 36)
+
+
+# --- Glückwunsch-Mail zum Geburtstag (ADR 0178) -------------------------------------------------
+
+
+@pytest.fixture
+def mailserver(db):
+    from apps.core import geheimnis
+    from apps.core.models import MailEinstellungen
+
+    m = MailEinstellungen.laden()
+    m.server, m.port, m.benutzer, m.absender = "mail.example.org", 587, "tafel", "t@example.org"
+    m.passwort_verschluesselt = geheimnis.verschluesseln("erfunden")
+    m.save()
+    return m
+
+
+def _vorlagen():
+    from apps.serienbriefe.models import GEBURTSTAG, GEBURTSTAG_NACH, Vorlage
+
+    Vorlage.objects.create(
+        name="Geburtstag", betreff="Alles Gute, {vorname}!", verwendung=GEBURTSTAG,
+        text="<p>{anrede_du}</p><p>herzlichen Glückwunsch zum {alter}. Geburtstag!</p>",
+    )  # fmt: skip
+    Vorlage.objects.create(
+        name="Geburtstag nachträglich", betreff="Nachträglich alles Gute, {vorname}!",
+        verwendung=GEBURTSTAG_NACH, text="<p>{anrede_du}</p><p>nachträglich alles Gute!</p>",
+    )  # fmt: skip
+
+
+def _mail_adresse(pk, tag, von=""):
+    return reverse("konten:geburtstagsmail", args=[pk, f"{tag:%Y-%m-%d}"]) + von
+
+
+def test_geburtstagsmail_ansehen_aendern_senden(admin, admin_client, django_user_model, mailserver):
+    from django.core import mail as postfach
+    from django.utils import timezone
+
+    from apps.konten.models import GeburtstagGruss, GeburtstagMail
+    from apps.serienbriefe.models import Versand, Vorlage
+
+    heute = timezone.localdate()
+    _person(django_user_model, "Otto", "Heutig", _geb(0, 1976))
+    otto = Adresse.objects.get(nachname="Heutig")
+    Adresse.objects.filter(pk=otto.pk).update(email="otto@example.org", anrede="Herr")
+    # ohne gekennzeichnete Vorlage: kein Knopf, die Seite verweist auf die Serienbriefe
+    assert "Glückwunsch per E-Mail" not in admin_client.get(START).content.decode()
+    antwort = admin_client.get(_mail_adresse(otto.pk, heute), follow=True)
+    assert "Verwendung" in antwort.content.decode()
+    _vorlagen()
+    adresse = _mail_adresse(otto.pk, heute)
+    start = admin_client.get(START).content.decode()
+    assert adresse in start and "Glückwunsch per E-Mail" in start
+    # die Seite zeigt die fertige Mail zum Ändern – noch ist nichts gesendet
+    seite = admin_client.get(adresse).content.decode()
+    assert "otto@example.org" in seite and "Alles Gute, Otto!" in seite
+    assert f"herzlichen Glückwunsch zum {heute.year - 1976}. Geburtstag" in seite
+    assert "Lieber Otto," in seite and ">Abbrechen<" in seite
+    assert not postfach.outbox and not GeburtstagMail.objects.exists()
+    # leerer Text wird nicht gesendet
+    leer = admin_client.post(adresse, {"betreff": "Alles Gute", "text": ""})
+    assert "Bitte Betreff und Text" in leer.content.decode() and not postfach.outbox
+    # geänderter Text geht hinaus, die Vorlage bleibt
+    antwort = admin_client.post(adresse, {
+        "betreff": "Alles Gute, lieber Otto!",
+        "text": "<p>Lieber Otto,</p><p>bleib gesund – das ganze Team gratuliert!</p>",
+    })  # fmt: skip
+    assert antwort.status_code == 302 and antwort["Location"] == START
+    (gesendet,) = postfach.outbox
+    assert gesendet.to == ["otto@example.org"] and gesendet.subject == "Alles Gute, lieber Otto!"
+    assert "das ganze Team gratuliert" in gesendet.body
+    assert "herzlichen Glückwunsch" in Vorlage.objects.get(name="Geburtstag").text
+    v = Versand.objects.get()
+    assert v.empfaenger == [f"a:{otto.pk}"] and v.vorlage == "Geburtstag" and v.anzahl == 1
+    # gilt für mich als gratuliert; andere mit dem Recht sehen, dass schon geschrieben wurde
+    assert GeburtstagGruss.objects.filter(benutzer=admin, adresse=otto, tag=heute).exists()
+    assert "Heute hat" not in admin_client.get(START).content.decode()
+    kalender = admin_client.get(GEB).content.decode()
+    assert "Mail gesendet am" in kalender
+    assert "schon gesendet" in admin_client.get(adresse).content.decode()
+
+
+def test_geburtstagsmail_nachtraeglich_ohne_adresse_und_grenzen(
+    admin, admin_client, django_user_model, mailserver
+):
+    from django.core import mail as postfach
+    from django.utils import timezone
+
+    heute = timezone.localdate()
+    _vorlagen()
+    _person(django_user_model, "Paula", "Gestrig", _geb(3, 1990))
+    _person(django_user_model, "Karl", "Ohnemail", _geb(0))
+    _person(django_user_model, "Lena", "Lange", _geb(9))
+    paula = Adresse.objects.get(nachname="Gestrig")
+    Adresse.objects.filter(pk=paula.pk).update(email="paula@example.org")
+    karl, lena = Adresse.objects.get(nachname="Ohnemail"), Adresse.objects.get(nachname="Lange")
+    vor3 = heute - dt.timedelta(days=3)
+    # im Kalender bei den letzten 7 Tagen, mit Rückweg in den Kalender
+    kalender = admin_client.get(GEB).content.decode()
+    adresse = _mail_adresse(paula.pk, vor3, "?von=kalender")
+    assert adresse in kalender and "keine E-Mail-Adresse" in kalender
+    seite = admin_client.get(adresse).content.decode()
+    assert "Nachträglich alles Gute, Paula!" in seite and "nachträglich alles Gute!" in seite
+    antwort = admin_client.post(adresse, {"betreff": "Nachträglich", "text": "<p>Alles Gute!</p>"})
+    assert antwort["Location"] == GEB and len(postfach.outbox) == 1
+    # ohne E-Mail-Adresse: kein Knopf im Brief, Senden gesperrt
+    start = admin_client.get(START).content.decode()
+    assert "keine E-Mail-Adresse hinterlegt" in start
+    assert _mail_adresse(karl.pk, heute) not in start
+    ohne = admin_client.post(_mail_adresse(karl.pk, heute), {"betreff": "x", "text": "<p>x</p>"})
+    assert "keine E-Mail-Adresse" in ohne.content.decode() and len(postfach.outbox) == 1
+    # falscher Tag, zu lange her, kaputtes Datum: nichts
+    assert admin_client.get(_mail_adresse(paula.pk, heute)).status_code == 404
+    vor9 = heute - dt.timedelta(days=9)
+    assert admin_client.get(_mail_adresse(lena.pk, vor9)).status_code == 404
+    assert admin_client.get(f"/konten/geburtstage/mail/{paula.pk}/quatsch/").status_code == 404
+
+
+def test_geburtstagsmail_nur_mit_beiden_rechten(
+    client, anmelden, django_user_model, recht_geben, admin, mailserver
+):
+    from django.utils import timezone
+
+    heute = timezone.localdate()
+    _vorlagen()
+    _person(django_user_model, "Otto", "Heutig", _geb(0))
+    otto = Adresse.objects.get(nachname="Heutig")
+    Adresse.objects.filter(pk=otto.pk).update(email="otto@example.org")
+    vera = _person(django_user_model, "Vera", "Vorstand", _geb(100), "Ausgabe")
+    anmelden(client, vera)
+    adresse = _mail_adresse(otto.pk, heute)
+    assert client.get(adresse).status_code == 403
+    recht_geben("Ausgabe", "mitarbeitende.geburtstagsbrief")
+    assert client.get(adresse).status_code == 403
+    start = client.get(START).content.decode()
+    assert "Otto Heutig" in start and "Glückwunsch per E-Mail" not in start
+    recht_geben("Ausgabe", "serienbriefe.erstellen")
+    assert client.get(adresse).status_code == 200
+    assert "Glückwunsch per E-Mail" in client.get(START).content.decode()
+    # sich selbst schreibt niemand
+    ich = Adresse.objects.get(konto=vera)
+    Adresse.objects.filter(pk=ich.pk).update(geburtsdatum=_geb(0), email="vera@example.org")
+    assert client.get(_mail_adresse(ich.pk, heute)).status_code == 404
+
+
+def test_je_verwendung_nur_eine_vorlage(db):
+    from apps.konten import geburtstagsmail
+    from apps.serienbriefe.models import GEBURTSTAG, Vorlage
+
+    assert geburtstagsmail.vorlage() is None
+    alt = Vorlage.objects.create(name="Alt", betreff="a", text="<p>a</p>", verwendung=GEBURTSTAG)
+    neu = Vorlage.objects.create(name="Neu", betreff="n", text="<p>n</p>", verwendung=GEBURTSTAG)
+    alt.refresh_from_db()
+    assert alt.verwendung == "" and geburtstagsmail.vorlage() == neu
+    # ohne eigene Vorlage „nachträglich“ gilt die erste
+    assert geburtstagsmail.vorlage(nachtraeglich=True) == neu

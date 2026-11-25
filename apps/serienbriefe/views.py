@@ -12,7 +12,6 @@ from django.views.decorators.http import require_POST
 
 from apps.core import mail, papierkorb
 from apps.core.html import bereinigen
-from apps.core.models import TafelEinstellungen
 from apps.core.pdf import im_fenster, pdf_antwort
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
@@ -144,11 +143,7 @@ def vorlage_loeschen(request, pk):
 
 
 def _allgemein(jahr: int) -> dict:
-    """Alle bekannten Platzhalter (leer, wo sie für den Empfänger nicht passen)."""
-    werte = {name: "" for name, _ in emp.PLATZHALTER}
-    werte |= {"jahr": jahr, "datum": f"{timezone.localdate():%d.%m.%Y}",
-              "tafel": TafelEinstellungen.laden().name}  # fmt: skip
-    return werte
+    return emp.allgemein(jahr)
 
 
 def _beschreibung(d: dict) -> str:
