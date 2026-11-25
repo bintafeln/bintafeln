@@ -51,6 +51,19 @@
   (mit Meldung), beim Import und täglich für abgelaufene Ausweise. Wird der Kunde wieder aktiv oder der Ausweis
   verlängert, die Kundengruppe neu wählen. Ohne Datum „Ausweis gültig bis“ bleibt die Gruppe. Eine Tafel kann das unter
   „Einstellungen → Kunden → Kundenstamm“ abschalten („… in der Kundengruppe lassen“).</p>
+{% if "kunden.herausnehmen" in rechte %}<h3>Kunden herausnehmen (lange nicht gekommen)</h3>
+<p>Hat ein Kunde seit der eingestellten Zeit nicht abgeholt (Vorgabe 56 Tage, „Einstellungen → Kunden → Kundenstamm“) oder
+  noch nie, steht auf seiner Seite oben rechts in der Karte „Angaben“ der Knopf <strong>„Kunden herausnehmen“</strong>.
+  Die Rückfrage zeigt den letzten Besuch und die <strong>Notizen</strong> – dort stehen Krankmeldungen und Abwesenheiten;
+  wer sich gemeldet hat, wird nicht herausgenommen. Mit der Bestätigung passiert in einem Schritt: Der Ausweis gilt nur
+  noch bis gestern, der Kunde ist ab heute für die eingestellte Zeit (Vorgabe 12 Monate) <strong>gesperrt</strong> und
+  fällt aus der Kundengruppe. Die Begründung „Lange unentschuldigt gefehlt“ steht bei der Sperre und am Einlass; Sie
+  können sie in der Rückfrage ändern.</p>
+<p>Solange die Sperre läuft, steht an derselben Stelle <strong>„Herausnahme zurücknehmen“</strong>: Die Sperre wandert in
+  den Papierkorb, der Ausweis gilt wieder wie vorher. Die Kundengruppe wählen Sie danach neu. Der Knopf erscheint nur
+  mit dem Recht „Kunden herausnehmen und sperren“ (Vorgabe: Admin).</p>
+{% hilfe_bild "kunden-herausnehmen" "① Der Knopf erscheint nur, wenn der Kunde lange nicht gekommen ist." %}
+{% hilfe_bild "kunden-herausnehmen-frage" "① Begründung (vorbelegt), ② erst jetzt wird herausgenommen." %}{% endif %}
 <h3>Status: aktiv nur mit gültigem Ausweis</h3>
 <p>Der Status eines Kunden ist <strong>aktiv</strong>, <strong>pausiert</strong>, <strong>gesperrt</strong>,
   <strong>beendet</strong> oder <strong>verstorben</strong>. Ist unter „Einstellungen → Kunden → Kundenstamm“ der Schalter

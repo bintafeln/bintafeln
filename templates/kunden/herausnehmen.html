@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titel %}Kunden herausnehmen – {{ h.kundennummer }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'kunden:haushalt' h.kundennummer %}">← zurück zum Kunden</a></p>
+  <h1>Kunden herausnehmen</h1>
+  <p>Kunde <strong>{{ h.kundennummer }}</strong>{% with p=h.hauptperson %}{% if p %} · {{ p.vorname }} {{ p.nachname }}{% endif %}{% endwith %}</p>
+  <dl class="angaben">
+    <dt>Letzter Besuch</dt><dd>{{ h.letzter_besuch|date:"d.m.Y"|default:"noch nie" }}</dd>
+    <dt>Ausweis gültig bis</dt><dd>{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
+    <dt>Kundengruppe</dt><dd>{{ h.kundengruppe|default:"–" }}</dd>
+  </dl>
+  {% if not faellig %}
+  <p class="fehler" role="alert">Dieser Kunde erfüllt die Bedingung „lange nicht gekommen“ nicht (mehr) oder ist schon
+    gesperrt. Er lässt sich hier nicht herausnehmen.</p>
+  {% else %}
+  <h2>Notizen zum Kunden</h2>
+  {% for n in notizen %}
+  <p class="notiz-zeile"><small class="leise">{{ n.erstellt_am|date:"d.m.Y" }}{% if n.verfasst_von %} · {{ n.verfasst_von }}{% endif %}</small><br>{{ n.text }}</p>
+  {% empty %}<p class="hinweis">Keine Notizen – der Kunde hat sich nicht gemeldet.</p>{% endfor %}
+  {% if notizen %}<p class="fehler"><strong>Bitte vorher lesen:</strong> Wer sich krank oder abwesend gemeldet hat, wird nicht herausgenommen.</p>{% endif %}
+
+  <h2>Das passiert</h2>
+  <ul>
+    <li>Der Ausweis gilt nur noch bis gestern.</li>
+    <li>Der Kunde ist ab heute bis <strong>{{ bis|date:"d.m.Y" }}</strong> gesperrt und fällt aus der Kundengruppe.</li>
+    <li>Erst danach kann er sich wieder anmelden. Die Herausnahme lässt sich auf der Kundenseite zurücknehmen.</li>
+  </ul>
+  <form method="post">
+    {% csrf_token %}
+    <div class="feld"><label for="begruendung">Begründung (steht bei der Sperre und am Einlass)</label>
+      <input type="text" name="begruendung" id="begruendung" maxlength="300" value="{{ begruendung }}" required></div>
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf knopf-gefahr">Kunden herausnehmen</button>
+      <a href="{% url 'kunden:haushalt' h.kundennummer %}" class="knopf knopf-abbrechen">Abbrechen</a>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}
