@@ -157,10 +157,33 @@ Die gesamte Konfiguration steht in der Datei `.env` (Vorlage: [`.env.example`](.
 
 Die folgenden Befehle als Benutzer mit `sudo`-Rechten ausführen.
 
-> **Schnell:** Nach dem Herunterladen (Schritt 2) erledigt `./betrieb installieren` die Schritte 3
-> und 4 (Docker installieren, falls nötig, `.env` mit zufälligen Schlüsseln anlegen, Domain und
-> Zeitzone abfragen, starten). Danach weiter mit „5. Einrichten". Wer die Schritte lieber von Hand
-> nachvollziehen will, folgt der ausführlichen Anleitung unten.
+### Schnell: ein Befehl
+
+Auf einem frischen Debian 13 genügt eine Zeile (als Benutzer mit `sudo`-Rechten oder als root):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bintafeln/bintafeln/main/installieren.sh | sudo bash
+```
+
+Fehlt `curl`, vorher `sudo apt update && sudo apt install -y curl`. Das Skript
+
+1. installiert, was fehlt (`git`, `curl`, `openssl`),
+2. lädt bintafeln nach `/opt/bintafeln`,
+3. **prüft den Server** und sagt verständlich, was nicht passt: zu wenig Arbeitsspeicher
+   (empfohlen 2 GB) oder Plattenplatz (mindestens 5 GB), Port 80/443 schon von einem anderen
+   Programm belegt, Domain zeigt noch nicht auf diesen Server,
+4. installiert Docker, falls nötig (nach Rückfrage),
+5. legt die `.env` mit zufälligen Schlüsseln an und fragt dabei nach **Domain** (leer lassen =
+   Betrieb ohne https über `http://<IP>`, zum Ausprobieren) und **Zeitzone**,
+6. startet bintafeln, wartet, bis es bereit ist, und nennt die Adresse für den Browser.
+
+Danach weiter mit „5. Einrichten“. Nichts Vorhandenes wird überschrieben: Ein zweiter Aufruf
+macht dort weiter, wo der erste aufgehört hat. Anderer Ordner: `… | sudo BINTAFELN_ORDNER=/pfad bash`.
+
+Solange das Repository privat ist, lässt sich die Zeile nicht ohne Zugang abrufen. Dann Schritt 2
+unten von Hand ausführen und im Ordner `./betrieb installieren` aufrufen – das erledigt die
+Punkte 3 bis 6 genauso. Wer jeden Schritt selbst nachvollziehen will, folgt der ausführlichen
+Anleitung.
 
 ### 1. Docker installieren
 

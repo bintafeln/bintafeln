@@ -406,6 +406,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Kontakt, Version, Kennung – nie Personendaten), Empfang beim Herausgeber mit
   `BINTAFELN_VERZEICHNIS_EMPFANG`; in Tests `verzeichnis._senden` ersetzen.
 - Betrieb auf dem Server über `./betrieb` (update, sichern, wiederherstellen, schluessel, status).
+  Erstinstallation mit einem Befehl: `installieren.sh` (holt das Repository, ruft `./betrieb
+  installieren`: Server prüfen – Speicher, Ports, Domain –, Docker, `.env`, starten, warten).
   Versionen `JJJJ.M.N` vergibt `.github/workflows/version.yml` nach jedem Merge, `update` bietet
   sie zur Auswahl an (auch ältere; dann Migrationen rückwärts, deshalb jede Migration
   umkehrbar halten), `bintafeln/version.py` liest die Datei VERSION (ADR 0023). Mehrere

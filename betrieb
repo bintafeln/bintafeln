@@ -94,7 +94,81 @@ env_anlegen() {
     env_setzen TZ "$tz"
 }
 
+warnung() { printf 'ACHTUNG: %s\n' "$*" >&2; }
+
+laeuft_schon() { docker_vorhanden && [[ -n "$(docker compose ps -q 2>/dev/null || true)" ]]; }
+
+port_belegt() {
+    # lauscht schon ein anderes Programm auf dem Port? Ohne "ss" lässt sich das nicht sagen.
+    command -v ss >/dev/null 2>&1 || return 1
+    ss -ltnH 2>/dev/null | awk '{print $4}' | grep -qE "[:.]$1\$"
+}
+
+eigene_adressen() { hostname -I 2>/dev/null || true; }
+
+vorab_pruefen() {
+    # Vor dem ersten Start: Was wird voraussichtlich schiefgehen? Nur Hinweise – bis auf belegte
+    # Ports, denn damit startet der Webserver gar nicht.
+    hinweis "Server prüfen"
+    local ram frei port belegt=""
+    ram=$(awk '/^MemTotal:/ {print int($2 / 1024)}' /proc/meminfo 2>/dev/null || echo 0)
+    if (( ram > 0 && ram < 1800 )); then
+        warnung "Nur ${ram} MB Arbeitsspeicher. Empfohlen sind 2 GB; der erste Start (Image bauen) kann sonst abbrechen."
+    fi
+    frei=$(df -Pm . 2>/dev/null | awk 'NR == 2 {print $4}')
+    if [[ "$frei" =~ ^[0-9]+$ ]] && (( frei < 5000 )); then
+        warnung "Nur ${frei} MB freier Speicherplatz. Empfohlen sind mindestens 5 GB (besser 20 GB für Sicherungen)."
+    fi
+    if ! laeuft_schon; then
+        for port in "$(env_wert HTTP_PORT 80)" "$(env_wert HTTPS_PORT 443)"; do
+            port_belegt "$port" && belegt+=" $port"
+        done
+        if [[ -n "$belegt" ]]; then
+            warnung "Auf dem Server lauscht schon ein anderes Programm auf Port$belegt (z. B. ein anderer Webserver)."
+            echo "  Entweder dieses Programm beenden oder in .env HTTP_PORT/HTTPS_PORT ändern;"
+            echo "  hinter einem vorhandenen Proxy siehe README, Abschnitt Mehrere Installationen auf einem Server."
+            nachfragen "Trotzdem starten?" || fehler "Abgebrochen. Nach der Änderung erneut: ./betrieb installieren"
+        fi
+    fi
+    echo "Prüfung abgeschlossen."
+}
+
+domain_pruefen() {
+    # Zeigt die Domain schon auf diesen Server? Sonst bekommt Caddy kein Zertifikat.
+    local domain="$1" ziel adresse
+    [[ -n "$domain" ]] || return 0
+    ziel=$(getent ahosts "$domain" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ' || true)
+    if [[ -z "$ziel" ]]; then
+        warnung "Die Domain $domain ist (noch) nicht auflösbar. Beim Anbieter der Domain einen A-Eintrag auf die IP dieses Servers setzen; ohne ihn gibt es kein https."
+        return 0
+    fi
+    for adresse in $(eigene_adressen); do
+        [[ " $ziel " == *" $adresse "* ]] && return 0
+    done
+    warnung "Die Domain $domain zeigt auf $ziel– dieser Server hat $(eigene_adressen | xargs)."
+    echo "  Steht der Server hinter einem Router oder einer festen IP des Hosters, kann das stimmen."
+    echo "  Sonst den A-Eintrag der Domain berichtigen; https klappt erst, wenn er hierher zeigt."
+}
+
+auf_start_warten() {
+    # Wartet, bis der Dienst app „healthy“ ist (erster Start baut das Image: einige Minuten).
+    local i
+    printf 'Warte, bis bintafeln bereit ist '
+    for (( i = 0; i < 180; i++ )); do
+        if docker compose ps app 2>/dev/null | grep -q '(healthy)'; then
+            printf ' bereit.\n'
+            return 0
+        fi
+        printf '.'
+        sleep 5
+    done
+    printf '\n'
+    warnung "bintafeln meldet sich noch nicht als bereit. Protokoll ansehen: docker compose logs app"
+    return 0
+}
+
 befehl_installieren() {
+    vorab_pruefen
     if docker_vorhanden; then
         echo "Docker ist bereits vorhanden."
     elif nachfragen "Docker ist nicht installiert. Jetzt installieren (nur Debian, Root nötig)?"; then
@@ -105,15 +179,21 @@ befehl_installieren() {
     docker_vorhanden || fehler "Docker oder Docker Compose steht auch nach der Installation nicht bereit."
     env_anlegen
     hinweis "bintafeln starten (baut beim ersten Mal das Image, das dauert einige Minuten)"
-    docker compose up -d
-    local domain
+    local domain ip port
     domain=$(env_wert BINTAFELN_DOMAIN)
+    domain_pruefen "$domain"
+    docker compose up -d
+    auf_start_warten
+    ip=$(eigene_adressen | awk '{print $1}')
+    port=$(env_wert HTTP_PORT 80)
+    [[ "$port" == 80 ]] && port="" || port=":$port"
     cat <<EOF
 
-Fertig. bintafeln startet gerade.
+Fertig.
+  * Jetzt im Browser öffnen:  ${domain:+https://$domain}${domain:-http://${ip:-<Server-IP>}$port}
+    Dort erscheint die Einrichtungsseite: Name der Tafel und das erste Admin-Konto.
   * Zustand ansehen:      docker compose ps        (der Dienst app wird „healthy")
   * Protokoll:            docker compose logs -f app
-  * Im Browser öffnen:    ${domain:+https://$domain}${domain:-http://<Server-IP>}
   * Sicherung einrichten: ./betrieb schluessel      (den privaten Schlüssel sicher und
                                                      getrennt vom Server aufbewahren!)
 
@@ -411,7 +491,8 @@ befehl_hilfe() {
     cat <<'EOF'
 Betriebswerkzeug für bintafeln
 
-  ./betrieb installieren               Docker installieren (Debian), .env anlegen und starten
+  ./betrieb installieren               Server prüfen, Docker installieren (Debian), .env anlegen,
+                                         starten und warten, bis bintafeln bereit ist
   ./betrieb update                     Version wählen (nach 3 Sekunden die neueste), sichern,
                                          holen, neu bauen und starten; auch zurück auf ältere
   ./betrieb update VERSION             direkt diese Version, z. B. 2026.10.5
