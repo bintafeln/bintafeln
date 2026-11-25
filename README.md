@@ -12,6 +12,19 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 Installation, mit erfundenen Daten. Die Zugänge stehen dort auf der Anmeldeseite; die Daten
 werden jede Nacht zurückgesetzt.
 
+## In einer Zeile installieren
+
+Auf einem frischen Server mit **Debian 13** anmelden und diese Zeile eingeben:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bintafeln/bintafeln/main/installieren.sh | sudo bash
+```
+
+Das Skript prüft den Server, installiert alles Nötige (auch Docker), fragt nach Domain und
+Zeitzone und nennt am Ende die Adresse für den Browser. Dort legen Sie den Namen der Tafel und
+das erste Admin-Konto an – fertig. Einzelheiten und der Weg Schritt für Schritt von Hand stehen
+unter [Installation](#installation-auf-debian-13-trixie-mit-docker).
+
 **Schnell zum Ziel**
 
 - [Demoversion ansehen](https://demo.bintafeln.de) – im Browser ausprobieren, nichts zu
@@ -180,10 +193,9 @@ Fehlt `curl`, vorher `sudo apt update && sudo apt install -y curl`. Das Skript
 Danach weiter mit „5. Einrichten“. Nichts Vorhandenes wird überschrieben: Ein zweiter Aufruf
 macht dort weiter, wo der erste aufgehört hat. Anderer Ordner: `… | sudo BINTAFELN_ORDNER=/pfad bash`.
 
-Solange das Repository privat ist, lässt sich die Zeile nicht ohne Zugang abrufen. Dann Schritt 2
-unten von Hand ausführen und im Ordner `./betrieb installieren` aufrufen – das erledigt die
-Punkte 3 bis 6 genauso. Wer jeden Schritt selbst nachvollziehen will, folgt der ausführlichen
-Anleitung.
+Wer das Programm lieber selbst herunterlädt (Schritt 2 unten), ruft danach im Ordner
+`./betrieb installieren` auf – das erledigt die Punkte 3 bis 6 genauso. Wer jeden Schritt selbst
+nachvollziehen will, folgt der ausführlichen Anleitung.
 
 ### 1. Docker installieren
 

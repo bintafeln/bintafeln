@@ -15,8 +15,7 @@ gemeinsame Verantwortung der nutzenden Tafeln übergehen.
 - **Lizenz:** AGPL-3.0.
 - **Träger:** zunächst der Maintainer privat; GitHub-Organisation `bintafeln`, damit weitere
   Besitzer hinzukommen können.
-- **Repository:** vorerst privat; öffentlich, sobald das Grundgerüst stabil ist. Deshalb gilt
-  schon jetzt: alles im Repository muss veröffentlichungsfähig sein.
+- **Repository:** öffentlich. Alles im Repository muss veröffentlichungsfähig sein.
 - **Technik:** Python, Django (aktuelle LTS), PostgreSQL, Auslieferung per Docker Compose
   (`app`, `db`, `proxy` mit Caddy, `backup` für die verschlüsselte Sicherung, siehe ADR 0008,
   `updater` für das Update aus der Oberfläche, ADR 0043, auf Wunsch `abruf`, ADR 0127).

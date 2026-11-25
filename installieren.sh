@@ -46,7 +46,7 @@ holen() {
     fi
     hinweis "bintafeln nach $ORDNER herunterladen"
     git clone "$QUELLE" "$ORDNER" \
-        || fehler "Herunterladen von $QUELLE fehlgeschlagen. Internetverbindung prüfen; bei einem privaten Repository zuerst von Hand klonen (README, Schritt 2)."
+        || fehler "Herunterladen von $QUELLE fehlgeschlagen. Internetverbindung prüfen und erneut aufrufen."
     # Wer mit sudo aufruft, soll danach ohne sudo im Ordner arbeiten können
     if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != root ]]; then
         chown -R "$SUDO_USER": "$ORDNER"
