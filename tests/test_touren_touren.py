@@ -19,8 +19,12 @@ from apps.touren.models import Halt, Station, Tour, Umstand
 
 pytestmark = pytest.mark.django_db
 
-MONTAG = dt.date(2026, 11, 23)
-DIENSTAG = dt.date(2026, 11, 24)
+# Der nächste Montag (heute, wenn heute Montag ist) und der Dienstag danach: Feste Daten lägen
+# irgendwann in der Vergangenheit, und eine kurzfristige Tour von gestern zeigt die Planung nicht.
+_HEUTE = dt.date.today()
+MONTAG = _HEUTE + dt.timedelta(days=(7 - _HEUTE.weekday()) % 7)
+DIENSTAG = MONTAG + dt.timedelta(days=1)
+FREITAG = MONTAG + dt.timedelta(days=4)
 
 
 @pytest.fixture(autouse=True)
@@ -77,7 +81,7 @@ def test_tour_aus_dem_fahrerplan(django_user_model):
     fritz = person(django_user_model, "Fritz")
     Besetzung.objects.create(tour=ft, wochentag="Mo", platz=1, person=fritz)
     t = Tour.objects.create(name="Tour 3", fahrdienst_tour=ft)
-    assert ablauf.faehrt_am(t, MONTAG) and not ablauf.faehrt_am(t, dt.date(2026, 11, 27))
+    assert ablauf.faehrt_am(t, MONTAG) and not ablauf.faehrt_am(t, FREITAG)
     # eigene Fahrtage grenzen ein: die Montags-Reihenfolge der Tour gilt nur montags
     montags = Tour.objects.create(name="Montag Tour 3", fahrdienst_tour=ft, fahrtage="Mo")
     assert ablauf.faehrt_am(montags, MONTAG) and not ablauf.faehrt_am(montags, DIENSTAG)
@@ -93,7 +97,7 @@ def test_tour_aus_dem_fahrerplan(django_user_model):
     e.module = ["touren"]
     e.save()
     assert ablauf.besetzung(t, MONTAG) == []
-    assert ablauf.faehrt_am(t, dt.date(2026, 11, 27))
+    assert ablauf.faehrt_am(t, FREITAG)
 
 
 def test_halte_nach_wochentag_und_nur_aktive_stationen():
@@ -163,7 +167,7 @@ def test_kurzfristige_tour_an_die_fahrer(django_user_model, mail_an):
     assert mit == [anna.name] and ohne == [otto.name]
     assert len(mail.outbox) == 1
     m = mail.outbox[0]
-    assert m.to == ["anna@example.org"] and "24.11.2026" in m.subject
+    assert m.to == ["anna@example.org"] and f"{DIENSTAG:%d.%m.%Y}" in m.subject
     assert "1. Markt" in m.body and "Zuerst zum Lager" in m.body
     assert "https://tafel.example.org/touren/tour/1/" in m.body
     t.refresh_from_db()
@@ -240,9 +244,9 @@ def test_fahrer_sieht_seine_tour_und_navigiert(fahrer):
 
 def test_anderer_tag_ueber_die_adresse(fahrer):
     tour_mit(1, name="Dienstags", fahrtage="Di")
-    seite = fahrer.get(reverse("touren:heute"), {"tag": "2026-11-24"}).content.decode()
+    seite = fahrer.get(reverse("touren:heute"), {"tag": DIENSTAG.isoformat()}).content.decode()
     assert "Dienstags" in seite
-    seite = fahrer.get(reverse("touren:heute"), {"tag": "2026-11-23"}).content.decode()
+    seite = fahrer.get(reverse("touren:heute"), {"tag": MONTAG.isoformat()}).content.decode()
     assert "Dienstags" not in seite and "keine Tour" in seite
 
 
@@ -255,8 +259,8 @@ def test_buero_legt_kurzfristige_tour_an_und_schickt_sie(buero, django_user_mode
     seite = buero.get(reverse("touren:tour_neu") + "?kurz").content.decode()
     assert "Anna Probe" in seite and "Vera Probe" in seite and "Nils Probe" not in seite
     antwort = buero.post(reverse("touren:tour_neu") + "?kurz", {
-        "name": "Sonderfahrt", "datum": "2026-11-24", "fahrer": anna.pk, "beifahrer": fest.pk,
-        "gast": "Gerda Gast", "hinweis": "", "aktiv": "on"})  # fmt: skip
+        "name": "Sonderfahrt", "datum": DIENSTAG.isoformat(), "fahrer": anna.pk,
+        "beifahrer": fest.pk, "gast": "Gerda Gast", "hinweis": "", "aktiv": "on"})  # fmt: skip
     t = Tour.objects.get(name="Sonderfahrt")
     assert antwort.url == reverse("touren:tour", args=[t.pk])
     assert t.datum == DIENSTAG and t.angelegt_von == "bernd" and t.personen.count() == 2
@@ -632,7 +636,7 @@ def test_kurzfristige_tour_in_einer_maske(buero, django_user_model, mail_an):
     adresse = reverse("touren:tour_neu") + "?kurz"
     seite = buero.get(adresse).content.decode()
     assert "Laden oder Lieferadresse suchen" in seite and "noch nicht in der Liste" in seite
-    daten = {"name": "Sonderabholung", "datum": "24.11.2026", "fahrer": fritz.pk,
+    daten = {"name": "Sonderabholung", "datum": f"{DIENSTAG:%d.%m.%Y}", "fahrer": fritz.pk,
              "hinweis": "", "aktiv": "on", "stationen": [b.pk, a.pk, b.pk], "senden": "1",
              "neu-name": "Hofladen Beispiel", "neu-art": "sonstiges", "neu-strasse": "Feldweg",
              "neu-hausnummer": "3", "neu-plz": "12345", "neu-ort": "Musterstadt"}  # fmt: skip
@@ -643,7 +647,7 @@ def test_kurzfristige_tour_in_einer_maske(buero, django_user_model, mail_an):
     assert neu.kennung.startswith("S-") and neu.geaendert_von == "bernd"
     # Reihenfolge wie gewählt, jede Station nur einmal, die neue am Ende
     assert [h.station for h in t.halte.all()] == [b, a, neu]
-    assert t.datum == dt.date(2026, 11, 24) and list(t.personen.all()) == [fritz]
+    assert t.datum == DIENSTAG and list(t.personen.all()) == [fritz]
     assert len(mail.outbox) == 1 and "Bäckerei Probe" in mail.outbox[0].body  # gleich geschickt
 
 
@@ -651,7 +655,7 @@ def test_kurzfristige_tour_fehler_behaelt_die_auswahl(buero):
     a = station(1, name="Supermarkt Nord")
     adresse = reverse("touren:tour_neu") + "?kurz"
     # neue Adresse nur halb eingetragen: nichts wird angelegt, die Auswahl bleibt stehen
-    daten = {"name": "Sonderabholung", "datum": "24.11.2026", "aktiv": "on",
+    daten = {"name": "Sonderabholung", "datum": f"{DIENSTAG:%d.%m.%Y}", "aktiv": "on",
              "stationen": [a.pk], "neu-name": "Hofladen", "neu-art": "sonstiges"}  # fmt: skip
     antwort = buero.post(adresse, daten)
     seite = antwort.content.decode()
