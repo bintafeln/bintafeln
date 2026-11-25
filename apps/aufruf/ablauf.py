@@ -627,6 +627,32 @@ def aktualisieren(stelle, datum) -> AufrufTag | None:
     return tag
 
 
+def zaehler(tag, datum) -> tuple[int, int]:
+    """(aufgerufen, gesamt) für „228/230 aufgerufen“ – in der Leiste am Einlass und auf dem
+    Aushang-Monitor dieselben Zahlen.
+
+    ``gesamt`` ist die Zahl aus der Kopfzeile am Einlass (``stelle.fortschritt``: die heute
+    möglichen Haushalte), damit überall derselbe Nenner steht; ohne sie die Zahl der Nummern in
+    der Aufrufliste. ``aufgerufen`` ist alles, was nicht mehr wartet: Wer noch in der Schlange
+    steht – auch die gerade angezeigten Nummern –, zählt noch nicht; wer schon vor seinem Aufruf
+    eingelassen wurde, zählt mit."""
+    from apps.ausgabe import stelle as stellen
+
+    gruppen = tag.stand.get("gruppen", [])
+    schlange = [x for g in gruppen for x in g["wartend"]]
+    # Wer schon abgeholt hat, wartet nicht mehr – auch wenn der Abgleich ihn erst gleich aus der
+    # Schlange nimmt
+    wartend = len(schlange) - len(_eingelassen_heute(datum, schlange))
+    f = stellen.fortschritt(tag.ausgabestelle, datum)
+    gesamt = (
+        f.erwartet
+        if f is not None
+        else wartend + sum(len(g["aufgerufen"]) + len(g.get("eingelassen", [])) for g in gruppen)
+    )
+    gesamt = max(gesamt, wartend)
+    return gesamt - wartend, gesamt
+
+
 def stand_fuer_anzeige(tag, einstellungen, datum, eingelassene_zeigen=False) -> dict:
     """Antwort für Monitor, Anzeige und Mobil (Felder wie im bisherigen Aufrufsystem).
 
@@ -649,16 +675,16 @@ def stand_fuer_anzeige(tag, einstellungen, datum, eingelassene_zeigen=False) -> 
     gesamt = len(alle_nummern)
     erledigt = len(_eingelassen_heute(datum, alle_nummern))
     kann_zurueck = bool(s["rueckgaengig"])
+    aufgerufen_gesamt, gesamt_heute = zaehler(tag, datum)
     # Lange keine Aktivität → Ausgabe gilt als beendet (ADR 0050); zum Weitermachen „Fortsetzen“.
     if beendet_durch_inaktivitaet(tag, einstellungen, datum):
-        aufgerufen_gesamt = sum(len(g2["aufgerufen"]) for g2 in s["gruppen"])
         return {"finished": True, "beendet_inaktiv": True, "selected_day": tag_name,
                 "can_undo": kann_zurueck, "total_completed": erledigt, "total_numbers": gesamt,
-                "aufgerufen_gesamt": aufgerufen_gesamt}  # fmt: skip
+                "aufgerufen_gesamt": aufgerufen_gesamt, "gesamt_heute": gesamt_heute}  # fmt: skip
     if s["index"] >= len(s["gruppen"]):
         return {"finished": True, "selected_day": tag_name, "can_undo": kann_zurueck,
                 "total_completed": erledigt, "total_numbers": gesamt,
-                "aufgerufen_gesamt": gesamt}  # fmt: skip
+                "aufgerufen_gesamt": aufgerufen_gesamt, "gesamt_heute": gesamt_heute}  # fmt: skip
     n = einstellungen.anzahl
     g = s["gruppen"][s["index"]]
     wartend = g["wartend"]
@@ -695,11 +721,6 @@ def stand_fuer_anzeige(tag, einstellungen, datum, eingelassene_zeigen=False) -> 
     def da(nummern):
         return None if kiosk is None else [x in kiosk for x in nummern]
 
-    # Wie viele der heutigen Nummern schon über den Monitor aufgerufen wurden: die bereits
-    # erledigten Batches aller Gruppen plus die gerade angezeigten (die stehen jetzt auf dem
-    # Monitor). Schon Eingelassene zählen mit, denn aufgerufen wurden sie trotzdem.
-    aufgerufen_gesamt = sum(len(g2["aufgerufen"]) for g2 in s["gruppen"]) + len(wartend[:n])
-
     return {
         "finished": False,
         "current_numbers": aufgerufen,
@@ -728,6 +749,7 @@ def stand_fuer_anzeige(tag, einstellungen, datum, eingelassene_zeigen=False) -> 
         "total_completed": erledigt,
         "total_numbers": gesamt,
         "aufgerufen_gesamt": aufgerufen_gesamt,
+        "gesamt_heute": gesamt_heute,
         "can_undo": kann_zurueck,
     }
 
