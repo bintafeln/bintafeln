@@ -1,9 +1,10 @@
 """Aushang-Seite „Fortschritt der Ausgabe“ (ADR 0135): ein Monitor in der Verteilung zeigt groß,
 wie weit die Ausgabe einer Ausgabestelle heute ist, z. B. „200 von 225“.
 
-Läuft heute an der Ausgabestelle der Aufruf (Modul ``aufruf``, Tag gestartet), zählen die
-aufgerufenen Nummern (wer schon vorher eingelassen wurde, zählt mit) von allen Nummern der
-Aufrufliste. Sonst – ohne Aufruf oder vor dem Start – wie viele heute abgeholt haben von den
+Läuft heute an der Ausgabestelle der Aufruf (Modul ``aufruf``, Tag gestartet), zählt, wer nicht
+mehr in der Schlange wartet (wer schon vorher eingelassen wurde, zählt mit), von den heute
+möglichen Haushalten – dieselben Zahlen wie in der Leiste am Einlass (``ablauf.zaehler``).
+Sonst – ohne Aufruf oder vor dem Start – wie viele heute abgeholt haben von den
 heute erwarteten Haushalten, wie der Fortschritt in der Kopfzeile am Einlass (ADR 0067). Nur
 Zahlen, keine Namen oder Kundennummern.
 """
@@ -30,9 +31,7 @@ def _aufruf(stelle, heute) -> dict | None:
     tag = ablauf.tag_holen(stelle, heute)
     if tag is None or tag.gestartet_am is None:
         return None
-    gruppen = tag.stand.get("gruppen", [])
-    fertig = sum(len(g["aufgerufen"]) + len(g.get("eingelassen", [])) for g in gruppen)
-    gesamt = fertig + sum(len(g["wartend"]) for g in gruppen)
+    fertig, gesamt = ablauf.zaehler(tag, heute)  # dieselben Zahlen wie in der Leiste am Einlass
     return {"fertig": fertig, "gesamt": gesamt, "art": AUFGERUFEN}
 
 
