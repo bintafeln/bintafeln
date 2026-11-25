@@ -431,7 +431,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps/wetter/wetter.py`, in Tests `wetter._json` ersetzen). `wochenuebersicht` (ADR 0054,
   Rechnung in `apps/wochenuebersicht/auswertung.py`, PDF hoch/quer in `pdf.py`; Vorschau auf
   kommende Wochen über `uebersicht(..., vorschau=Montag)`: geplante Umzüge, `schliesst_am` und
-  Schließzeiten je Tag eingerechnet). `abrechnung`
+  Schließzeiten je Tag eingerechnet; eigene Listen `EigeneListe`: Querformat mit eigenem Namen und
+  eigener Reihenfolge der Tage unter der kurzen Adresse `/liste/<kurz>/`, `auswertung.ordnen()` –
+  Namen nie fest im Code). `abrechnung`
   (ADR 0060, Regeln in `apps/abrechnung/ablauf.py`, Einnahmen aus der Kasse, beim Einreichen
   festgehalten; Quittungen über `privatdateien`; eine Abrechnung umfasst 1–6 Monate,
   `Monatsabrechnung.bis`, passende Abrechnung zu einem Monat nur über `ablauf.holen()`/`im_monat()`;

@@ -12,6 +12,8 @@ def menue(eintrag):
              eintrag("Selbstabholer", "wochenuebersicht:selbstabholer")),
             ("wochenuebersicht.bearbeiten",
              eintrag("Reihenfolge", "wochenuebersicht:reihenfolge")),
+            ("wochenuebersicht.bearbeiten",
+             eintrag("Eigene Listen", "wochenuebersicht:eigene")),
         ]),
     ]  # fmt: skip
 
@@ -39,12 +41,13 @@ MODUL = Modul(
     titel="Wochenübersicht",
     beschreibung="Soll und Ist der Ausgabestellen je Wochentag mit Selbstabholern, Druck als PDF",
     app_label="wochenuebersicht",
-    pfade=("/wochenuebersicht/",),
+    pfade=("/wochenuebersicht/", "/liste/"),
+    weitere_urls=(("/liste/", "apps.wochenuebersicht.urls_kurz"),),
     rechte=(
         ("wochenuebersicht.sehen", "Wochenübersicht der Ausgabestellen ansehen und drucken",
          "Zeigt nur Summen, keine Personendaten."),
-        ("wochenuebersicht.bearbeiten", "Selbstabholer und Reihenfolge der Wochenübersicht pflegen",
-         ""),
+        ("wochenuebersicht.bearbeiten",
+         "Selbstabholer, Reihenfolge und eigene Listen der Wochenübersicht pflegen", ""),
     ),
     vorgaben={"Büro": ("wochenuebersicht.sehen", "wochenuebersicht.bearbeiten")},
     kapitel=(
