@@ -560,6 +560,37 @@ class GeburtstagGruss(models.Model):
         return f"{self.benutzer} – {self.adresse} ({self.tag:%d.%m.%Y})"
 
 
+class GeburtstagVormerkung(models.Model):
+    """Vorbereitete Glückwunsch-Mail (ADR 0179): Betreff und Text stehen fest, der Server schickt
+    sie am Geburtstag zur gewählten Uhrzeit (``geburtstagsmail.faellige_senden``). Danach wird die
+    Vormerkung gelöscht; was gesendet wurde, steht in ``GeburtstagMail`` und im Mail-Archiv."""
+
+    adresse = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE, related_name="+")
+    tag = models.DateField("Geburtstag am")
+    uhrzeit = models.TimeField("Senden um")
+    betreff = models.CharField("Betreff", max_length=200)
+    text = models.TextField("Text")
+    vorlage = models.ForeignKey("serienbriefe.Vorlage", on_delete=models.SET_NULL, null=True,
+                                blank=True, related_name="+")  # fmt: skip
+    von = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+                            blank=True, related_name="+")  # fmt: skip
+    von_name = models.CharField("Vorgemerkt von", max_length=150)
+    am = models.DateTimeField("Vorgemerkt am", default=timezone.now)
+    fehler = models.CharField("Letzter Fehler beim Senden", max_length=300, blank=True)
+    gemeldet = models.BooleanField("Scheitern gemeldet", default=False)
+
+    class Meta:
+        verbose_name = "Vorgemerkter Glückwunsch zum Geburtstag"
+        verbose_name_plural = "Vorgemerkte Glückwünsche zum Geburtstag"
+        ordering = ["tag", "uhrzeit"]
+        constraints = [
+            models.UniqueConstraint(fields=["adresse", "tag"], name="geburtstagvormerkung_einmal")
+        ]
+
+    def __str__(self):
+        return f"{self.adresse} ({self.tag:%d.%m.%Y})"
+
+
 class GeburtstagMail(models.Model):
     """Merkt, dass jemandem zum Geburtstag eine Glückwunsch-Mail geschickt wurde (ADR 0178) –
     damit es alle sehen, die gratulieren dürfen, und niemand doppelt schreibt. Vorübergehend wie

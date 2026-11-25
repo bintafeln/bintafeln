@@ -316,7 +316,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `PasswortAendernMiddleware` ein neues Passwort, bevor die Zwei-Faktor-Einrichtung kommt.
   Glückwunsch-Mail zum Geburtstag (ADR 0178): `apps/konten/geburtstagsmail.py` – Text aus der
   Serienbrief-Vorlage mit `Vorlage.verwendung` (Geburtstag / nachträglich), immer erst die Seite mit
-  der fertigen, änderbaren Mail, nie automatisch senden; `GeburtstagMail` merkt 30 Tage, wer schrieb.
+  der fertigen, änderbaren Mail, nie ungesehen senden; `GeburtstagMail` merkt 30 Tage, wer schrieb. Vormerken (ADR 0179):
+  `GeburtstagVormerkung` mit festem Text und Uhrzeit je Mail, `faellige_senden()` läuft im Befehl
+  `benachrichtigungen_senden`, Meldung an die vormerkende Person über die Benachrichtigung
+  `geburtstagsmail`.
   Geburtstagsbrief auf der Startseite (ADR 0170): `apps/konten/geburtstage.py` (`brief()`,
   `gesehen()`, `fristen_anwenden()`), eigener Glückwunsch für jede Person, zu allen mit dem Recht
   `mitarbeitende.geburtstagsbrief`; gemerkt je Konto in `GeburtstagGruss` (vorübergehend), Vorlage

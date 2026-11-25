@@ -49,6 +49,8 @@ def kalender(heute: dt.date | None = None) -> list[dict]:
         schon_vorbei = (geb.month, geb.day) < (heute.month, heute.day)
         monate[geb.month - 1]["eintraege"].append(
             {
+                "adresse": a,
+                "naechster": _dieses_jahr(geb, heute.year + (1 if schon_vorbei else 0)),
                 "name": _name(a),
                 "geburtsdatum": geb,
                 "tag": geb.day,
@@ -186,7 +188,11 @@ def fristen_anwenden(heute: dt.date | None = None) -> int:
     alt = GeburtstagGruss.objects.filter(tag__lt=heute - dt.timedelta(days=GRUSS_TAGE))
     anzahl = alt.count()
     alt.delete()
+    from apps.konten.models import GeburtstagVormerkung
+
     GeburtstagMail.objects.filter(tag__lt=heute - dt.timedelta(days=GRUSS_TAGE)).delete()
+    # nicht gesendete Vormerkungen (Mailserver fiel aus) bleiben so lange zum Nachsenden von Hand
+    GeburtstagVormerkung.objects.filter(tag__lt=heute - dt.timedelta(days=GRUSS_TAGE)).delete()
     return anzahl
 
 

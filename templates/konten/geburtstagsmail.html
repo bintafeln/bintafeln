@@ -4,8 +4,10 @@
 <script src="{% static 'js/html_editor.js' %}" defer></script>
 <section class="karte breit">
   <h1>Glückwunsch per E-Mail an {{ a.name }}</h1>
-  <p>{% if nachtraeglich %}Hatte am {{ tag|date:"d.m." }} Geburtstag (wurde {{ alter }}){% else %}Hat heute Geburtstag (wird {{ alter }}){% endif %}
+  <p>{% if kuenftig %}Hat am {{ tag|date:"d.m.Y" }} Geburtstag (wird {{ alter }}){% elif nachtraeglich %}Hatte am {{ tag|date:"d.m." }} Geburtstag (wurde {{ alter }}){% else %}Hat heute Geburtstag (wird {{ alter }}){% endif %}
     · Vorlage „{{ v.name }}“</p>
+  {% if kuenftig %}<p class="hinweis">{% if vorgemerkt %}Vorgemerkt von {{ vorgemerkt.von_name }} am {{ vorgemerkt.am|date:"d.m.Y" }}. Sie können Text und Uhrzeit ändern oder die Vormerkung löschen.{% else %}Sie bereiten die Mail jetzt vor; der Server schickt sie am Geburtstag zur gewählten Uhrzeit. Bis dahin können Sie sie ändern oder löschen.{% endif %}</p>
+  {% elif vorgemerkt %}<p class="hinweis"><strong>Achtung:</strong> Dieser Glückwunsch war vorgemerkt{% if vorgemerkt.fehler %}, konnte aber noch nicht gesendet werden: {{ vorgemerkt.fehler }}{% else %} für {{ vorgemerkt.uhrzeit|time:"H:i" }} Uhr{% endif %}. „Senden“ schickt ihn jetzt gleich.</p>{% endif %}
   {% if gesendet %}<p class="hinweis" role="status"><strong>Achtung:</strong> Ein Glückwunsch wurde schon gesendet: am {{ gesendet.am|date:"d.m.Y H:i" }} Uhr von {{ gesendet.von }}. „Senden“ schickt noch einen.</p>{% endif %}
   {% if not a.email %}<p class="fehler" role="alert">Für diese Person ist keine E-Mail-Adresse hinterlegt. Tragen Sie sie im Adressbuch ein.</p>
   {% elif not mail_bereit %}<p class="fehler" role="alert">Der Mailversand ist noch nicht eingerichtet (Einstellungen → Tafel → E-Mail).</p>{% endif %}
@@ -20,10 +22,18 @@
                 data-editor-grafiken="{% url 'serienbriefe:grafiken' %}">{{ text }}</textarea>
       <small class="hilfe">So geht die Mail hinaus. Sie können den Text hier noch ändern; die Vorlage bleibt, wie sie ist.</small></div>
     {% if fuss %}<div class="feld"><label>Darunter steht die Fußzeile der Vorlage</label><div class="hinweis">{{ fuss }}</div></div>{% endif %}
+    {% if kuenftig %}<div class="feld"><label for="gm-uhrzeit">Senden am {{ tag|date:"d.m.Y" }} um *</label>
+      <input type="time" id="gm-uhrzeit" name="uhrzeit" value="{{ uhrzeit|time:'H:i' }}" required class="zahl-eingabe">
+      <small class="hilfe">Der Server schickt zur gewählten Zeit oder wenige Minuten danach.</small></div>{% endif %}
     <div class="aktionsleiste">
-      <button type="submit" class="knopf"{% if not a.email or not mail_bereit %} disabled{% endif %}>Senden</button>
+      <button type="submit" class="knopf"{% if not a.email or not mail_bereit %} disabled{% endif %}>{% if kuenftig %}{% if vorgemerkt %}Änderung speichern{% else %}Am Geburtstag senden{% endif %}{% else %}Senden{% endif %}</button>
       <a class="knopf knopf-abbrechen" href="{% url zurueck %}">Abbrechen</a>
     </div>
   </form>
+  {% if kuenftig and vorgemerkt %}
+  <form method="post" class="gm-loeschen">
+    {% csrf_token %}<input type="hidden" name="aktion" value="loeschen">
+    <button type="submit" class="knopf knopf-gefahr">Vormerkung löschen</button>
+  </form>{% endif %}
 </section>
 {% endblock %}

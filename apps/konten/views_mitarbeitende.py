@@ -853,7 +853,11 @@ def geburtstage(request):
         "naechste": geburtstagsmail.ergaenzen(request.user, geb.naechste(14, heute), heute,
                                               "naechster"),
         "letzte": geburtstagsmail.ergaenzen(request.user, geb.letzte(7, heute), heute, "letzter"),
-        "monate": [m for m in geb.kalender(heute) if m["eintraege"]],
+        "monate": [
+            {**m, "eintraege": geburtstagsmail.ergaenzen(request.user, m["eintraege"], heute,
+                                                         "naechster")}
+            for m in geb.kalender(heute) if m["eintraege"]
+        ],
         "heute": heute,
     })  # fmt: skip
 
@@ -863,7 +867,8 @@ def geburtstage(request):
 @rollen.recht_erforderlich("serienbriefe.erstellen")
 def geburtstagsmail(request, pk, tag):
     """Glückwunsch-Mail an ein Geburtstagskind (ADR 0178): zeigt die fertige Mail aus der Vorlage
-    zum Ändern; erst „Senden“ schickt sie, „Abbrechen“ führt zurück."""
+    zum Ändern; erst „Senden“ schickt sie, „Abbrechen“ führt zurück. Vor dem Geburtstag wird sie
+    vorgemerkt (ADR 0179): mit Uhrzeit, änderbar und löschbar, bis der Server sie schickt."""
     import datetime as dt
 
     from apps.core.html import bereinigen
@@ -876,29 +881,56 @@ def geburtstagsmail(request, pk, tag):
         tag = dt.date.fromisoformat(tag)
     except ValueError:
         raise Http404 from None
-    a = gm.geburtstagskind(pk, tag, heute)
+    kuenftig = tag > heute  # dann wird vorgemerkt, der Server schickt am Geburtstag (ADR 0179)
+    a = gm.vormerkbar(pk, tag, heute) if kuenftig else gm.geburtstagskind(pk, tag, heute)
     if a is None or a.konto_id == request.user.pk:
         raise Http404
-    zurueck = "konten:geburtstage" if request.GET.get("von") == "kalender" else "core:start"
+    zurueck = "core:start"
+    if kuenftig or request.GET.get("von") == "kalender":
+        zurueck = "konten:geburtstage"
+    vorgemerkt = gm.vormerkung(a, tag)
     entwurf = gm.entwurf(a, tag, heute)
     if entwurf is None:
         messages.error(request, "Es gibt noch keine Vorlage für den Glückwunsch zum Geburtstag "
                                 "(Serienbriefe → Vorlage → Verwendung).")  # fmt: skip
         return redirect(zurueck)
     v, betreff, html = entwurf
+    uhrzeit = gm.uhrzeit_vorschlag(request.user)
+    if vorgemerkt:  # der vorbereitete Text gilt, auch beim Nachsenden von Hand
+        v, betreff, html, uhrzeit = (vorgemerkt.vorlage or v, vorgemerkt.betreff,
+                                     vorgemerkt.text, vorgemerkt.uhrzeit)  # fmt: skip
     fehler = ""
+    if request.method == "POST" and request.POST.get("aktion") == "loeschen":
+        if vorgemerkt:
+            papierkorb.loeschen(request.user, "Vorgemerkter Glückwunsch",
+                                f"{a.name} ({tag:%d.%m.%Y})", vorgemerkt,
+                                recht="mitarbeitende.geburtstagsbrief")  # fmt: skip
+            messages.success(request, "Vormerkung in den Papierkorb gelegt.")
+        return redirect(zurueck)
     if request.method == "POST":
         betreff = request.POST.get("betreff", "").strip()
         html = gestaltung.speichern(request.POST.get("text", ""))
-        if not betreff or not gestaltung.mail_text(html).strip():
+        try:
+            uhrzeit = dt.time.fromisoformat(request.POST.get("uhrzeit", "") or f"{uhrzeit:%H:%M}")
+        except ValueError:
+            fehler = "Bitte eine Uhrzeit angeben."
+        if fehler:
+            pass
+        elif not betreff or not gestaltung.mail_text(html).strip():
             fehler = "Bitte Betreff und Text angeben."
         elif not a.email:
             fehler = "Für diese Person ist keine E-Mail-Adresse hinterlegt."
+        elif kuenftig:
+            gm.vormerken(request.user, a, tag, uhrzeit, v, betreff, html)
+            messages.success(request, f"Glückwunsch an {a.name} vorgemerkt: geht am "
+                                      f"{tag:%d.%m.%Y} um {uhrzeit:%H:%M} Uhr hinaus.")  # fmt: skip
+            return redirect(zurueck)
         else:
             return _geburtstagsmail_senden(request, a, tag, v, betreff, html, zurueck)
     return render(request, "konten/geburtstagsmail.html", {
         "a": a, "tag": tag, "nachtraeglich": tag < heute, "v": v, "betreff": betreff,
-        "text": html, "fehler": fehler, "zurueck": zurueck,
+        "text": html, "fehler": fehler, "zurueck": zurueck, "kuenftig": kuenftig,
+        "vorgemerkt": vorgemerkt, "uhrzeit": uhrzeit,
         "alter": tag.year - a.geburtsdatum.year,
         "fuss": bereinigen(gestaltung.als_html(v.fusszeile)),
         "gesendet": GeburtstagMail.objects.filter(adresse=a, tag=tag).first(),
