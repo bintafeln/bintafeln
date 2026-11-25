@@ -21,7 +21,8 @@ class VorlageForm(forms.ModelForm):
 
     class Meta:
         model = Vorlage
-        fields = ["name", "betreff", "text", "briefkopf", "fusszeile", "freie_grafiken"]
+        fields = ["name", "betreff", "text", "briefkopf", "fusszeile", "freie_grafiken",
+                  "verwendung"]  # fmt: skip
         widgets = {
             "betreff": forms.TextInput(attrs={"data-platzhalter-ziel": ""}),
             "text": forms.Textarea(attrs={"rows": 16, "class": "html-eingabe",

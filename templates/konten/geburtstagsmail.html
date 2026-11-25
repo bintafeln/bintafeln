@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% load static %}
+{% block titel %}Glückwunsch an {{ a.name }}{% endblock %}
+{% block inhalt %}
+<script src="{% static 'js/html_editor.js' %}" defer></script>
+<section class="karte breit">
+  <h1>Glückwunsch per E-Mail an {{ a.name }}</h1>
+  <p>{% if nachtraeglich %}Hatte am {{ tag|date:"d.m." }} Geburtstag (wurde {{ alter }}){% else %}Hat heute Geburtstag (wird {{ alter }}){% endif %}
+    · Vorlage „{{ v.name }}“</p>
+  {% if gesendet %}<p class="hinweis" role="status"><strong>Achtung:</strong> Ein Glückwunsch wurde schon gesendet: am {{ gesendet.am|date:"d.m.Y H:i" }} Uhr von {{ gesendet.von }}. „Senden“ schickt noch einen.</p>{% endif %}
+  {% if not a.email %}<p class="fehler" role="alert">Für diese Person ist keine E-Mail-Adresse hinterlegt. Tragen Sie sie im Adressbuch ein.</p>
+  {% elif not mail_bereit %}<p class="fehler" role="alert">Der Mailversand ist noch nicht eingerichtet (Einstellungen → Tafel → E-Mail).</p>{% endif %}
+  {% if fehler %}<p class="fehler" role="alert">{{ fehler }}</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <div class="feld"><label>An</label><p id="gm-an"><strong>{{ a.email|default:"–" }}</strong></p></div>
+    <div class="feld"><label for="gm-betreff">Betreff *</label>
+      <input type="text" id="gm-betreff" name="betreff" value="{{ betreff }}" maxlength="200" required></div>
+    <div class="feld"><label for="gm-text">Text *</label>
+      <textarea id="gm-text" name="text" rows="14" class="html-eingabe" data-editor data-editor-ohne="link bild"
+                data-editor-grafiken="{% url 'serienbriefe:grafiken' %}">{{ text }}</textarea>
+      <small class="hilfe">So geht die Mail hinaus. Sie können den Text hier noch ändern; die Vorlage bleibt, wie sie ist.</small></div>
+    {% if fuss %}<div class="feld"><label>Darunter steht die Fußzeile der Vorlage</label><div class="hinweis">{{ fuss }}</div></div>{% endif %}
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf"{% if not a.email or not mail_bereit %} disabled{% endif %}>Senden</button>
+      <a class="knopf knopf-abbrechen" href="{% url zurueck %}">Abbrechen</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

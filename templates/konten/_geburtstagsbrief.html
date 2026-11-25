@@ -13,11 +13,13 @@
   {% if erster.eigen %}<h2>{% if erster.gestern %}Nachträglich alles Gute zum Geburtstag, {{ erster.vorname }}!{% else %}Alles Gute zum Geburtstag, {{ erster.vorname }}!{% endif %}</h2>
   {% else %}<h2>Geburtstag im Team</h2>{% endif %}
   {% if not letzter.eigen %}<ul class="gb-liste">{% for g in geburtstagsbrief %}{% if not g.eigen %}
-    <li>{% if g.gestern %}Gestern hatte <strong>{{ g.name }}</strong> Geburtstag (wurde {{ g.alter }}){% else %}Heute hat <strong>{{ g.name }}</strong> Geburtstag (wird {{ g.alter }}){% endif %}</li>{% endif %}{% endfor %}
+    <li>{% if g.gestern %}Gestern hatte <strong>{{ g.name }}</strong> Geburtstag (wurde {{ g.alter }}){% else %}Heute hat <strong>{{ g.name }}</strong> Geburtstag (wird {{ g.alter }}){% endif %}{% if g.mail.gesendet %}<br><small class="gb-mail">Glückwunsch-Mail gesendet am {{ g.mail.gesendet.am|date:"d.m. H:i" }} Uhr von {{ g.mail.gesendet.von }}</small>{% elif g.mail.ohne_email %}<br><small class="gb-mail">keine E-Mail-Adresse hinterlegt</small>{% endif %}</li>{% endif %}{% endfor %}
   </ul>{% endif %}
   <form method="post" action="{% url 'konten:geburtstagsbrief_gesehen' %}">{% csrf_token %}
     {% for g in geburtstagsbrief %}<input type="hidden" name="gruss" value="{{ g.adresse.pk }}:{{ g.tag|date:'Y-m-d' }}">{% endfor %}
     <button type="submit" class="knopf">{% if letzter.eigen %}Danke!{% elif erster.eigen %}Danke – und gratuliert{% else %}Gratuliert{% endif %}</button>
+    {% for g in geburtstagsbrief %}{% if g.mail and not g.mail.ohne_email %}
+    <a class="knopf knopf-zweitrangig" href="{% url 'konten:geburtstagsmail' g.mail.adresse g.mail.tag|date:'Y-m-d' %}">{% if g.mail.gesendet %}Noch eine E-Mail{% else %}Glückwunsch per E-Mail{% endif %}{% if geburtstagsbrief|length > 1 %} an {{ g.vorname }}{% endif %}</a>{% endif %}{% endfor %}
     <button type="button" class="knopf knopf-zweitrangig" data-gb-spaeter>Später</button>
   </form>
 </template>

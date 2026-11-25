@@ -28,6 +28,7 @@ PLATZHALTER = [
     ("anzahl_spenden", "Anzahl der Spenden (Dankesbriefe)"),
     ("spendendaten", "Daten der Spenden, z. B. „15.01.2026, 15.02.2026“ (Dankesbriefe)"),
     ("kundennummer", "Kundennummer"),
+    ("alter", "Alter am Geburtstag (nur im Glückwunsch zum Geburtstag)"),
     ("jahr", "gewähltes Jahr"), ("datum", "heutiges Datum"), ("tafel", "Name der Tafel"),
 ]  # fmt: skip
 
@@ -38,7 +39,8 @@ NAMEN = {
     "organisation": "Organisation", "mitgliedsnummer": "Mitgliedsnummer",
     "jahresbeitrag": "Jahresbeitrag", "beitrag_offen": "Offener Beitrag",
     "spendensumme": "Spendensumme", "anzahl_spenden": "Anzahl Spenden",
-    "spendendaten": "Spendendaten", "kundennummer": "Kundennummer", "jahr": "Jahr",
+    "spendendaten": "Spendendaten", "kundennummer": "Kundennummer", "alter": "Alter",
+    "jahr": "Jahr",
     "datum": "Heutiges Datum", "tafel": "Name der Tafel",
 }  # fmt: skip
 # Erfundener Empfänger für die Vorschau beim Bearbeiten einer Vorlage
@@ -48,6 +50,7 @@ BEISPIEL = {
     "nachname": "Beispiel", "organisation": "", "mitgliedsnummer": "42",
     "jahresbeitrag": "36,00 €", "beitrag_offen": "36,00 €", "spendensumme": "150,00 €",
     "anzahl_spenden": "2", "spendendaten": "15.01., 15.06.", "kundennummer": "1234",
+    "alter": "60",
 }  # fmt: skip
 BEISPIEL_ANSCHRIFT = ["Frau Erika Beispiel", "Musterweg 1", "12345 Musterstadt"]
 
@@ -105,6 +108,21 @@ def anrede_du(anrede: str, vorname: str, nachname: str, organisation: bool) -> s
     if anrede == "Herr":
         return f"Lieber {vorname},"
     return f"Hallo {vorname},"
+
+
+def allgemein(jahr: int) -> dict:
+    """Alle bekannten Platzhalter (leer, wo sie für den Empfänger nicht passen)."""
+    from apps.core.models import TafelEinstellungen
+
+    werte = {name: "" for name, _ in PLATZHALTER}
+    werte |= {"jahr": jahr, "datum": f"{timezone.localdate():%d.%m.%Y}",
+              "tafel": TafelEinstellungen.laden().name}  # fmt: skip
+    return werte
+
+
+def aus_adresse(a, jahr: int, **mehr) -> "Empfaenger":
+    """Empfänger aus einer Adresse des Adressbuchs; ``mehr`` sind zusätzliche Platzhalter."""
+    return _aus_adresse(a, jahr, **mehr)
 
 
 def _aus_adresse(a, jahr: int, **mehr) -> Empfaenger:

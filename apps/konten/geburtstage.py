@@ -76,6 +76,7 @@ def naechste(tage: int = 14, heute: dt.date | None = None) -> list[dict]:
             continue
         ergebnis.append(
             {
+                "adresse": a,
                 "name": _name(a),
                 "geburtsdatum": geb,
                 "naechster": naechster,
@@ -103,6 +104,7 @@ def letzte(tage: int = 7, heute: dt.date | None = None) -> list[dict]:
             continue
         ergebnis.append(
             {
+                "adresse": a,
                 "name": _name(a),
                 "geburtsdatum": geb,
                 "letzter": letzter,
@@ -179,9 +181,12 @@ def fristen_anwenden(heute: dt.date | None = None) -> int:
     from apps.konten.models import GeburtstagGruss
 
     heute = heute or dt.date.today()
+    from apps.konten.models import GeburtstagMail
+
     alt = GeburtstagGruss.objects.filter(tag__lt=heute - dt.timedelta(days=GRUSS_TAGE))
     anzahl = alt.count()
     alt.delete()
+    GeburtstagMail.objects.filter(tag__lt=heute - dt.timedelta(days=GRUSS_TAGE)).delete()
     return anzahl
 
 

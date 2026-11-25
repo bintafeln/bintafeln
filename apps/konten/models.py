@@ -560,6 +560,25 @@ class GeburtstagGruss(models.Model):
         return f"{self.benutzer} – {self.adresse} ({self.tag:%d.%m.%Y})"
 
 
+class GeburtstagMail(models.Model):
+    """Merkt, dass jemandem zum Geburtstag eine Glückwunsch-Mail geschickt wurde (ADR 0178) –
+    damit es alle sehen, die gratulieren dürfen, und niemand doppelt schreibt. Vorübergehend wie
+    ``GeburtstagGruss``; die Mail selbst steht im Mail-Archiv und bei den Serienbrief-Versänden."""
+
+    adresse = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE, related_name="+")
+    tag = models.DateField("Geburtstag am")
+    am = models.DateTimeField("Gesendet am", default=timezone.now)
+    von = models.CharField("Von", max_length=150)
+
+    class Meta:
+        verbose_name = "Glückwunsch-Mail zum Geburtstag"
+        verbose_name_plural = "Glückwunsch-Mails zum Geburtstag"
+        ordering = ["-am"]
+
+    def __str__(self):
+        return f"{self.adresse} ({self.tag:%d.%m.%Y})"
+
+
 auditlog.register(AnmeldeEinstellungen)
 auditlog.register(VertrautesGeraet, exclude_fields=["pruefsumme", "passwort_stand"])
 auditlog.register(TOTPDevice, include_fields=["user", "name", "confirmed"])

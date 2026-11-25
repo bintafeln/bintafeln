@@ -3,6 +3,12 @@
 from auditlog.registry import auditlog
 from django.db import models
 
+GEBURTSTAG, GEBURTSTAG_NACH = "geburtstag", "geburtstag_nach"
+VERWENDUNGEN = [
+    (GEBURTSTAG, "Glückwunsch zum Geburtstag (E-Mail an Mitarbeitende)"),
+    (GEBURTSTAG_NACH, "Glückwunsch nachträglich (E-Mail an Mitarbeitende)"),
+]
+
 
 class Vorlage(models.Model):
     name = models.CharField("Name", max_length=100, unique=True)
@@ -27,6 +33,12 @@ class Vorlage(models.Model):
         "Frei gesetzte Grafiken", default=list, blank=True,
         help_text="Grafiken an fester Stelle der Seite, z. B. Unterschriften (ADR 0166).",
     )  # fmt: skip
+    verwendung = models.CharField(
+        "Verwendung", max_length=20, blank=True, choices=VERWENDUNGEN,
+        help_text="Mit „Glückwunsch zum Geburtstag“ bietet der Geburtstagsbrief diese Vorlage als "
+        "E-Mail an das Geburtstagskind an; „nachträglich“ für alle, denen man erst nach dem Tag "
+        "schreibt. Je Verwendung gilt eine Vorlage – die zuletzt gewählte.",
+    )  # fmt: skip
     geaendert_am = models.DateTimeField("Geändert am", auto_now=True)
 
     class Meta:
@@ -36,6 +48,13 @@ class Vorlage(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.verwendung:  # je Verwendung nur eine Vorlage: die zuletzt gewählte
+            Vorlage.objects.filter(verwendung=self.verwendung).exclude(pk=self.pk).update(
+                verwendung=""
+            )
 
 
 class Versand(models.Model):

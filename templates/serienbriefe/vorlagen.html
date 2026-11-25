@@ -8,7 +8,7 @@
     <a class="knopf knopf-zweitrangig" href="{% url 'serienbriefe:vorlage_neu' %}">Neue Vorlage</a>
   </div>
   <ul>
-  {% for v in vorlagen %}<li><a href="{% url 'serienbriefe:vorlage' v.pk %}">{{ v.name }}</a> – {{ v.betreff }}
+  {% for v in vorlagen %}<li><a href="{% url 'serienbriefe:vorlage' v.pk %}">{{ v.name }}</a> – {{ v.betreff }}{% if v.verwendung %} <span class="marke-ok">{{ v.get_verwendung_display }}</span>{% endif %}
     · <a href="{% url 'serienbriefe:erstellen' %}?vorlage={{ v.pk }}">verwenden</a></li>
   {% empty %}<li>Noch keine Vorlagen.</li>{% endfor %}
   </ul>
