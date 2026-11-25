@@ -2310,7 +2310,9 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .druck-mail form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .5rem; }
 .druck-mail > summary { display: inline-flex; width: auto; list-style: none; }
 .druck-mail > summary::-webkit-details-marker { display: none; }
-.druck-mail select { width: auto; max-width: 100%; }
+.druck-mail select, .druck-mail input[type=email] { width: auto; max-width: 100%; font-size: 1.05rem;
+  min-height: 2.75rem; padding: .45rem .7rem; }
+.druck-mail input[type=email] { flex: 1 1 16rem; }
 .druck-mail-ergebnis { border: 0; width: 100%; height: 2rem; display: block; }
 .druck-seiten { display: grid; gap: 1rem; justify-items: center; }
 .druck-seite { max-width: 100%; height: auto; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); background: #fff; }

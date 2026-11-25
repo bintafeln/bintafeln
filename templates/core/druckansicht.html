@@ -10,7 +10,7 @@
       <a class="knopf knopf-zweitrangig" href="data:application/pdf;base64,{{ pdf }}" download="{{ dateiname }}">⬇ PDF herunterladen</a>
       <button type="button" class="knopf knopf-zweitrangig" data-zurueck>← Zurück</button>
     </div>
-    {% if mail_bereit and empfaenger %}
+    {% if mail_bereit %}{% if empfaenger or mail_frei %}
     <details class="druck-mail">
       <summary class="knopf knopf-zweitrangig">✉ Per E-Mail senden</summary>
       <form method="post" action="{% url 'core:druck_senden' %}" target="druck-mail-ergebnis">
@@ -19,12 +19,14 @@
         <input type="hidden" name="signatur" value="{{ signatur }}">
         <input type="hidden" name="dateiname" value="{{ dateiname }}">
         <label for="druck-an">An</label>
-        <select name="an" id="druck-an">{% for adresse, text in empfaenger %}<option value="{{ adresse }}">{{ text }}</option>{% endfor %}</select>
+        {% if empfaenger %}<select name="an" id="druck-an">{% for adresse, text in empfaenger %}<option value="{{ adresse }}">{{ text }}</option>{% endfor %}</select>{% endif %}
+        {% if mail_frei %}<label for="druck-frei">oder an</label>
+        <input type="email" name="an_frei" id="druck-frei" placeholder="andere E-Mail-Adresse" autocomplete="email" inputmode="email">{% endif %}
         <button type="submit" class="knopf">Senden</button>
       </form>
       <iframe name="druck-mail-ergebnis" title="Ergebnis des Versands" class="druck-mail-ergebnis"></iframe>
     </details>
-    {% endif %}
+    {% endif %}{% endif %}
     <p class="hinweis">„Drucken“ öffnet den Druckdialog dieses Geräts. {{ seiten|length }} Seite{{ seiten|length|pluralize:"n" }}.</p>
   </div>
   <div class="druck-seiten">
