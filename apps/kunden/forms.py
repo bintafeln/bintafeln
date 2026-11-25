@@ -37,6 +37,8 @@ class KundenEinstellungenForm(forms.ModelForm):
             "selbst_gefuehrt",
             "gruppe_behalten",
             "status_nach_ausweis",
+            "herausnehmen_nach_tagen",
+            "herausnehmen_sperre_monate",
             "verstorben_loeschen_monate",
             "verlegung_vorlauf_wochen",
             "nachfrist_sichtbar_tage",

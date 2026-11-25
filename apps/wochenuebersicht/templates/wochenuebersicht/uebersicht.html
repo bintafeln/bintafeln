@@ -23,7 +23,9 @@
   </form>
   <p class="wochen-pdf">PDF:
     <a class="knopf knopf-zweitrangig" href="{% url 'wochenuebersicht:pdf' 'hoch' %}?{{ abfrage }}" target="_blank">Hochformat</a>
-    <a class="knopf knopf-zweitrangig" href="{% url 'wochenuebersicht:pdf' 'quer' %}?{{ abfrage }}" target="_blank">Querformat</a></p>
+    <a class="knopf knopf-zweitrangig" href="{% url 'wochenuebersicht:pdf' 'quer' %}?{{ abfrage }}" target="_blank">Querformat</a>
+    {% for e in eigene %}<a class="knopf knopf-zweitrangig" href="{% url 'wochenliste:liste' e.kurz %}?{{ abfrage }}" target="_blank">{{ e.name }}</a>
+    {% endfor %}</p>
 
   {% for tag in tage %}
   <h2>{{ tag.name }}{% if tag.datum %} <small class="leise">{{ tag.datum|date:"d.m." }}</small>{% endif %}</h2>

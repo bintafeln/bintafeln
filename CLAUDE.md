@@ -191,6 +191,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `KundenEinstellungen.status_nach_ausweis` (Vorgabe aus); `Haushalt.save()` führt `status_seit`.
   Status „verstorben“: zählt wie „beendet“ nicht mit (`Haushalt.NICHT_MEHR` statt nur BEENDET
   ausschließen), nach `verstorben_loeschen_monate` in den Papierkorb.
+  Kunden herausnehmen (ADR 0177): `apps/kunden/herausnehmen.py` – Knopf auf der Kundenseite nur mit
+  `kunden.herausnehmen` und wenn `faellig()` (wie die Liste „Lange nicht gekommen“,
+  `KundenEinstellungen.herausnehmen_nach_tagen`); Ausweis bis gestern + `Sperre(herausnahme=True,
+  ausweis_vorher=…)`, `zuruecknehmen()` stellt das Datum wieder her.
   Einkommensart vieler Haushalte auf einmal ändern (nach Alter der Hauptperson, erst ansehen, dann
   ändern, in Portionen) in `apps/kunden/views_einkommensart.py` (ADR 0146).
   Notizen an die Ausgabestelle (`Notiz.an_stelle`, Startseite, Antwort beim Ausweisdruck) in
@@ -430,7 +434,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps/wetter/wetter.py`, in Tests `wetter._json` ersetzen). `wochenuebersicht` (ADR 0054,
   Rechnung in `apps/wochenuebersicht/auswertung.py`, PDF hoch/quer in `pdf.py`; Vorschau auf
   kommende Wochen über `uebersicht(..., vorschau=Montag)`: geplante Umzüge, `schliesst_am` und
-  Schließzeiten je Tag eingerechnet). `abrechnung`
+  Schließzeiten je Tag eingerechnet; eigene Listen `EigeneListe`: Querformat mit eigenem Namen und
+  eigener Reihenfolge der Tage unter der kurzen Adresse `/liste/<kurz>/`, `auswertung.ordnen()` –
+  Namen nie fest im Code). `abrechnung`
   (ADR 0060, Regeln in `apps/abrechnung/ablauf.py`, Einnahmen aus der Kasse, beim Einreichen
   festgehalten; Quittungen über `privatdateien`; eine Abrechnung umfasst 1–6 Monate,
   `Monatsabrechnung.bis`, passende Abrechnung zu einem Monat nur über `ablauf.holen()`/`im_monat()`;

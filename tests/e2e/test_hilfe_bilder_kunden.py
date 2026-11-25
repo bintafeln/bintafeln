@@ -609,3 +609,24 @@ def test_hilfe_bild_platz_anbieten(angemeldet, admin, muster):
     aufnehmen(seite, "platz-anbieten-vorschau", seite.locator("section.karte").first,
               Marke(seite.locator("#mail-vorschau"), "rahmen", 1),
               Marke(seite.get_by_role("button", name="Jetzt senden"), "rahmen", 2))  # fmt: skip
+
+
+def test_hilfe_bild_kunden_herausnehmen(angemeldet, admin, muster):
+    """„Kunden herausnehmen“: Knopf auf der Kundenseite, Rückfrage, Herausnahme (Bild fürs
+    Handbuch)."""
+    from apps.kunden.models import Sperre
+
+    lange_her = timezone.localdate() - dt.timedelta(days=90)
+    Haushalt.objects.filter(kundennummer="00042").update(letzter_besuch=lange_her)
+    seite = oeffnen(angemeldet, admin, reverse("kunden:haushalt", args=["00042"]))
+    knopf = seite.get_by_role("link", name="Kunden herausnehmen")
+    angaben = seite.locator("section.karte", has_text="Angaben").first
+    aufnehmen(seite, "kunden-herausnehmen", angaben, Marke(knopf, "rahmen", 1))
+    knopf.click()
+    ja = seite.get_by_role("button", name="Kunden herausnehmen")
+    grund = seite.locator("#begruendung")
+    aufnehmen(seite, "kunden-herausnehmen-frage", seite.locator("section.karte").first,
+              Marke(grund, "rahmen", 1), Marke(ja, "rahmen", 2))  # fmt: skip
+    ja.click()
+    expect(seite.get_by_role("button", name="Herausnahme zurücknehmen")).to_be_visible()
+    assert Sperre.objects.filter(haushalt__kundennummer="00042", herausnahme=True).exists()

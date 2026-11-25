@@ -22,6 +22,10 @@
 {# Zwei Spalten, in denen die Karten lückenlos untereinander stehen; schmal: eine Spalte #}
 <div class="seiten-spalte">
 <section class="karte">
+  {% if herausnehmen %}<a class="knopf knopf-gefahr karte-knopf-rechts" href="{% url 'kunden:herausnehmen' h.kundennummer %}" title="Lange nicht gekommen: Ausweis beenden und für die eingestellte Zeit sperren">Kunden herausnehmen</a>
+  {% elif herausnahme %}<form method="post" action="{% url 'kunden:herausnahme_zurueck' h.kundennummer %}" class="karte-knopf-rechts"
+        onsubmit="return confirm('Herausnahme zurücknehmen? Die Sperre wird gelöscht, der Ausweis gilt wieder wie vorher.')">{% csrf_token %}
+    <button type="submit" class="knopf knopf-zweitrangig">Herausnahme zurücknehmen</button></form>{% endif %}
   <h2>Angaben</h2>
   {% for s, aktiv in sperren %}{% if aktiv %}
   <p class="fehler sperre-hinweis" role="alert"><strong>Gesperrt</strong> seit {{ s.von|date:"d.m.Y" }}{% if s.bis %} bis {{ s.bis|date:"d.m.Y" }}{% else %} (unbefristet){% endif %}{% if s.begruendung %}: {{ s.begruendung }}{% endif %}</p>

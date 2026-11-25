@@ -70,6 +70,10 @@ KATALOG = [
     Recht("kunden.konto", KUNDEN, "Kundenkonto und Buchungen sehen"),
     Recht("kunden.anmerkungen", KUNDEN, "Interne Anmerkungen sehen"),
     Recht("kunden.notizen", KUNDEN, "Notizen schreiben und eigene löschen"),
+    Recht("kunden.herausnehmen", KUNDEN, "Kunden herausnehmen und sperren",
+          "Wer lange nicht gekommen ist, lässt sich mit einem Knopf auf der Kundenseite "
+          "herausnehmen: Der Ausweis endet, der Kunde wird für die eingestellte Zeit gesperrt. "
+          "Vorgabe: nur Admin."),
     Recht("kunden.wechsel_entscheiden", KUNDEN, "Wechselwünsche der Kunden entscheiden",
           "Möchte ein Kunde Uhrzeit, Tag oder Ausgabestelle wechseln, trägt der Einlass das ein. "
           "Mit diesem Recht genehmigt oder lehnt man ab – gedacht für den Vorstand. "

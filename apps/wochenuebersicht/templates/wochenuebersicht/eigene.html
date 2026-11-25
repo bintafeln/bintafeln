@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titel %}Eigene Listen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'wochenuebersicht:uebersicht' %}">← Wochenübersicht</a></p>
+  <h1>Eigene Listen</h1>
+  <p class="hinweis">Die Wochenübersicht im Querformat mit eigenem Namen und eigener Reihenfolge der Tage – z. B. für die Person, die die Waren zusammenstellt. Jede Liste hat eine kurze Adresse, die Sie weitergeben können; öffnen kann sie nur, wer angemeldet ist und die Wochenübersicht sehen darf.</p>
+  <div class="aktionsleiste"><a class="knopf" href="{% url 'wochenuebersicht:eigene_neu' %}">Neu</a></div>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Liste</th><th>Reihenfolge der Tage</th><th>Adresse</th></tr></thead>
+    <tbody>
+      {% for e, adresse in liste %}
+      <tr><td><a href="{% url 'wochenuebersicht:eigene_bearbeiten' e.pk %}">{{ e.name }}</a></td><td>{{ e.tage_liste|join:", "|default:"wie gewohnt" }}</td><td><a href="{{ adresse }}" target="_blank">{{ adresse }}</a></td></tr>
+      {% empty %}
+      <tr><td colspan="3" class="hinweis">Noch keine eigenen Listen.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

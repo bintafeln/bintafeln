@@ -38,6 +38,13 @@ def _vormonat(heute):
     return ende.replace(day=1), ende
 
 
+def _lange_nicht(heute):
+    """Dieselbe Grenze wie für den Knopf „Kunden herausnehmen“ (Einstellungen → Kunden)."""
+    from apps.kunden import herausnehmen
+
+    return herausnehmen.grenze(heute)
+
+
 KUNDEN, PERSONEN, ZAHLEN = "Kunden", "Personen", "Zählungen"
 H_SPALTEN = ("kundennummer", "nachname", "vorname", "kundengruppe", "personen", "ausweis")
 
@@ -69,7 +76,7 @@ LISTEN = [
     Liste("lange_nicht", KUNDEN, "Lange nicht gekommen",
           "Haushalte, die seit dem gewählten Tag nicht abgeholt haben (oder noch nie).",
           filter=("stelle", "gruppe", "tag", "status", "besuch_vor"),
-          vorgaben={"status": "aktiv", "besuch_vor": lambda h: h - dt.timedelta(days=56)},
+          vorgaben={"status": "aktiv", "besuch_vor": _lange_nicht},
           spalten=("kundennummer", "nachname", "vorname", "kundengruppe", "letzter_besuch"),
           sort="letzter_besuch"),
     Liste("neue_kunden", KUNDEN, "Neue Kunden", "Haushalte, die seit dem gewählten Tag Kunde sind.",

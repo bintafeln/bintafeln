@@ -600,6 +600,27 @@ def test_hilfe_bild_wochenuebersicht(angemeldet, admin, muster):
     assert vorher == '"Soll"'
 
 
+def test_hilfe_bild_wochenuebersicht_eigene(angemeldet, admin, muster):
+    from apps.wochenuebersicht.models import EigeneListe
+
+    _module("wochenuebersicht")
+    e = EigeneListe.objects.create(name="Packliste Lager", kurz="packliste", tage="Mi,Di,Mo,Fr,Do")
+    seite = oeffnen(angemeldet, admin, reverse("wochenuebersicht:eigene_bearbeiten", args=[e.pk]))
+    karte = seite.locator("section.karte").first
+    aufnehmen(
+        seite,
+        "wochenuebersicht-eigene",
+        karte,
+        Marke(karte.locator("#id_name"), "rahmen", 1),
+        Marke(karte.locator("#id_kurz"), "rahmen", 2),
+        Marke(karte.locator("fieldset").nth(1), "rahmen", 3),
+        Marke(karte.locator("#adresse"), "rahmen", 4),
+    )
+    # das PDF kommt unter der kurzen Adresse
+    antwort = seite.request.get(reverse("wochenliste:liste", args=["packliste"]))
+    assert antwort.ok and antwort.headers["content-type"] == "application/pdf"
+
+
 def test_hilfe_bild_abrechnung(angemeldet, admin, muster, benutzer_mit_rolle):
     from decimal import Decimal as D
 

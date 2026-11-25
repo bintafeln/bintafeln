@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titel %}{% if e %}{{ e.name }}{% else %}Neue eigene Liste{% endif %}{% endblock %}
+{% block inhalt %}
+<form method="post"{% if e %} data-autosave{% endif %}>
+  {% csrf_token %}
+  <section class="karte breit">
+    <p><a href="{% url 'wochenuebersicht:eigene' %}">← Eigene Listen</a></p>
+    <h1>{% if e %}{{ e.name }} ändern{% else %}Neue eigene Liste{% endif %}</h1>
+    {% if e %}<p id="adresse">Adresse zum Weitergeben: <a href="{{ adresse }}" target="_blank"><strong>{{ adresse }}</strong></a></p>{% endif %}
+    {% include "includes/formular_abschnitte.html" %}
+    <p class="hinweis">Tage, die Sie nicht nennen, folgen danach in der gewohnten Reihenfolge.</p>
+    <div class="aktionsleiste"><button type="submit" class="knopf">{% if e %}Speichern{% else %}Anlegen{% endif %}</button></div>
+  </section>
+</form>
+{% if e %}
+<section class="karte breit">
+  <form method="post" action="{% url 'wochenuebersicht:eigene_loeschen' e.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="knopf knopf-gefahr">Liste löschen</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}
