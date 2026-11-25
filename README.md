@@ -12,6 +12,19 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 Installation, mit erfundenen Daten. Die Zugänge stehen dort auf der Anmeldeseite; die Daten
 werden jede Nacht zurückgesetzt.
 
+## In einer Zeile installieren
+
+Auf einem frischen Server mit **Debian 13** anmelden und diese Zeile eingeben:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bintafeln/bintafeln/main/installieren.sh | sudo bash
+```
+
+Das Skript prüft den Server, installiert alles Nötige (auch Docker), fragt nach Domain und
+Zeitzone und nennt am Ende die Adresse für den Browser. Dort legen Sie den Namen der Tafel und
+das erste Admin-Konto an – fertig. Einzelheiten und der Weg Schritt für Schritt von Hand stehen
+unter [Installation](#installation-auf-debian-13-trixie-mit-docker).
+
 **Schnell zum Ziel**
 
 - [Demoversion ansehen](https://demo.bintafeln.de) – im Browser ausprobieren, nichts zu
@@ -157,10 +170,32 @@ Die gesamte Konfiguration steht in der Datei `.env` (Vorlage: [`.env.example`](.
 
 Die folgenden Befehle als Benutzer mit `sudo`-Rechten ausführen.
 
-> **Schnell:** Nach dem Herunterladen (Schritt 2) erledigt `./betrieb installieren` die Schritte 3
-> und 4 (Docker installieren, falls nötig, `.env` mit zufälligen Schlüsseln anlegen, Domain und
-> Zeitzone abfragen, starten). Danach weiter mit „5. Einrichten". Wer die Schritte lieber von Hand
-> nachvollziehen will, folgt der ausführlichen Anleitung unten.
+### Schnell: ein Befehl
+
+Auf einem frischen Debian 13 genügt eine Zeile (als Benutzer mit `sudo`-Rechten oder als root):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bintafeln/bintafeln/main/installieren.sh | sudo bash
+```
+
+Fehlt `curl`, vorher `sudo apt update && sudo apt install -y curl`. Das Skript
+
+1. installiert, was fehlt (`git`, `curl`, `openssl`),
+2. lädt bintafeln nach `/opt/bintafeln`,
+3. **prüft den Server** und sagt verständlich, was nicht passt: zu wenig Arbeitsspeicher
+   (empfohlen 2 GB) oder Plattenplatz (mindestens 5 GB), Port 80/443 schon von einem anderen
+   Programm belegt, Domain zeigt noch nicht auf diesen Server,
+4. installiert Docker, falls nötig (nach Rückfrage),
+5. legt die `.env` mit zufälligen Schlüsseln an und fragt dabei nach **Domain** (leer lassen =
+   Betrieb ohne https über `http://<IP>`, zum Ausprobieren) und **Zeitzone**,
+6. startet bintafeln, wartet, bis es bereit ist, und nennt die Adresse für den Browser.
+
+Danach weiter mit „5. Einrichten“. Nichts Vorhandenes wird überschrieben: Ein zweiter Aufruf
+macht dort weiter, wo der erste aufgehört hat. Anderer Ordner: `… | sudo BINTAFELN_ORDNER=/pfad bash`.
+
+Wer das Programm lieber selbst herunterlädt (Schritt 2 unten), ruft danach im Ordner
+`./betrieb installieren` auf – das erledigt die Punkte 3 bis 6 genauso. Wer jeden Schritt selbst
+nachvollziehen will, folgt der ausführlichen Anleitung.
 
 ### 1. Docker installieren
 

@@ -32,7 +32,7 @@ jobs:
       - name: ruff format
         run: ruff format --check .
       - name: shellcheck
-        run: shellcheck betrieb docker/entrypoint.sh tests/sicherung_e2e.sh && shellcheck -s sh docker/backup/sicherung.sh
+        run: shellcheck betrieb installieren.sh docker/entrypoint.sh tests/sicherung_e2e.sh && shellcheck -s sh docker/backup/sicherung.sh
 
   test:
     runs-on: ubuntu-latest
