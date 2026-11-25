@@ -575,3 +575,34 @@ def test_befehl_schickt_vorgemerkte(db, monkeypatch):
     monkeypatch.setattr(geburtstagsmail, "faellige_senden", lambda: gerufen.append(1) or 0)
     call_command("benachrichtigungen_senden")
     assert gerufen == [1]
+
+
+def test_geburtstagsmail_zeigt_unterschrift_der_vorlage(
+    admin, admin_client, django_user_model, mailserver, settings, tmp_path
+):
+    """Frei gesetzte Grafiken der Vorlage (Unterschrift) hängen beim Senden unter dem Text – die
+    Seite zeigt sie deshalb schon vorher."""
+    from django.core import mail as postfach
+    from django.utils import timezone
+
+    from apps.serienbriefe import grafiken
+    from apps.serienbriefe.models import GEBURTSTAG, Vorlage
+    from tests.test_serienbriefe_frei import _unterschrift
+
+    settings.MEDIA_ROOT = tmp_path
+    heute = timezone.localdate()
+    _vorlagen()
+    _person(django_user_model, "Otto", "Heutig", _geb(0))
+    otto = Adresse.objects.get(nachname="Heutig")
+    Adresse.objects.filter(pk=otto.pk).update(email="otto@example.org")
+    adresse = _mail_adresse(otto.pk, heute)
+    assert 'id="gm-grafiken"' not in admin_client.get(adresse).content.decode()
+    g = grafiken.speichern(_unterschrift(), freistellen=True)
+    Vorlage.objects.filter(verwendung=GEBURTSTAG).update(
+        freie_grafiken=[{"grafik": g.pk, "x": 30, "y": 230, "breite": 40, "seite": "letzte"}]
+    )
+    seite = admin_client.get(adresse).content.decode()
+    assert 'id="gm-grafiken"' in seite and grafiken.adresse(g) in seite
+    admin_client.post(adresse, {"betreff": "Alles Gute", "text": "<p>Alles Gute!</p>"})
+    (gesendet,) = postfach.outbox
+    assert "cid:" in gesendet.alternatives[0][0]  # die Unterschrift steckt in der Mail

@@ -2535,6 +2535,9 @@ details.tour-vorzeitig[open] { padding: .75rem 1rem 1rem; }
 .geburtstage-naechste .geb-mail { flex-basis: 100%; font-size: .9rem; }
 .geburtstage-jahr .geb-mail { display: block; font-size: .85rem; margin-left: 1.8rem; }
 .gm-loeschen { margin-top: 1rem; }
+.gm-grafiken { background: #fff; border: 1px solid var(--rand); border-radius: 8px; padding: .5rem .75rem; }
+.gm-grafiken p { margin: 0; }
+.gm-grafiken img { max-width: 100%; height: auto; }
 .geburtstagsbrief-dialog form { display: flex; flex-direction: column; gap: .5rem; position: relative; }
 .geburtstagsbrief-dialog .knopf { width: 100%; min-height: 3rem; font-size: 1.1rem; }
 .gb-konfetti { position: absolute; inset: 0; pointer-events: none; }
