@@ -127,7 +127,8 @@ def _melden(m, betreff: str, text: str) -> None:
     from apps.core import benachrichtigung
 
     if m.von and m.von.is_active and m.von.email:
-        benachrichtigung.melden("geburtstagsmail", [m.von.email], betreff, text,
+        an = benachrichtigung.an("geburtstagsmail", [m.von.email])
+        benachrichtigung.melden("geburtstagsmail", an, betreff, text,
                                 schluessel=f"{m.adresse_id}:{m.tag}")  # fmt: skip
 
 

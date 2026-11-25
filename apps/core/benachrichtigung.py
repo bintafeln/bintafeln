@@ -257,7 +257,7 @@ KERN = (
         fuer=_recht("mitarbeitende.geburtstagsbrief"),
         wann="Am Geburtstag, sobald der Server eine vorgemerkte Glückwunsch-Mail verschickt hat "
              "(oder am Tag danach, wenn das nicht ging).",
-        an="Die Person, die den Glückwunsch vorgemerkt hat."),
+        wahl=Empfaengerwahl(None, "wer den Glückwunsch vorgemerkt hat", fest=False)),
     Art("speicher_knapp", "Festplatte des Servers wird voll",
         "Die einzelne Person kann sie nicht abschalten, höchstens täglich sammeln.",
         fuer=_recht("einstellungen.tafel"), nie_erlaubt=False,
