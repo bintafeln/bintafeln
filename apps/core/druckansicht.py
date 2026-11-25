@@ -89,6 +89,12 @@ def seiten(inhalt: bytes) -> list[dict] | None:
         pdf.close()
 
 
+def frei_erlaubt(benutzer) -> bool:
+    """Ob das Konto das PDF auch an eine frei eingegebene Adresse schicken darf: persönliche
+    Konten ja, Konten einer Ausgabestelle (gemeinsam genutzte Geräte) nur an die Auswahl."""
+    return not getattr(benutzer, "stelle_id", None)
+
+
 def empfaenger(request) -> list[tuple[str, str]]:
     """Wohin das PDF gehen darf (Auswahl statt Freitext): die E-Mail der gewählten
     Ausgabestelle, die eigene und die der Tafel."""
@@ -133,6 +139,7 @@ def anzeigen(request, antwort):
         "seiten": bilder, "dateiname": _dateiname(antwort),
         "pdf": base64.b64encode(inhalt).decode(), "signatur": signieren(inhalt),
         "empfaenger": empfaenger(request), "mail_bereit": mail.eingerichtet(),
+        "mail_frei": frei_erlaubt(request.user),
         "quer": bool(bilder and bilder[0]["quer"]),
     })  # fmt: skip
     seite["Cache-Control"] = "no-store"

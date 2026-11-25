@@ -360,7 +360,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - PDFs nur über `apps.core.pdf` (`Pdf`-Rahmen, `pdf_antwort()` ohne Zwischenspeichern; ADR 0021).
   Druckansicht für Tablets im Kiosk-Modus (ADR 0141): `apps.core.druckansicht.DruckansichtMiddleware`
   zeigt PDFs als Seite mit Drucken/Mail/Zurück (Vorgabe für Ausgabestellen-Konten, sonst je Gerät
-  per Cookie unter „Mein Konto“; `?_pdf=roh` liefert das PDF selbst). In der App vom Home-Bildschirm
+  per Cookie unter „Mein Konto“; `?_pdf=roh` liefert das PDF selbst). Mail nur an die angebotenen Adressen;
+  persönliche Konten auch an eine freie (`druckansicht.frei_erlaubt()`), Stellen-Konten nie. In der App vom Home-Bildschirm
   und auf diesen Geräten öffnet `static/js/pdf_fenster.js` PDFs nie in einem neuen Fenster, sondern
   über der Seite; „Drucken“ teilt das PDF über das Teilen-Menü des Geräts (Web Share).
   Auskunft Art. 15: `apps/kunden/auskunft.py` und `apps/konten/auskunft.py`, Kundenausweis

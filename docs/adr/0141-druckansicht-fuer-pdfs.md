@@ -50,3 +50,10 @@ und `window.print()` tut dort nichts. Deshalb:
   Datei mit dieser Signatur.
 - Die Druckansicht als Seite bleibt für PDFs, die direkt als Seite geöffnet werden; auch dort
   teilt „Drucken“ das PDF, wenn das Gerät es kann.
+
+## Nachtrag: freie Adresse für persönliche Konten
+
+Persönliche Konten dürfen das PDF auch an eine frei eingegebene Adresse schicken (Feld „oder
+an“, `druckansicht.frei_erlaubt()`). Konten einer Ausgabestelle bleiben bei der Auswahl: Diese
+Geräte werden von vielen benutzt, und PDFs mit Kundendaten sollen von dort nicht an beliebige
+Adressen gehen. Jede Mail steht weiter im Mail-Archiv.

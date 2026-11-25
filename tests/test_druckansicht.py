@@ -83,6 +83,38 @@ def test_mail_nur_mit_echtem_pdf_und_angebotener_adresse(admin_client, mailserve
     assert len(django_mail.outbox) == 1
 
 
+def test_mail_an_freie_adresse_nur_fuer_persoenliche_konten(
+    admin_client, mailserver, benutzer_mit_rolle, anmelden
+):
+    """Persönliche Konten dürfen eine andere Adresse eintragen; Konten einer Ausgabestelle
+    (gemeinsame Geräte) bleiben bei der Auswahl."""
+    from django.test import Client
+
+    from apps.konten import rollen
+    from apps.kunden.models import Ausgabestelle
+
+    admin_client.cookies[druckansicht.COOKIE] = "1"
+    seite = admin_client.get(AUSKUNFT)
+    kontext = seite.context_data
+    assert kontext["mail_frei"] and 'name="an_frei"' in seite.rendered_content
+    daten = {"pdf": kontext["pdf"], "signatur": kontext["signatur"],
+             "dateiname": kontext["dateiname"], "an": "tafel@example.org"}  # fmt: skip
+    kaputt = admin_client.post(SENDEN, {**daten, "an_frei": "keine adresse"})
+    assert "nicht gültig" in kaputt.content.decode() and not django_mail.outbox
+    antwort = admin_client.post(SENDEN, {**daten, "an_frei": " lager@example.org "})
+    assert "wurde an lager@example.org gesendet" in antwort.content.decode()
+    assert django_mail.outbox[-1].to == ["lager@example.org"]
+    # Konto einer Ausgabestelle: kein freies Feld, eine eingeschmuggelte Adresse zählt nicht
+    konto = benutzer_mit_rolle("tablet", rollen.AUSGABE)
+    konto.stelle = Ausgabestelle.objects.create(name="Nord", email="nord@example.org")
+    konto.save()
+    assert not druckansicht.frei_erlaubt(konto)
+    c = anmelden(Client(), konto)
+    antwort = c.post(SENDEN, {**daten, "an": "nord@example.org", "an_frei": "fremd@example.org"})
+    assert "wurde an nord@example.org gesendet" in antwort.content.decode()
+    assert django_mail.outbox[-1].to == ["nord@example.org"]
+
+
 def test_grosse_oder_kaputte_pdfs_bleiben_pdfs(monkeypatch):
     assert druckansicht.seiten(b"kein pdf") is None
     from apps.core.pdf import Pdf

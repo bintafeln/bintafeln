@@ -5,6 +5,8 @@ import binascii
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.http import HttpResponseBadRequest
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -45,6 +47,7 @@ def vorschau(request):
     return render(request, "core/_pdf_fenster.html", {
         "seiten": druckansicht.seiten(inhalt) or [],
         "empfaenger": druckansicht.empfaenger(request), "mail_bereit": mail.eingerichtet(),
+        "mail_frei": druckansicht.frei_erlaubt(request.user),
     })  # fmt: skip
 
 
@@ -56,11 +59,22 @@ def senden(request):
     inhalt = _pdf(request)
     an = request.POST.get("an", "")
     erlaubt = dict(druckansicht.empfaenger(request))
+    # persönliche Konten dürfen auch eine andere Adresse eintragen; sie geht dann vor
+    frei = request.POST.get("an_frei", "").strip()
+    frei_falsch = False
+    if frei and druckansicht.frei_erlaubt(request.user):
+        try:
+            validate_email(frei)
+            an, erlaubt = frei, {frei: frei}
+        except ValidationError:
+            frei_falsch = True
     name = (request.POST.get("dateiname") or "dokument.pdf")[:100]
     if not name.lower().endswith(".pdf"):
         name += ".pdf"
     if not inhalt or not druckansicht.pruefen(inhalt, request.POST.get("signatur", "")):
         ergebnis, ok = "Das PDF ist nicht mehr gültig. Bitte noch einmal öffnen.", False
+    elif frei_falsch:
+        ergebnis, ok = "Die eingegebene E-Mail-Adresse ist nicht gültig.", False
     elif an not in erlaubt:
         ergebnis, ok = "Bitte eine der angebotenen Adressen wählen.", False
     else:
