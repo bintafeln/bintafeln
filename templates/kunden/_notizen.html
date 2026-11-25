@@ -86,7 +86,7 @@
   <script src="{% static 'js/foto_sofort.js' %}" defer></script>
   {% endif %}
 
-  {% if "kunden.notizen" in rechte %}<p class="wechsel-knopf"><a href="{% url 'kunden:wechselwunsch' h.kundennummer %}{% if notiz_htmx %}?von=einlass{% endif %}">Will wechseln …</a>
+  {% if "kunden.notizen" in rechte %}<p class="wechsel-knopf"><a href="{% url 'kunden:wechselwunsch' h.kundennummer %}{% if notiz_htmx %}?von=einlass{% endif %}">will wechseln …</a>
     <small class="leise">(andere Uhrzeit, anderer Tag oder andere Ausgabestelle)</small></p>{% endif %}
 
   {% if notiz_htmx %}
