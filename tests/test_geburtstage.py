@@ -603,6 +603,19 @@ def test_geburtstagsmail_zeigt_unterschrift_der_vorlage(
     )
     seite = admin_client.get(adresse).content.decode()
     assert 'id="gm-grafiken"' in seite and grafiken.adresse(g) in seite
+    # „Vorschau“: die ganze Mail mit geändertem Text, Unterschrift und Fußzeile – nichts geht hinaus
+    Vorlage.objects.filter(verwendung=GEBURTSTAG).update(fusszeile="<p>Tafel Musterstadt e. V.</p>")
+    assert 'id="gm-vorschau"' not in seite
+    vorschau = admin_client.post(adresse, {
+        "betreff": "Alles Gute, Otto", "text": "<p>Bleib gesund!</p>", "aktion": "vorschau",
+    }).content.decode()  # fmt: skip
+    teil = vorschau[vorschau.index('id="gm-vorschau"') :]
+    assert "Alles Gute, Otto" in teil and "Bleib gesund!" in teil and "otto@example.org" in teil
+    assert grafiken.adresse(g) in teil and "Tafel Musterstadt e. V." in teil
+    assert (
+        "Bleib gesund!" in vorschau[: vorschau.index('id="gm-vorschau"')]
+    )  # Text bleibt im Editor
+    assert not postfach.outbox
     admin_client.post(adresse, {"betreff": "Alles Gute", "text": "<p>Alles Gute!</p>"})
     (gesendet,) = postfach.outbox
     assert "cid:" in gesendet.alternatives[0][0]  # die Unterschrift steckt in der Mail

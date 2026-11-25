@@ -397,6 +397,17 @@ def test_hilfe_bild_geburtstagsmail(angemeldet, admin, muster, django_user_model
         Marke(karte.locator(".editor-flaeche, [contenteditable]").first, "rahmen", 3),
         Marke(karte.locator(".aktionsleiste"), "rahmen", 4),
     )
+    # „Vorschau“ zeigt die ganze Mail mit dem geänderten Text und sendet nichts
+    editor = karte.locator("[contenteditable]").first
+    editor.click()
+    seite.keyboard.press("Control+End")
+    seite.keyboard.type(" Bis bald!")
+    karte.get_by_role("button", name="Vorschau").click()
+    vorschau = seite.locator("#gm-vorschau")
+    expect(vorschau).to_contain_text("Alles Gute zum Geburtstag, Otto!")
+    expect(vorschau).to_contain_text("Bis bald!")
+    assert not postfach.outbox
+    karte = seite.locator("section.karte").first
     # „Abbrechen“ sendet nichts
     karte.get_by_role("link", name="Abbrechen").click()
     expect(seite).to_have_url(re.compile(r"/$"))

@@ -2537,6 +2537,16 @@ details.tour-vorzeitig[open] { padding: .75rem 1rem 1rem; }
 .gm-loeschen { margin-top: 1rem; }
 .gm-grafiken { background: #fff; border: 1px solid var(--rand); border-radius: 8px; padding: .5rem .75rem; }
 .gm-grafiken p { margin: 0; }
+/* Vorschau der ganzen Mail: wie im Mailprogramm, deshalb immer hell */
+.gm-vorschau { margin-top: 1.5rem; border-top: 2px solid var(--akzent); padding-top: 1rem; }
+.gm-vorschau-kopf { display: grid; grid-template-columns: auto 1fr; gap: .2rem .8rem; margin: 0 0 .6rem; }
+.gm-vorschau-kopf dt { font-weight: 700; } .gm-vorschau-kopf dd { margin: 0; overflow-wrap: anywhere; }
+.gm-vorschau-mail { background: #fff; color: #222; border: 1px solid var(--rand); border-radius: 8px;
+  padding: 1rem 1.25rem; max-width: 42rem; font-family: Helvetica, Arial, sans-serif; font-size: 15px;
+  line-height: 1.45; }
+.gm-vorschau-mail img { max-width: 100%; height: auto; }
+.gm-vorschau-mail hr { border: 0; border-top: 1px solid #ccc; margin: 24px 0 8px; }
+.gm-vorschau-fuss { font-size: 12px; color: #666; }
 .gm-grafiken img { max-width: 100%; height: auto; }
 .geburtstagsbrief-dialog form { display: flex; flex-direction: column; gap: .5rem; position: relative; }
 .geburtstagsbrief-dialog .knopf { width: 100%; min-height: 3rem; font-size: 1.1rem; }

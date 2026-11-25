@@ -28,9 +28,18 @@
       <small class="hilfe">Der Server schickt zur gewählten Zeit oder wenige Minuten danach.</small></div>{% endif %}
     <div class="aktionsleiste">
       <button type="submit" class="knopf"{% if not a.email or not mail_bereit %} disabled{% endif %}>{% if kuenftig %}{% if vorgemerkt %}Änderung speichern{% else %}Am Geburtstag senden{% endif %}{% else %}Senden{% endif %}</button>
+      <button type="submit" name="aktion" value="vorschau" class="knopf knopf-zweitrangig" formnovalidate data-ziel="gm-vorschau"
+              title="Zeigt die ganze Mail, wie sie ankommt; sendet nichts">Vorschau</button>
       <a class="knopf knopf-abbrechen" href="{% url zurueck %}">Abbrechen</a>
     </div>
   </form>
+  {% if vorschau %}
+  <div id="gm-vorschau" class="gm-vorschau">
+    <h2>Vorschau: So kommt die Mail an</h2>
+    <p class="hinweis">Noch ist nichts gesendet{% if kuenftig %} oder vorgemerkt{% endif %}.</p>
+    <dl class="gm-vorschau-kopf"><dt>An</dt><dd>{{ a.email|default:"–" }}</dd><dt>Betreff</dt><dd>{{ vorschau.betreff|default:"–" }}</dd></dl>
+    <div class="gm-vorschau-mail">{{ vorschau.text }}{{ grafiken }}{% if fuss %}<hr><div class="gm-vorschau-fuss">{{ fuss }}</div>{% endif %}</div>
+  </div>{% endif %}
   {% if kuenftig and vorgemerkt %}
   <form method="post" class="gm-loeschen">
     {% csrf_token %}<input type="hidden" name="aktion" value="loeschen">

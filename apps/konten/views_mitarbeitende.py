@@ -899,7 +899,7 @@ def geburtstagsmail(request, pk, tag):
     if vorgemerkt:  # der vorbereitete Text gilt, auch beim Nachsenden von Hand
         v, betreff, html, uhrzeit = (vorgemerkt.vorlage or v, vorgemerkt.betreff,
                                      vorgemerkt.text, vorgemerkt.uhrzeit)  # fmt: skip
-    fehler = ""
+    fehler, vorschau = "", None
     if request.method == "POST" and request.POST.get("aktion") == "loeschen":
         if vorgemerkt:
             papierkorb.loeschen(request.user, "Vorgemerkter Glückwunsch",
@@ -914,7 +914,10 @@ def geburtstagsmail(request, pk, tag):
             uhrzeit = dt.time.fromisoformat(request.POST.get("uhrzeit", "") or f"{uhrzeit:%H:%M}")
         except ValueError:
             fehler = "Bitte eine Uhrzeit angeben."
-        if fehler:
+        if request.POST.get("aktion") == "vorschau":
+            # nur ansehen: die ganze Mail, wie sie ankommt – nichts wird gesendet oder vorgemerkt
+            vorschau, fehler = {"betreff": betreff, "text": bereinigen(html)}, ""
+        elif fehler:
             pass
         elif not betreff or not gestaltung.mail_text(html).strip():
             fehler = "Bitte Betreff und Text angeben."
@@ -930,7 +933,7 @@ def geburtstagsmail(request, pk, tag):
     return render(request, "konten/geburtstagsmail.html", {
         "a": a, "tag": tag, "nachtraeglich": tag < heute, "v": v, "betreff": betreff,
         "text": html, "fehler": fehler, "zurueck": zurueck, "kuenftig": kuenftig,
-        "vorgemerkt": vorgemerkt, "uhrzeit": uhrzeit,
+        "vorgemerkt": vorgemerkt, "uhrzeit": uhrzeit, "vorschau": vorschau,
         "alter": tag.year - a.geburtsdatum.year,
         "fuss": bereinigen(gestaltung.als_html(v.fusszeile)),
         # frei gesetzte Grafiken der Vorlage (Unterschrift): hängen beim Senden unter dem Text
