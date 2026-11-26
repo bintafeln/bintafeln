@@ -552,3 +552,31 @@ def test_alter_vorgabetext_wird_ersetzt_eigener_bleibt():
     TourenEinstellungen.objects.update(mail_text=MAIL_TEXT)
     migration.alter_text(django_apps, None)
     assert TourenEinstellungen.laden().mail_text == MAIL_TEXT_ALT
+
+
+def test_leere_zeilen_der_listen_verlangen_nichts(buero):
+    """Die leeren Zeilen für neue Einträge unter „Einrichten“ dürfen nichts verlangen – auch
+    wenn dort der Haken „Aktiv“ entfernt wurde. Sonst ließe sich die Liste nicht speichern
+    („Dieses Feld ist zwingend erforderlich“ an der leeren Zeile)."""
+    from apps.touren.models import Kurztext, Umstand, Warengruppe
+
+    for vorsatz, schalter, modell, feld in (
+        ("um", "umstaende", Umstand, "name"),
+        ("kt", "kurztexte", Kurztext, "text"),
+        ("wg", "warengruppen", Warengruppe, "name"),
+    ):
+        alle = list(modell.objects.all())
+        daten = {schalter: "1", f"{vorsatz}-TOTAL_FORMS": len(alle) + 2,
+                 f"{vorsatz}-INITIAL_FORMS": len(alle), f"{vorsatz}-MIN_NUM_FORMS": 0,
+                 f"{vorsatz}-MAX_NUM_FORMS": 1000}  # fmt: skip
+        for nr, eintrag in enumerate(alle):
+            daten |= {f"{vorsatz}-{nr}-id": eintrag.pk, f"{vorsatz}-{nr}-aktiv": "on",
+                      f"{vorsatz}-{nr}-{feld}": getattr(eintrag, feld),
+                      f"{vorsatz}-{nr}-reihenfolge": eintrag.reihenfolge}  # fmt: skip
+        # zwei leere Zeilen: ohne Namen, „Aktiv“ nicht angehakt, eine mit geänderter Reihenfolge
+        daten |= {f"{vorsatz}-{len(alle)}-{feld}": "", f"{vorsatz}-{len(alle)}-reihenfolge": "0",
+                  f"{vorsatz}-{len(alle) + 1}-{feld}": "  ",
+                  f"{vorsatz}-{len(alle) + 1}-reihenfolge": "70"}  # fmt: skip
+        antwort = buero.post(reverse("touren:einrichten"), daten)
+        assert antwort.status_code == 302, (schalter, antwort.content.decode()[-3000:])
+        assert modell.objects.count() == len(alle), schalter

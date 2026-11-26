@@ -344,8 +344,27 @@ class FahrzeugDokumentForm(forms.ModelForm):
         widgets = {"bezeichnung": forms.TextInput(attrs={"data-zeigen-bei": "art=sonstiges"})}
 
 
+class _ListenzeileForm(forms.ModelForm):
+    """Zeile einer Liste unter „Einrichten“. Eine neue Zeile ohne Namen ist leer und wird
+    übersprungen – auch wenn daneben ein Haken oder die Reihenfolge anders steht als vorgegeben
+    (sonst hieße es bei der leeren Zeile „Dieses Feld ist zwingend erforderlich“)."""
+
+    BEZEICHNUNG = "name"
+
+    def has_changed(self):
+        bezeichnung = self.data.get(self.add_prefix(self.BEZEICHNUNG), "") if self.is_bound else ""
+        if self.instance.pk is None and self.is_bound and not str(bezeichnung).strip():
+            return False
+        return super().has_changed()
+
+
+class _KurztextForm(_ListenzeileForm):
+    BEZEICHNUNG = "text"
+
+
 UmstaendeFormSet = forms.modelformset_factory(
     Umstand,
+    form=_ListenzeileForm,
     fields=["name", "reihenfolge", "anmerkung_pflicht", "aktiv"],
     extra=2,
     can_delete=False,
@@ -353,6 +372,7 @@ UmstaendeFormSet = forms.modelformset_factory(
 
 KurztexteFormSet = forms.modelformset_factory(
     Kurztext,
+    form=_KurztextForm,
     fields=["text", "reihenfolge", "aktiv"],
     extra=2,
     can_delete=False,
@@ -360,6 +380,7 @@ KurztexteFormSet = forms.modelformset_factory(
 
 WarengruppenFormSet = forms.modelformset_factory(
     Warengruppe,
+    form=_ListenzeileForm,
     fields=["name", "reihenfolge", "kiste_kg", "aktiv"],
     extra=2,
     can_delete=False,
