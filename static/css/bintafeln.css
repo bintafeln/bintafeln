@@ -1922,6 +1922,12 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .editor-flaeche .platzhalter::after { content: "×"; display: inline-block; width: 1.1em; margin-left: .3em;
   border-radius: 999px; text-align: center; cursor: pointer; color: var(--akzent-dunkel); opacity: .7; }
 .editor-flaeche .platzhalter:hover::after { opacity: 1; background: var(--akzent); color: var(--auf-akzent); }
+.sb-empfaenger { list-style: none; margin: .25rem 0 0; padding: 0; max-height: 28rem; overflow: auto;
+  border: 1px solid var(--rand); border-radius: var(--radius); }
+.sb-empfaenger li { border-bottom: 1px solid var(--rand); }
+.sb-empfaenger li:last-child { border-bottom: 0; }
+.sb-empfaenger label { display: flex; align-items: baseline; gap: .5rem; padding: .4rem .6rem; cursor: pointer; }
+.sb-alle { display: flex; gap: .5rem; margin: .25rem 0; }
 .serienbrief-fuss { margin-top: 1rem; padding-top: .5rem; border-top: 1px solid var(--rand); font-size: .8rem; color: var(--leise); }
 
 /* Tickets (apps/tickets) */

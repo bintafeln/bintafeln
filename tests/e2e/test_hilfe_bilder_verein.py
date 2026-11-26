@@ -274,7 +274,16 @@ def test_hilfe_bild_serienbrief(angemeldet, admin, muster):
     seite.keyboard.press("Escape")
     seite.get_by_label("Empfänger").select_option("spender")
     seite.get_by_role("button", name="Vorschau").click()
-    pdf = seite.get_by_role("button", name="PDF mit 2 Briefen erzeugen")
+    pdf = seite.get_by_role("button", name="PDF mit Briefen erzeugen (2)")
+    # einzelne Empfänger abhaken: die Zahl im Knopf läuft mit, „Alle anhaken“ holt sie zurück
+    haken = seite.locator("#sb-empfaenger input[name=an]")
+    expect(haken).to_have_count(2)
+    haken.first.uncheck()
+    expect(seite.get_by_role("button", name="PDF mit Briefen erzeugen (1)")).to_be_visible()
+    seite.get_by_role("button", name="Keinen").click()
+    expect(seite.get_by_role("button", name="PDF mit Briefen erzeugen (0)")).to_be_visible()
+    seite.get_by_role("button", name="Alle anhaken").click()
+    expect(pdf).to_be_visible()
     raster = seite.locator(".seiten-raster")
     aufnehmen(seite, "serienbriefe-vorschau", [seite.locator(".aktionsleiste"), raster],
               Marke(seite.get_by_role("button", name="Vorschau"), "rahmen", 1),

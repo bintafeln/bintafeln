@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load static %}
 {% block titel %}Serienbrief erstellen{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
@@ -6,8 +6,9 @@
   <p class="hinweis">Vorlage und Empfänger wählen, „Vorschau“ zeigt, wer den Brief bekommt und wie er aussieht. Briefe
     entstehen als ein PDF zum Drucken (Anschrift passt in Fensterumschläge DIN lang); E-Mails gehen einzeln an jeden
     Empfänger. Jeder Versand wird vermerkt.</p>
-  <form method="post" class="serienbrief-auswahl">
+  <form method="post" class="serienbrief-auswahl" id="sb-form">
     {% csrf_token %}
+    {% if auswahl_fuer %}<input type="hidden" name="auswahl_fuer" value="{{ auswahl_fuer }}">{% endif %}
     {% if form.non_field_errors %}<div class="fehler" role="alert">{% for f in form.non_field_errors %}<p>{{ f }}</p>{% endfor %}</div>{% endif %}
     <h2 class="abschnitt-titel">1. Brief</h2>
     <div class="formular-raster">
@@ -27,12 +28,12 @@
     </div>
     <div class="aktionsleiste">
       <button type="submit" name="schritt" value="vorschau" class="knopf" data-ziel="ergebnis-vorschau">Vorschau</button>
-      {% if erreichbar %}
+      {% if liste %}
         {% if d.versandart == "email" %}
           <button type="submit" name="schritt" value="senden" class="knopf knopf-eintragen"{% if not mail_bereit %} disabled{% endif %}
-                  onclick="return confirm('{{ erreichbar|length }} E-Mails jetzt senden?')">{{ erreichbar|length }} E-Mail{{ erreichbar|length|pluralize:"s" }} senden</button>
+                  onclick="return confirm('Die E-Mails an die angehakten Empfänger jetzt senden?')">E-Mails senden (<span data-sb-anzahl>{{ erreichbar|length }}</span>)</button>
         {% else %}
-          <button type="submit" name="schritt" value="pdf" class="knopf knopf-eintragen" formtarget="_blank">PDF mit {{ erreichbar|length }} Brief{{ erreichbar|length|pluralize:"en" }} erzeugen</button>
+          <button type="submit" name="schritt" value="pdf" class="knopf knopf-eintragen" formtarget="_blank">PDF mit Briefen erzeugen (<span data-sb-anzahl>{{ erreichbar|length }}</span>)</button>
         {% endif %}
       {% endif %}
     </div>
@@ -41,12 +42,19 @@
 {% if d %}
 <div class="seiten-raster">
 <section class="karte" id="ergebnis-vorschau">
-  <h2>{{ erreichbar|length }} Empfänger</h2>
+  <h2><span data-sb-anzahl>{{ erreichbar|length }}</span> von {{ liste|length }} Empfängern</h2>
   {% if d.versandart == "email" and not mail_bereit %}<p class="meldung error">Es ist noch kein Mailserver eingerichtet{% if "einstellungen.mail" in rechte %} („Einstellungen → E-Mail“){% endif %}.</p>{% endif %}
   {% if ohne %}<p class="meldung error">{{ ohne|length }} ohne {% if d.versandart == "email" %}E-Mail-Adresse{% else %}vollständige Anschrift{% endif %} (werden übersprungen):
     {% for e in ohne|slice:":20" %}{{ e.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if ohne|length > 20 %} …{% endif %}</p>{% endif %}
-  <ul>{% for e in erreichbar|slice:":50" %}<li>{{ e.name }}{% if d.versandart == "email" %} · {{ e.email }}{% endif %}</li>{% endfor %}</ul>
-  {% if erreichbar|length > 50 %}<p class="hinweis">… und {{ erreichbar|length|add:"-50" }} weitere.</p>{% endif %}
+  {% if liste %}
+  <p class="hinweis">Wer den Brief bekommt, ist angehakt. Haken entfernen nimmt einzelne heraus; es gilt für „{% if d.versandart == "email" %}E-Mails senden{% else %}PDF mit Briefen erzeugen{% endif %}“ und die nächste Vorschau.</p>
+  <p class="sb-alle"><button type="button" class="knopf knopf-zweitrangig knopf-klein" data-sb-alle="1">Alle anhaken</button>
+    <button type="button" class="knopf knopf-zweitrangig knopf-klein" data-sb-alle="0">Keinen</button></p>
+  <ul class="sb-empfaenger" id="sb-empfaenger">{% for e, an in liste %}
+    <li><label><input type="checkbox" name="an" value="{{ e.schluessel }}" form="sb-form"{% if an %} checked{% endif %}> {{ e.name }}{% if d.versandart == "email" %} <small class="leise">· {{ e.email }}</small>{% endif %}</label></li>{% endfor %}
+  </ul>
+  <script src="{% static 'js/serienbrief_auswahl.js' %}" defer></script>
+  {% endif %}
 </section>
 <section class="karte">
   <h2>Vorschau{% if beispiel %}: {{ beispiel.name }}{% endif %}</h2>

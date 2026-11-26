@@ -66,19 +66,26 @@
 <h3>Erstellen</h3>
 <ol>
   <li>Vorlage wählen.</li>
-  <li>Empfänger im Auswahlmenü: Adressen nach Kategorie, Mitglieder (z. B. nur mit offenem Beitrag), Spender eines
-    Jahres (ggf. ab einer Mindestsumme){% if "serienbriefe.kunden" in rechte %} oder Kunden (Haushalte, ggf. nur
+  <li>Empfänger im Auswahlmenü: Adressen nach Kategorie, Mitglieder (z. B. nur mit offenem Beitrag),
+    <strong>Ehrenamtliche</strong>, <strong>ehemalige Ehrenamtliche</strong> (wie die Listen unter „Verein/Team“),
+    Spender eines Jahres (ggf. ab einer Mindestsumme){% if "serienbriefe.kunden" in rechte %} oder Kunden (Haushalte, ggf. nur
     bestimmte Kundengruppen){% endif %}. Darunter erscheinen nur die Filter, die dazu passen. Kategorien, Arten und
     Kundengruppen wählen Sie in einem aufklappbaren Menü mit Häkchen; leer heißt alle.</li>
   <li>Versand: Briefe als PDF oder E-Mail. „Vorschau“ zeigt die Empfänger, wer übersprungen wird (ohne Anschrift bzw.
     E-Mail) und einen Beispielbrief.</li>
+  <li><strong>Einzelne herausnehmen:</strong> In der Vorschau steht jeder Empfänger mit einem Häkchen. Entfernen Sie
+    es bei allen, die diesen Brief nicht bekommen sollen; „Alle anhaken“ und „Keinen“ setzen alle auf einmal. Die
+    Zahl im Knopf zeigt, wie viele es gerade sind. Ändern Sie oben die Auswahl der Empfänger, sind wieder alle
+    angehakt.</li>
   <li>„PDF erzeugen“ und drucken – die Anschrift passt in Fensterumschläge DIN lang – oder „E-Mails senden“. Jede E-Mail
     geht einzeln an einen Empfänger, gestaltet wie der Brief.</li>
 </ol>
 {% hilfe_bild "serienbriefe-auswahl" "① Vorlage wählen, ② die Empfänger wählen, ③ darunter erscheinen nur die Filter, die dazu passen (hier die Mindestsumme der Spender)." %}
 {% hilfe_bild "serienbriefe-kundengruppen" "Mehrere Werte wählen: ① das Menü aufklappen, ② bei langen Listen oben suchen, ③ Häkchen setzen. Zugeklappt steht oben, was gewählt ist; leer heißt alle." %}
-{% hilfe_bild "serienbriefe-vorschau" "① „Vorschau“ zeigt ② die Empfänger und einen Beispielbrief, ③ dann das PDF erzeugen." %}
+{% hilfe_bild "serienbriefe-vorschau" "① „Vorschau“ zeigt ② die Empfänger zum An- und Abhaken und einen Beispielbrief, ③ dann das PDF erzeugen – die Zahl nennt die angehakten." %}
 <div class="tipp">Für Adressen und Spender ist „nur mit Einwilligung“ vorgewählt: Dann bekommt nur Post bzw. E-Mail,
-  wer im Adressbuch eine Einwilligung mit Datum hat. Mitglieder und Kunden schreiben Sie im Rahmen der Mitgliedschaft
+  wer im Adressbuch eine Einwilligung mit Datum hat. Nehmen Sie den Haken heraus, merkt sich das Programm das für Ihr
+  Konto – beim nächsten Mal ist er wieder aus, bis Sie ihn setzen. Ob Sie ohne Einwilligung schreiben dürfen, müssen
+  Sie selbst beurteilen. Ehrenamtliche und ehemalige Ehrenamtliche schreiben Sie wie Mitglieder ohne diesen Haken an. Mitglieder und Kunden schreiben Sie im Rahmen der Mitgliedschaft
   bzw. Betreuung an.</div>
 <p>Jeder Versand wird vermerkt (wann, was, an wie viele) und steht in der Auskunft der Empfänger.</p>
