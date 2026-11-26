@@ -1376,6 +1376,7 @@ def test_hilfe_bild_touren_fahrzeug(angemeldet, admin, muster):
     wagen = Fahrzeug.objects.create(
         name="Kühlwagen", kennzeichen="MU-ST 1", typ="Sprinter", kilometerstand=84210,
         erstzulassung=dt.date(2019, 6, 14),
+        tuev_bis=timezone.localdate() + dt.timedelta(days=300),
     )  # fmt: skip
     for art in ("schein", "brief"):
         FahrzeugDokument.objects.create(
@@ -1384,7 +1385,8 @@ def test_hilfe_bild_touren_fahrzeug(angemeldet, admin, muster):
             hochgeladen_von_name="Clara Beispiel",
         )  # fmt: skip
     Fahrzeug.objects.create(name="Stromer", kennzeichen="MU-ST 7", typ="E-Vito", reihenfolge=2,
-                            kilometerstand=12870, erstzulassung=dt.date(2024, 3, 1))  # fmt: skip
+                            kilometerstand=12870, erstzulassung=dt.date(2024, 3, 1),
+                            tuev_bis=timezone.localdate() + dt.timedelta(days=40))  # fmt: skip
     Fahrzeug.objects.create(name="Alter Transporter", kennzeichen="MU-ST 3", typ="Koffer",
                             reihenfolge=3, kilometerstand=231400,
                             erstzulassung=dt.date(2011, 5, 2),

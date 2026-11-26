@@ -554,3 +554,26 @@ def test_verkauftes_fahrzeug_bleibt_ausgeschaltet_beim_fortschreiben(lage):
     wagen.save(update_fields=["verkauft_am", "kilometerstand"])
     wagen.refresh_from_db()
     assert not wagen.aktiv and wagen.kilometerstand == 500
+
+
+def test_naechster_tuev_am_fahrzeug_und_in_der_liste(admin_client):
+    from django.utils import timezone
+
+    heute = timezone.localdate()
+    bald, spaeter = heute + dt.timedelta(days=30), heute + dt.timedelta(days=400)
+    daten = {"name": "Kühlwagen", "reihenfolge": "1", "aktiv": "on",
+             "tuev_bis": f"{spaeter:%d.%m.%Y}"}  # fmt: skip
+    assert admin_client.post(reverse("touren:fahrzeug_neu"), daten).status_code == 302
+    wagen = Fahrzeug.objects.get(name="Kühlwagen")
+    assert wagen.tuev_bis == spaeter and wagen.tuev_stand == ""
+    Fahrzeug.objects.create(name="Bald", tuev_bis=bald)
+    Fahrzeug.objects.create(name="Vorbei", tuev_bis=heute - dt.timedelta(days=1))
+    ohne = Fahrzeug.objects.create(name="Ohne")
+    assert ohne.tuev_stand == ""
+    assert Fahrzeug.objects.get(name="Bald").tuev_stand == "bald"
+    assert Fahrzeug.objects.get(name="Vorbei").tuev_stand == "abgelaufen"
+    liste = admin_client.get(reverse("touren:einrichten")).content.decode()
+    assert "<th>Nächster TÜV</th>" in liste and f"{spaeter:%d.%m.%Y}" in liste
+    assert liste.count("bald fällig") == 1 and liste.count(">abgelaufen<") == 1
+    seite = admin_client.get(reverse("touren:fahrzeug", args=[wagen.pk])).content.decode()
+    assert 'name="tuev_bis"' in seite and f"{spaeter:%d.%m.%Y}" in seite

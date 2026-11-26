@@ -240,6 +240,9 @@ class Tourstart(models.Model):
         return f"{self.tour} am {self.datum:%d.%m.%Y}"
 
 
+TUEV_BALD_TAGE = 60  # so lange vorher gilt der TÜV eines Fahrzeugs als „bald fällig“
+
+
 class Fahrzeug(models.Model):
     """Ein Fahrzeug der Tafel, zur Wahl beim Beginn einer Fahrt (ADR 0151)."""
 
@@ -249,6 +252,11 @@ class Fahrzeug(models.Model):
     typ = models.CharField("Fahrzeugart", max_length=60, blank=True,
                            help_text="z. B. Sprinter, Koffer oder E-Vito")  # fmt: skip
     erstzulassung = models.DateField("Erstzulassung", null=True, blank=True)
+    tuev_bis = models.DateField(
+        "Nächster TÜV", null=True, blank=True,
+        help_text="Wann die nächste Hauptuntersuchung fällig ist (steht auf der Plakette und im "
+        "Fahrzeugschein). Die Liste zeigt es farbig, wenn der Termin naht oder vorbei ist.",
+    )  # fmt: skip
     verkauft_am = models.DateField(
         "Verkauft am", null=True, blank=True,
         help_text="Mit einem Datum gilt das Fahrzeug als verkauft: Es steht dann im Archiv und "
@@ -276,6 +284,16 @@ class Fahrzeug(models.Model):
             if kwargs.get("update_fields") is not None:
                 kwargs["update_fields"] = {*kwargs["update_fields"], "aktiv"}
         super().save(*args, **kwargs)
+
+    @property
+    def tuev_stand(self) -> str:
+        """„abgelaufen“, „bald“ (in den nächsten 60 Tagen) oder leer."""
+        if not self.tuev_bis:
+            return ""
+        heute = timezone.localdate()
+        if self.tuev_bis < heute:
+            return "abgelaufen"
+        return "bald" if (self.tuev_bis - heute).days <= TUEV_BALD_TAGE else ""
 
 
 class FahrzeugDokument(models.Model):
