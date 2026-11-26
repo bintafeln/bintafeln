@@ -70,6 +70,39 @@ def test_ausweis_drucken_beantwortet_die_meldung(admin_client, ausgabe, mitte, z
     assert h and z
 
 
+def test_ausweis_notiz_geht_nach_frist_in_den_papierkorb(admin_client, mitte):
+    """Die Antwort „Neuer Ausweis ist gedruckt“ verschwindet nach der eingestellten Frist von
+    selbst (Vorgabe 14 Tage); andere Notizen bleiben."""
+    import datetime as dt
+
+    from django.utils import timezone
+
+    from apps.core.models import PapierkorbEintrag
+    from apps.kunden.models import KundenEinstellungen, verwaiste_notizen_loeschen
+
+    haushalt("601", mitte)
+    haushalt("602", mitte)
+    heute = timezone.localdate()
+    Nachricht.objects.create(kundennummer="601", anliegen="ausweis")
+    admin_client.get(reverse("kunden:ausweis", args=["601"]))
+    antwort = Notiz.objects.get(kundennummer="601")
+    assert antwort.loeschen_am == heute + dt.timedelta(days=14)
+    andere = Notiz.objects.create(kundennummer="601", text="Bitte Bescheid mitbringen")
+    # vor dem Tag bleibt sie stehen
+    assert verwaiste_notizen_loeschen() == 0
+    Notiz.objects.filter(pk=antwort.pk).update(loeschen_am=heute)
+    assert verwaiste_notizen_loeschen() == 1
+    assert list(Notiz.objects.filter(kundennummer="601")) == [andere]
+    assert PapierkorbEintrag.objects.count() == 1  # wiederherstellbar
+    # Frist 0: die Notiz bleibt, bis sie jemand löscht
+    e = KundenEinstellungen.laden()
+    e.ausweis_notiz_tage = 0
+    e.save()
+    Nachricht.objects.create(kundennummer="602", anliegen="ausweis")
+    admin_client.get(reverse("kunden:ausweis", args=["602"]))
+    assert Notiz.objects.get(kundennummer="602").loeschen_am is None
+
+
 def test_startseite_und_gelesen(admin_client, ausgabe, mitte):
     haushalt("601", mitte)
     haushalt("602", mitte)

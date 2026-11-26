@@ -40,6 +40,7 @@ class KundenEinstellungenForm(forms.ModelForm):
             "herausnehmen_nach_tagen",
             "herausnehmen_sperre_monate",
             "verstorben_loeschen_monate",
+            "ausweis_notiz_tage",
             "verlegung_vorlauf_wochen",
             "nachfrist_sichtbar_tage",
             "export_felder",

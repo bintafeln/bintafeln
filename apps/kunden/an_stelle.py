@@ -33,11 +33,26 @@ def gelesen(notiz: Notiz, benutzer) -> None:
     notiz.save(update_fields=["gelesen_am", "gelesen_von"])
 
 
+AUSWEIS_TEXTE = (
+    "Neuer Ausweis ist gedruckt und liegt im Schrank.",
+    "Neuer Ausweis ist gedruckt und wird zur Ausgabestelle geschickt.",
+)
+
+
+def ausweis_notiz_bis(ab: dt.date | None = None) -> dt.date | None:
+    """Wann die Notiz „Neuer Ausweis ist gedruckt“ von selbst in den Papierkorb geht; None, wenn
+    die Tafel sie stehen lässt (``KundenEinstellungen.ausweis_notiz_tage`` = 0)."""
+    from apps.kunden.models import KundenEinstellungen
+
+    tage = KundenEinstellungen.laden().ausweis_notiz_tage
+    return (ab or timezone.localdate()) + dt.timedelta(days=tage) if tage else None
+
+
 def ausweis_text(h: Haushalt) -> str:
     stelle = h.kundengruppe.ausgabestelle if h.kundengruppe else None
     if stelle and stelle.ausweise_hier:
-        return "Neuer Ausweis ist gedruckt und liegt im Schrank."
-    return "Neuer Ausweis ist gedruckt und wird zur Ausgabestelle geschickt."
+        return AUSWEIS_TEXTE[0]
+    return AUSWEIS_TEXTE[1]
 
 
 def ausweis_gedruckt(haushalte, benutzer, merken: bool = False) -> int:
@@ -53,6 +68,7 @@ def ausweis_gedruckt(haushalte, benutzer, merken: bool = False) -> int:
     von = (benutzer.get_full_name() or benutzer.get_username())[:100]
     texte = list(NotizVorlage.objects.filter(melden=AUSWEIS).values_list("text", flat=True))
     beantwortet, antworten, gestrichen = set(), [], []
+    bis = ausweis_notiz_bis()
     for n in offen:
         if n.kundennummer not in beantwortet:
             beantwortet.add(n.kundennummer)
@@ -69,7 +85,7 @@ def ausweis_gedruckt(haushalte, benutzer, merken: bool = False) -> int:
             alt.delete()
             antwort = Notiz.objects.create(kundennummer=h.kundennummer, text=ausweis_text(h),
                                            verfasst_von=von, benutzer=benutzer,
-                                           an_stelle=True)  # fmt: skip
+                                           an_stelle=True, loeschen_am=bis)  # fmt: skip
             antworten.append(antwort.pk)
     Nachricht.objects.filter(pk__in=[n.pk for n in offen]).update(
         erledigt_am=jetzt, erledigt_von=benutzer.get_username()[:150])  # fmt: skip
