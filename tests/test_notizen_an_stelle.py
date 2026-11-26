@@ -245,8 +245,9 @@ def test_ausweise_auswahl_nur_mit_recht_und_eigene_stelle(
 
 
 def test_sammeldruck_zuruecknehmen_oder_bestaetigen(admin_client, admin, ausgabe, mitte):
-    """„Alle gemeldeten Ausweise drucken“ merkt sich den Druck (ADR 0167): Hat der Drucker nichts
-    ausgegeben, nimmt „Nein, zurücknehmen“ alles zurück."""
+    """Jeder Druck gemeldeter Ausweise merkt sich, was er erledigt hat (ADR 0167, 0180): Hat der
+    Drucker nichts ausgegeben, nimmt „Druck zurücknehmen“ alles zurück – ohne dass vorher jemand
+    etwas bestätigen muss."""
     from apps.kunden import an_stelle
     from apps.kunden.models import Ausweisdruck
 
@@ -257,12 +258,7 @@ def test_sammeldruck_zuruecknehmen_oder_bestaetigen(admin_client, admin, ausgabe
     Nachricht.objects.create(kundennummer="802", anliegen="ausweis")
     gemeldet = Notiz.objects.get(kundennummer="801")
     url = reverse("kunden:nachrichten")
-    assert "ordentlich aus dem Drucker" not in admin_client.get(url).content.decode()
-    # Einzeldruck merkt sich nichts
-    Nachricht.objects.create(kundennummer="803", anliegen="ausweis")
-    haushalt("803", mitte)
-    admin_client.get(reverse("kunden:ausweis", args=["803"]))
-    assert not Ausweisdruck.objects.exists()
+    assert "Zuletzt gedruckte Ausweise" not in admin_client.get(url).content.decode()
     # Sammeldruck: Meldungen erledigt, Antwort bei der Ausgabestelle, gemeldete Notiz gestrichen
     pdf = admin_client.get(reverse("kunden:ausweise_auswahl"), {"gemeldet": "1"})
     assert pdf["Content-Type"] == "application/pdf"
@@ -272,7 +268,9 @@ def test_sammeldruck_zuruecknehmen_oder_bestaetigen(admin_client, admin, ausgabe
     assert not Notiz.objects.filter(pk=gemeldet.pk).exists()
     assert Notiz.objects.filter(an_stelle=True, kundennummer__in=["801", "802"]).count() == 2
     seite = admin_client.get(url).content.decode()
-    assert "2 Ausweise gedruckt" in seite and "801, 802" in seite
+    assert "Zuletzt gedruckte Ausweise" in seite and "<strong>2 Ausweise</strong>" in seite
+    assert "801, 802" in seite and "Druck zurücknehmen" in seite
+    assert "ordentlich aus dem Drucker" not in seite  # es wird nicht mehr nachgefragt
     # Ohne das Recht: kein Kasten, kein Zurücknehmen
     zurueck = reverse("kunden:ausweisdruck", args=[druck.pk, "zuruecknehmen"])
     assert ausgabe.post(zurueck).status_code == 403
@@ -287,23 +285,90 @@ def test_sammeldruck_zuruecknehmen_oder_bestaetigen(admin_client, admin, ausgabe
     assert wieder.verfasst_von == gemeldet.verfasst_von
     druck.refresh_from_db()
     assert not druck.offen and druck.zurueckgenommen_am and druck.entschieden_von
-    assert "ordentlich aus dem Drucker" not in admin_client.get(url).content.decode()
+    assert "Zuletzt gedruckte Ausweise" not in admin_client.get(url).content.decode()
     # Ein zweites Mal geht nicht
     antwort = admin_client.post(zurueck, follow=True)
     assert "schon entschieden" in antwort.content.decode()
     with pytest.raises(an_stelle.DruckFehler):
         an_stelle.druck_bestaetigen(druck, admin)
-    # Erneut drucken und bestätigen: Der Kasten verschwindet, alles bleibt erledigt
+    # Erneut drucken und ausblenden: Der Eintrag verschwindet, alles bleibt erledigt
     admin_client.get(reverse("kunden:ausweise_auswahl"), {"gemeldet": "1"})
     neu = Ausweisdruck.objects.exclude(pk=druck.pk).get()
     assert neu.kundennummern == ["801", "802"]
     antwort = admin_client.post(reverse("kunden:ausweisdruck", args=[neu.pk, "bestaetigen"]),
                                 follow=True)  # fmt: skip
-    assert "als erledigt vermerkt" in antwort.content.decode()
-    assert "ordentlich aus dem Drucker" not in antwort.content.decode()
+    assert "ausgeblendet" in antwort.content.decode()
+    assert "Zuletzt gedruckte Ausweise" not in antwort.content.decode()
     assert not Nachricht.objects.filter(erledigt_am__isnull=True).exists()
     assert admin_client.post(reverse("kunden:ausweisdruck", args=[neu.pk, "quatsch"])
                              ).status_code == 404  # fmt: skip
+
+
+def test_einzeldruck_laesst_sich_zuruecknehmen_und_alte_drucke_verschwinden(admin_client, mitte):
+    """Auch ein einzeln gedruckter gemeldeter Ausweis steht zum Zurücknehmen da; nach 14 Tagen
+    wird ein Druck nicht mehr angeboten."""
+    import datetime as dt
+
+    from django.utils import timezone
+
+    from apps.kunden import an_stelle
+    from apps.kunden.models import Ausweisdruck
+
+    haushalt("811", mitte)
+    haushalt("812", mitte)
+    Nachricht.objects.create(kundennummer="811", anliegen="ausweis")
+    # ohne Meldung merkt sich der Druck nichts
+    admin_client.get(reverse("kunden:ausweis", args=["812"]))
+    assert not Ausweisdruck.objects.exists()
+    admin_client.get(reverse("kunden:ausweis", args=["811"]))
+    druck = Ausweisdruck.objects.get()
+    assert druck.kundennummern == ["811"] and list(an_stelle.letzte_drucke()) == [druck]
+    seite = admin_client.get(reverse("kunden:nachrichten")).content.decode()
+    assert "<strong>1 Ausweis</strong>" in seite
+    admin_client.post(reverse("kunden:ausweisdruck", args=[druck.pk, "zuruecknehmen"]))
+    assert Nachricht.objects.filter(kundennummer="811", erledigt_am__isnull=True).exists()
+    # ein älterer Druck steht nicht mehr zum Zurücknehmen da
+    alt = Ausweisdruck.objects.create(gedruckt_am=timezone.now() - dt.timedelta(days=15))
+    assert alt not in list(an_stelle.letzte_drucke())
+
+
+def test_gemeldete_ausweise_ohne_oder_nur_schwerbehinderte(admin_client, mitte):
+    """Schwerbehinderte bekommen einen anderen Ausweis: „ohne“ druckt die übrigen und lässt deren
+    Meldungen offen, „nur“ druckt sie später für sich (ADR 0180)."""
+    from apps.kunden import merkmale
+    from apps.kunden.models import Ausweisdruck, Person
+
+    merkmale.feste_anlegen()
+    haushalt("821", mitte)
+    haushalt("822", mitte)
+    besonders = haushalt("823", mitte)
+    Person.objects.create(haushalt=besonders, vorname="Sven", nachname="Beispiel",
+                          zusatz={"schwerbehindert": True})  # fmt: skip
+    for nummer in ("821", "822", "823"):
+        Nachricht.objects.create(kundennummer=nummer, anliegen="ausweis")
+    url, druck = reverse("kunden:nachrichten"), reverse("kunden:ausweise_auswahl")
+    seite = admin_client.get(url).content.decode()
+    assert "ohne Schwerbehinderte (2)" in seite
+    assert "Nur Ausweise für Schwerbehinderte drucken (1)" in seite
+    assert "Alle gemeldeten Ausweise drucken" not in seite
+    # ohne Schwerbehinderte: zwei gedruckt und erledigt, der dritte bleibt offen
+    pdf = admin_client.get(druck, {"gemeldet": "1", "sb": "ohne"})
+    assert pdf["Content-Type"] == "application/pdf"
+    assert Ausweisdruck.objects.get().kundennummern == ["821", "822"]
+    offen = Nachricht.objects.filter(erledigt_am__isnull=True, anliegen="ausweis")
+    assert list(offen.values_list("kundennummer", flat=True)) == ["823"]
+    assert not Notiz.objects.filter(kundennummer="823").exists()
+    seite = admin_client.get(url).content.decode()
+    assert "ohne Schwerbehinderte" not in seite
+    assert "Nur Ausweise für Schwerbehinderte drucken (1)" in seite
+    # später, mit dem anderen Ausweis im Drucker: nur die Schwerbehinderten
+    admin_client.get(druck, {"gemeldet": "1", "sb": "nur"})
+    assert not offen.exists()
+    assert Ausweisdruck.objects.order_by("-pk").first().kundennummern == ["823"]
+    # ohne gemeldete Schwerbehinderte bleibt der eine Knopf wie bisher
+    Nachricht.objects.create(kundennummer="821", anliegen="ausweis")
+    seite = admin_client.get(url).content.decode()
+    assert "Alle gemeldeten Ausweise drucken (1)" in seite and "Schwerbehinderte" not in seite
 
 
 def test_alte_ausweisdrucke_werden_geloescht():

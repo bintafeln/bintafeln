@@ -199,8 +199,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Notizen an die Ausgabestelle (`Notiz.an_stelle`, Startseite, Antwort beim Ausweisdruck) in
   `apps/kunden/an_stelle.py`; die Antwort „Neuer Ausweis ist gedruckt“ bekommt `Notiz.loeschen_am`
   (`KundenEinstellungen.ausweis_notiz_tage`, Vorgabe 14) und geht dann still in den Papierkorb; feste Notiz-Vorlagen zu `FESTE_ANLIEGEN` (ADR 0070).
-  Sammeldruck „Alle gemeldeten Ausweise“ lässt sich als Ganzes zurücknehmen (`Ausweisdruck`,
-  `an_stelle.druck_bestaetigen()`/`druck_zuruecknehmen()`, Kasten auf der Nachrichtenseite; ADR 0167).
+  Jeder Druck gemeldeter Ausweise lässt sich als Ganzes zurücknehmen (`Ausweisdruck`,
+  `an_stelle.letzte_drucke()`/`druck_zuruecknehmen()`, Abschnitt „Zuletzt gedruckte Ausweise“ auf der
+  Nachrichtenseite – ohne Nachfrage; ADR 0167, 0180). Schwerbehinderte (Ausweis mit Rollstuhl-Symbol,
+  `merkmale.mit_rollstuhl_ausweis()`) getrennt: `?gemeldet=1&sb=ohne|nur`, der Rest bleibt offen.
   Nachricht einer Ausgabestelle an die Verwaltung ohne Kunden (`StellenNachricht`, Startseite,
   Mail über die Benachrichtigung `nachricht_verwaltung`, Antwort auf der Startseite der Stelle) in
   `apps/kunden/an_verwaltung.py` (ADR 0140).

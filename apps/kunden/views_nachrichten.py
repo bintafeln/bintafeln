@@ -142,6 +142,11 @@ def liste(request):
         reiter.insert(0, (ALLGEMEIN, "ohne Kunde", len(allgemein_offen)))
     if anliegen in dict(NACHRICHT_ANLIEGEN):
         alle = alle.filter(anliegen=anliegen)
+    darf_drucken = rollen.hat_recht(request.user, "kunden.ausweis")
+    gemeldet = besondere = 0
+    if darf_drucken:
+        haushalte, mit_rollstuhl = an_stelle.gemeldete()
+        gemeldet, besondere = haushalte.count(), mit_rollstuhl.count()
     return render(request, "kunden/nachrichten.html", {
         "offen": alle.filter(erledigt_am__isnull=True),
         "erledigt": list(alle.filter(erledigt_am__isnull=False).order_by("-erledigt_am")[:100]),
@@ -152,11 +157,10 @@ def liste(request):
         "tage": Nachricht.AUFBEWAHREN_TAGE,
         "anliegen": anliegen, "anliegen_liste": reiter,
         "darf_verlaengern": rollen.hat_recht(request.user, "kunden.bearbeiten"),
-        "ausweisdrucke": list(an_stelle.offene_drucke())
-        if rollen.hat_recht(request.user, "kunden.ausweis") else [],
-        "ausweise_gemeldet": rollen.hat_recht(request.user, "kunden.ausweis")
-        and Nachricht.objects.filter(anliegen=an_stelle.AUSWEIS, erledigt_am__isnull=True)
-        .values("kundennummer").distinct().count(),
+        "ausweisdrucke": list(an_stelle.letzte_drucke()) if darf_drucken else [],
+        "zurueck_tage": an_stelle.ZURUECK_TAGE,
+        "ausweise_gemeldet": gemeldet, "ausweise_besondere": besondere,
+        "ausweise_uebrige": gemeldet - besondere,
     })  # fmt: skip
 
 
@@ -169,7 +173,7 @@ def ausweisdruck(request, pk, was):
     try:
         if was == "bestaetigen":
             an_stelle.druck_bestaetigen(druck, request.user)
-            messages.success(request, "Der Druck ist als erledigt vermerkt.")
+            messages.success(request, "Der Druck ist ausgeblendet.")
         elif was == "zuruecknehmen":
             anzahl = an_stelle.druck_zuruecknehmen(druck, request.user)
             messages.success(request, f"Der Druck ist zurückgenommen: {anzahl} "

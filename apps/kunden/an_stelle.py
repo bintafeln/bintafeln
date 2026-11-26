@@ -105,10 +105,31 @@ class DruckFehler(ValueError):
     pass
 
 
-def offene_drucke():
-    """Sammeldrucke, zu denen noch niemand gesagt hat, ob alles gedruckt wurde."""
-    return Ausweisdruck.objects.filter(bestaetigt_am__isnull=True,
-                                       zurueckgenommen_am__isnull=True)  # fmt: skip
+ZURUECK_TAGE = 14  # so lange steht ein Druck zum Zurücknehmen auf der Nachrichtenseite
+ZURUECK_ANZAHL = 5
+
+
+def letzte_drucke():
+    """Die letzten Drucke gemeldeter Ausweise, die sich noch zurücknehmen lassen (ADR 0180):
+    nicht zurückgenommen, nicht ausgeblendet, höchstens 14 Tage alt, der neueste zuerst."""
+    seit = timezone.now() - dt.timedelta(days=ZURUECK_TAGE)
+    offen = Ausweisdruck.objects.filter(bestaetigt_am__isnull=True, gedruckt_am__gte=seit,
+                                        zurueckgenommen_am__isnull=True)  # fmt: skip
+    return offen[:ZURUECK_ANZAHL]
+
+
+def gemeldete(benutzer=None):
+    """(alle, mit Rollstuhl-Ausweis): Haushalte mit offener Meldung „Neuen Ausweis drucken“ und
+    davon die, die den anderen Ausweis für Schwerbehinderte bekommen."""
+    from apps.kunden import merkmale, zugang
+
+    nummern = Nachricht.objects.filter(anliegen=AUSWEIS, erledigt_am__isnull=True).values(
+        "kundennummer"
+    )
+    alle = Haushalt.objects.filter(kundennummer__in=nummern)
+    if benutzer is not None:
+        alle = zugang.filtern(alle, benutzer)
+    return alle, merkmale.mit_rollstuhl_ausweis(alle)
 
 
 def _entscheiden(druck: Ausweisdruck, benutzer) -> Ausweisdruck:
@@ -121,7 +142,7 @@ def _entscheiden(druck: Ausweisdruck, benutzer) -> Ausweisdruck:
 
 @transaction.atomic
 def druck_bestaetigen(druck: Ausweisdruck, benutzer) -> None:
-    """Alle Ausweise sind ordentlich gedruckt: Der Druck ist abgeschlossen."""
+    """Der Druck ist in Ordnung und soll nicht mehr zum Zurücknehmen angeboten werden."""
     druck = _entscheiden(druck, benutzer)
     druck.bestaetigt_am = timezone.now()
     druck.save()

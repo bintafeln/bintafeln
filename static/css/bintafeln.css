@@ -148,8 +148,12 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .platte-balken span { display: block; height: 100%; background: var(--akzent); }
 .platte-balken.platte-knapp span { background: #d9a400; }
 .platte-balken.platte-dringend span { background: var(--fehler); }
-.ausweisdruck { margin: .75rem 0; }
-.ausweisdruck .aktionsleiste { margin-top: .5rem; }
+.ausweisdruck { margin: .75rem 0; padding: .6rem .8rem; border: 1px solid var(--rand); border-radius: var(--radius);
+  background: var(--flaeche-2); }
+.ausweisdruck h2 { font-size: 1.05rem; margin: 0 0 .25rem; }
+.ausweisdruck-liste { list-style: none; margin: .4rem 0 0; padding: 0; display: grid; gap: .4rem; }
+.ausweisdruck-liste li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem .8rem; }
+.ausweisdruck-knoepfe { display: inline-flex; align-items: center; gap: .6rem; }
 .meldung.update-neu { border-left: 6px solid var(--akzent); font-size: 1.1rem; }
 
 .marke-rolle {

@@ -95,6 +95,15 @@ def haushalte_mit_merkmal(haushalte, feld: Zusatzfeld, ja: bool):
     return haushalte.filter(bedingung).distinct() if ja else haushalte.exclude(bedingung)
 
 
+def mit_rollstuhl_ausweis(haushalte):
+    """Die Haushalte, deren Ausweis das Rollstuhl-Symbol trägt (mitgeliefert: „Schwerbehindert“)
+    – sie bekommen einen anderen Ausweis und werden beim Sammeldruck getrennt gedruckt."""
+    pks: set = set()
+    for feld in _felder(ausweis="rollstuhl"):
+        pks |= set(haushalte_mit_merkmal(haushalte, feld, True).values_list("pk", flat=True))
+    return haushalte.filter(pk__in=pks)
+
+
 def rollstuhl_einlass(haushalt, benutzer) -> bool:
     """True, wenn am Einlass ein Rollstuhl-Symbol neben der Nummer stehen soll: ein aktives
     Ja/Nein-Merkmal mit Ausweis-Symbol „rollstuhl“ (mitgeliefert: „Schwerbehindert“) ist bei
