@@ -15,6 +15,8 @@ from django.utils import timezone
 QUELLEN = [
     ("adressen", "Adressen nach Kategorie"),
     ("mitglieder", "Mitglieder"),
+    ("ehrenamtliche", "Ehrenamtliche"),
+    ("ehemalige", "Ehemalige Ehrenamtliche"),
     ("spender", "Spender eines Jahres"),
     ("kunden", "Kunden (Haushalte)"),
 ]
@@ -165,6 +167,21 @@ def suchen(quelle: str, d: dict, benutzer=None) -> list[Empfaenger]:
         ergebnis = [
             _aus_adresse(a, jahr) for a in adressen.distinct().order_by("organisation", "nachname")
         ]
+    elif quelle in ("ehrenamtliche", "ehemalige"):
+        # wie die Listen unter „Verein/Team“ (ADR 0098); kein Einwilligungs-Filter – wer mitmacht
+        # oder mitgemacht hat, steht wie ein Mitglied in einer Beziehung zur Tafel
+        from apps.konten.verwaltung import EHEMALIGE_KATEGORIE
+
+        ehrenamt = Q(konto__stelle__isnull=True, konto__beschaeftigung="ehrenamtlich")
+        ehemalig = Q(kategorien__name=EHEMALIGE_KATEGORIE)
+        if quelle == "ehrenamtliche":
+            pks = Adresse.objects.filter(ehrenamt, konto__is_active=True).exclude(
+                pk__in=Adresse.objects.filter(ehemalig).values("pk")
+            )
+        else:
+            pks = Adresse.objects.filter(ehemalig | (ehrenamt & Q(konto__is_active=False)))
+        adressen = Adresse.objects.filter(pk__in=pks.values("pk"))
+        ergebnis = [_aus_adresse(a, jahr) for a in adressen.order_by("nachname", "vorname")]
     elif quelle == "mitglieder":
         heute = timezone.localdate()
         mitglieder = Mitglied.objects.select_related("adresse").filter(

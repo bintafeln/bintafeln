@@ -146,6 +146,46 @@ def _allgemein(jahr: int) -> dict:
     return emp.allgemein(jahr)
 
 
+EINWILLIGUNG_AUS = "serienbrief-ohne-einwilligung"  # Schlüssel in Benutzer.listen_filter
+
+
+def _einwilligung_gemerkt(benutzer) -> bool:
+    """Ob „Nur mit Einwilligung“ angehakt vorbelegt wird: ja, bis das Konto es abgewählt hat."""
+    return EINWILLIGUNG_AUS not in (benutzer.listen_filter or {})
+
+
+def _einwilligung_merken(benutzer, d: dict) -> None:
+    """Merkt am Konto, wenn der Haken abgewählt wurde (und vergisst es, wenn er wieder sitzt).
+    Nur bei Empfängern, bei denen der Haken überhaupt zur Wahl steht."""
+    if d["quelle"] not in ("adressen", "spender"):
+        return
+    gemerkt = dict(benutzer.listen_filter or {})
+    if d.get("nur_einwilligung"):
+        if gemerkt.pop(EINWILLIGUNG_AUS, None) is None:
+            return
+    elif gemerkt.get(EINWILLIGUNG_AUS):
+        return
+    else:
+        gemerkt[EINWILLIGUNG_AUS] = "1"
+    benutzer.listen_filter = gemerkt
+    benutzer.save(update_fields=["listen_filter"])
+
+
+def _auswahl_kennung(d: dict) -> str:
+    """Kurze Kennung der Empfänger-Auswahl (ohne die Vorlage): Für sie gilt das An- und Abhaken
+    einzelner Empfänger."""
+    import hashlib
+
+    teile = []
+    for name in ("quelle", "versandart", "jahr", "kategorien", "nur_einwilligung",
+                 "mindestbetrag", "mitgliedsarten", "nur_offen", "kundengruppen"):  # fmt: skip
+        wert = d.get(name)
+        if hasattr(wert, "values_list"):
+            wert = sorted(wert.values_list("pk", flat=True))
+        teile.append(f"{name}={wert}")
+    return hashlib.sha256("|".join(teile).encode()).hexdigest()[:16]
+
+
 def _beschreibung(d: dict) -> str:
     teile = [dict(emp.QUELLEN)[d["quelle"]]]
     if d["quelle"] == "adressen" and d.get("kategorien"):
@@ -161,13 +201,27 @@ def _beschreibung(d: dict) -> str:
 @never_cache
 @rollen.recht_erforderlich("serienbriefe.erstellen")
 def erstellen(request):
-    form = AuswahlForm(request.POST or None, benutzer=request.user,
-                       initial={"vorlage": request.GET.get("vorlage")})  # fmt: skip
+    form = AuswahlForm(request.POST or None, benutzer=request.user, initial={
+        "vorlage": request.GET.get("vorlage"),
+        "nur_einwilligung": _einwilligung_gemerkt(request.user),
+    })  # fmt: skip
     kontext = {"form": form}
     if request.method == "POST" and form.is_valid():
         d = form.cleaned_data
+        _einwilligung_merken(request.user, d)
         alle = emp.suchen(d["quelle"], d, request.user)
         erreichbar, ohne = emp.aufteilen(alle, d["versandart"])
+        # Einzelne Empfänger abgehakt? Gilt nur, solange die Auswahl darüber dieselbe ist –
+        # sonst wären nach einem anderen Filter alle neu Dazugekommenen stillschweigend aus.
+        kennung = _auswahl_kennung(d)
+        angehakt = None
+        if request.POST.get("auswahl_fuer") == kennung:
+            angehakt = set(request.POST.getlist("an"))
+        liste = [(e, angehakt is None or e.schluessel in angehakt) for e in erreichbar]
+        kontext |= {"liste": liste, "auswahl_fuer": kennung}
+        erreichbar = [e for e, an in liste if an]
+        if request.POST.get("schritt") in ("pdf", "senden") and not erreichbar:
+            messages.error(request, "Bitte mindestens einen Empfänger anhaken.")
         allgemein = _allgemein(d["jahr"])
         v = d["vorlage"]
         schritt = request.POST.get("schritt", "vorschau")

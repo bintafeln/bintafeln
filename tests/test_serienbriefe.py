@@ -89,8 +89,8 @@ def test_pdf_und_vermerk(admin_client, daten, pdf_text):
     daten_form = {"vorlage": vorlage.pk, "quelle": "spender", "versandart": "brief",
                   "jahr": JAHR, "nur_einwilligung": "on"}  # fmt: skip
     vorschau = admin_client.post(URL, daten_form).content.decode()
-    assert "1 Empfänger" in vorschau and "Sehr geehrte Frau Muster," in vorschau
-    assert "150,00 €" in vorschau and "PDF mit 1 Brief erzeugen" in vorschau
+    assert "</span> von 1 Empfängern" in vorschau and "Sehr geehrte Frau Muster," in vorschau
+    assert "150,00 €" in vorschau and "PDF mit Briefen erzeugen" in vorschau
     antwort = admin_client.post(URL, daten_form | {"schritt": "pdf"})
     text = pdf_text(antwort)
     assert "Sehr geehrte Frau Muster," in text and "Weg 1" in text and "150,00" in text
@@ -132,3 +132,75 @@ def test_rechte(client, admin, benutzer_mit_rolle, anmelden, daten):
     client.logout()
     anmelden(client, benutzer_mit_rolle("anton", rollen.AUSGABE))
     assert client.get(URL).status_code == 403
+
+
+# --- Ehrenamtliche, einzelne Empfänger abhaken, Einwilligungs-Haken merken ----------------------
+
+
+def _helfer(django_user_model, vorname, nachname, *, aktiv=True, art="ehrenamtlich"):
+    konto = django_user_model.objects.create_user(
+        username=nachname.lower(), is_active=aktiv, beschaeftigung=art
+    )
+    return Adresse.objects.create(art="person", vorname=vorname, nachname=nachname, konto=konto,
+                                  strasse="Weg 5", plz="12345", ort="Musterstadt",
+                                  email=f"{nachname.lower()}@example.org")  # fmt: skip
+
+
+def test_ehrenamtliche_und_ehemalige_als_empfaenger(daten, admin, django_user_model):
+    from apps.konten.verwaltung import EHEMALIGE_KATEGORIE
+
+    _helfer(django_user_model, "Anna", "Aktiv")
+    _helfer(django_user_model, "Fritz", "Fest", art="fest")
+    _helfer(django_user_model, "Gerd", "Gesperrt", aktiv=False)
+    gewesen = _helfer(django_user_model, "Eva", "Ehemals")
+    ehemalige, _ = AdressKategorie.objects.get_or_create(name=EHEMALIGE_KATEGORIE)
+    gewesen.kategorien.add(ehemalige)
+    # ohne Konto, aber als ehemalig geführt
+    otto = Adresse.objects.create(art="person", vorname="Otto", nachname="Ohnekonto",
+                                  strasse="Weg 6", plz="12345", ort="Musterstadt")  # fmt: skip
+    otto.kategorien.add(ehemalige)
+    d = {"jahr": JAHR, "versandart": "brief", "nur_einwilligung": True}
+    assert [e.name for e in emp.suchen("ehrenamtliche", d)] == ["Anna Aktiv"]
+    assert [e.name for e in emp.suchen("ehemalige", d)] == [
+        "Eva Ehemals", "Gerd Gesperrt", "Otto Ohnekonto",
+    ]  # fmt: skip
+    assert dict(emp.QUELLEN)["ehrenamtliche"] == "Ehrenamtliche"
+
+
+def test_einzelne_empfaenger_abhaken(admin_client, daten, pdf_text):
+    erika, baeckerei = daten
+    vorlage = Vorlage.objects.get(name="Dank für Spenden")
+    form = {"vorlage": vorlage.pk, "quelle": "spender", "versandart": "brief", "jahr": JAHR}
+    antwort = admin_client.post(URL, form)
+    seite = antwort.content.decode()
+    # beide stehen angehakt in der Liste
+    assert seite.count('name="an"') == 2 and seite.count(" checked>") >= 2
+    assert "</span> von 2 Empfängern" in seite
+    kennung = antwort.context["auswahl_fuer"]
+    nur_erika = form | {"auswahl_fuer": kennung, "an": [f"a:{erika.pk}"]}
+    vorschau = admin_client.post(URL, nur_erika)
+    angehakt = {e.name: an for e, an in vorschau.context["liste"]}
+    assert angehakt == {"Erika Muster": True, "Bäckerei Probe": False}
+    text = pdf_text(admin_client.post(URL, nur_erika | {"schritt": "pdf"}))
+    assert "Frau Muster" in text and "Bäckerei" not in text
+    assert Versand.objects.get().empfaenger == [f"a:{erika.pk}"]
+    # niemand angehakt: nichts wird erzeugt
+    keiner = admin_client.post(URL, form | {"auswahl_fuer": kennung, "schritt": "pdf"})
+    assert "mindestens einen Empfänger" in keiner.content.decode()
+    assert Versand.objects.count() == 1
+    # andere Auswahl darüber: das alte Abhaken gilt nicht mehr, alle sind wieder angehakt
+    anders = admin_client.post(URL, nur_erika | {"mindestbetrag": "10"})
+    assert all(an for _, an in anders.context["liste"])
+
+
+def test_einwilligungs_haken_wird_gemerkt(admin, admin_client, daten):
+    vorlage = Vorlage.objects.get(name="Dank für Spenden")
+    assert admin_client.get(URL).context["form"]["nur_einwilligung"].value() is True
+    form = {"vorlage": vorlage.pk, "quelle": "adressen", "versandart": "brief", "jahr": JAHR}
+    admin_client.post(URL, form)  # Haken abgewählt
+    assert admin_client.get(URL).context["form"]["nur_einwilligung"].value() is False
+    # bei Empfängern ohne diesen Haken (Mitglieder) ändert sich nichts am Gemerkten
+    admin_client.post(URL, form | {"quelle": "mitglieder", "nur_einwilligung": "on"})
+    assert admin_client.get(URL).context["form"]["nur_einwilligung"].value() is False
+    admin_client.post(URL, form | {"nur_einwilligung": "on"})  # wieder angehakt
+    assert admin_client.get(URL).context["form"]["nur_einwilligung"].value() is True
