@@ -7,25 +7,40 @@
     werden nach {{ tage }} Tagen gelöscht.</p>
   {% if darf_verlaengern or ausweise_gemeldet %}<div class="aktionen">
     {% if darf_verlaengern %}<a class="knopf" href="{% url 'kunden:verlaengern' %}">Gemeldete Ausweise zusammen prüfen und verlängern</a>{% endif %}
-    {% if ausweise_gemeldet %}<a class="knopf" href="{% url 'kunden:ausweise_auswahl' %}?gemeldet=1" target="_blank" rel="noopener"
+    {% if ausweise_gemeldet and not ausweise_besondere %}<a class="knopf" href="{% url 'kunden:ausweise_auswahl' %}?gemeldet=1" target="_blank" rel="noopener"
       title="Ein PDF mit allen offenen Meldungen „Neuen Ausweis drucken“; die Ausgabestellen bekommen die Antwort, die Meldungen sind danach erledigt"
       onclick="setTimeout(() => location.reload(), 1500)">Alle gemeldeten Ausweise drucken ({{ ausweise_gemeldet }})</a>{% endif %}
+    {% if ausweise_besondere %}
+    {% if ausweise_uebrige %}<a class="knopf" href="{% url 'kunden:ausweise_auswahl' %}?gemeldet=1&amp;sb=ohne" target="_blank" rel="noopener"
+      title="Ein PDF mit den gemeldeten Ausweisen ohne die für Schwerbehinderte; deren Meldungen bleiben offen"
+      onclick="setTimeout(() => location.reload(), 1500)">Gemeldete Ausweise drucken – ohne Schwerbehinderte ({{ ausweise_uebrige }})</a>{% endif %}
+    <a class="knopf{% if ausweise_uebrige %} knopf-zweitrangig{% endif %}" href="{% url 'kunden:ausweise_auswahl' %}?gemeldet=1&amp;sb=nur" target="_blank" rel="noopener"
+      title="Ein PDF nur mit den gemeldeten Ausweisen für Schwerbehinderte (anderer Ausweis im Drucker)"
+      onclick="setTimeout(() => location.reload(), 1500)">Nur Ausweise für Schwerbehinderte drucken ({{ ausweise_besondere }})</a>
+    {% endif %}
   </div>{% endif %}
-  {% for d in ausweisdrucke %}
-  <div class="meldung update-wichtig ausweisdruck" role="status">
-    <p><strong>{{ d.kundennummern|length }} Ausweis{{ d.kundennummern|length|pluralize:"e" }} gedruckt</strong>
-      am {{ d.gedruckt_am|date:"d.m.Y" }} um {{ d.gedruckt_am|time:"H:i" }} Uhr{% if d.von %} von {{ d.von }}{% endif %}
-      – sind alle ordentlich aus dem Drucker gekommen?</p>
-    <p class="hinweis">Kundennummern: {{ d.kundennummern|join:", " }}</p>
-    <div class="aktionsleiste">
-      <form method="post" action="{% url 'kunden:ausweisdruck' d.pk 'bestaetigen' %}" class="inline">
-        {% csrf_token %}<button type="submit" class="knopf">Ja, alle gedruckt</button></form>
-      <form method="post" action="{% url 'kunden:ausweisdruck' d.pk 'zuruecknehmen' %}" class="inline"
-            onsubmit="return confirm('Den ganzen Druck zurücknehmen? Die Meldungen sind dann wieder offen, und die Notiz „Neuer Ausweis ist gedruckt“ verschwindet bei den Ausgabestellen.')">
-        {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Nein, zurücknehmen</button></form>
-    </div>
+  {% if ausweisdrucke %}
+  <div class="ausweisdruck" id="ausweisdrucke">
+    <h2>Zuletzt gedruckte Ausweise</h2>
+    <p class="hinweis">Ist ein Druck nicht oder nicht ganz aus dem Drucker gekommen, nehmen Sie ihn hier zurück: Die Meldungen
+      sind dann wieder offen und lassen sich noch einmal drucken. Sie müssen nichts bestätigen – die Einträge
+      verschwinden nach {{ zurueck_tage }} Tagen von selbst.</p>
+    <ul class="ausweisdruck-liste">
+    {% for d in ausweisdrucke %}
+      <li><span><strong>{{ d.kundennummern|length }} Ausweis{{ d.kundennummern|length|pluralize:"e" }}</strong>
+          am {{ d.gedruckt_am|date:"d.m.Y" }} um {{ d.gedruckt_am|time:"H:i" }} Uhr{% if d.von %} von {{ d.von }}{% endif %}
+          <small class="leise">· Kundennummern: {{ d.kundennummern|join:", " }}</small></span>
+        <span class="ausweisdruck-knoepfe">
+        <form method="post" action="{% url 'kunden:ausweisdruck' d.pk 'zuruecknehmen' %}" class="inline"
+              onsubmit="return confirm('Diesen Druck zurücknehmen? Die Meldungen sind dann wieder offen, und die Notiz „Neuer Ausweis ist gedruckt“ verschwindet bei den Ausgabestellen.')">
+          {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig knopf-klein">Druck zurücknehmen</button></form>
+        <form method="post" action="{% url 'kunden:ausweisdruck' d.pk 'bestaetigen' %}" class="inline">
+          {% csrf_token %}<button type="submit" class="link" title="Der Druck war in Ordnung: nicht mehr anzeigen">ausblenden</button></form>
+        </span></li>
+    {% endfor %}
+    </ul>
   </div>
-  {% endfor %}
+  {% endif %}
   <nav class="reiter nachrichten-reiter" aria-label="Anliegen">
     <a href="{% url 'kunden:nachrichten' %}"{% if not anliegen %} aria-current="page"{% endif %}>alle <span class="zahl">{{ offen_gesamt }}</span></a>
     {% for wert, name, zahl in anliegen_liste %}<a href="?anliegen={{ wert }}"{% if wert == anliegen %} aria-current="page"{% endif %}>{{ name }} <span class="zahl">{{ zahl }}</span></a>{% endfor %}

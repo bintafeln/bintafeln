@@ -777,7 +777,7 @@ def notiz_gelesen(request, pk):
 @rollen.recht_erforderlich("kunden.ausweis")
 def ausweis(request, kundennummer):
     h = zugang.haushalt(request.user, kundennummer)
-    _ausweis_gedruckt(request, [h])
+    _ausweis_gedruckt(request, [h], merken=True)
     return pdf_antwort(ausweis_pdf(h), f"kundenausweis-{_dateiname(h)}.pdf")
 
 
@@ -825,7 +825,7 @@ def ausweise(request):
             f"Mehr als {MAX_SAMMELDRUCK} Haushalte: bitte nach Kundengruppe oder Status filtern.",
         )  # fmt: skip
         return redirect(f"{reverse('kunden:uebersicht')}?{request.GET.urlencode()}")
-    _ausweis_gedruckt(request, haushalte)
+    _ausweis_gedruckt(request, haushalte, merken=True)
     return pdf_antwort(ausweise_pdf(haushalte), "kundenausweise.pdf")
 
 
@@ -838,15 +838,20 @@ def ausweise_auswahl(request):
     Zurück-Knopf) in einem eigenen Fenster mit „Fertig“."""
     daten = request.POST if request.method == "POST" else request.GET
     if daten.get("gemeldet"):
-        nummern = list(Nachricht.objects.filter(anliegen=an_stelle.AUSWEIS,
-                                                erledigt_am__isnull=True)
-                       .values_list("kundennummer", flat=True))  # fmt: skip
+        # „ohne“/„nur“: Schwerbehinderte bekommen einen anderen Ausweis und werden getrennt
+        # gedruckt; was nicht im PDF ist, bleibt als Meldung offen (ADR 0180)
+        alle, besondere = an_stelle.gemeldete()
+        teil = daten.get("sb")
+        if teil == "ohne":
+            alle = alle.exclude(pk__in=besondere.values("pk"))
+        elif teil == "nur":
+            alle = besondere
+        nummern = list(alle.values_list("kundennummer", flat=True))
         zurueck = "kunden:nachrichten"
-        merken = True  # der ganze Druck lässt sich zurücknehmen (ADR 0167)
     else:
         nummern = daten.getlist("nummer")
         zurueck = "kunden:verlaengern"
-        merken = False
+    merken = True  # jeder Druck gemeldeter Ausweise lässt sich zurücknehmen (ADR 0167, 0180)
     haushalte = list(
         zugang.filtern(Haushalt.objects.filter(kundennummer__in=nummern), request.user)
         .select_related("kundengruppe__ausgabestelle")
