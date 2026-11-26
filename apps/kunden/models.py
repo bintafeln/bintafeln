@@ -1156,11 +1156,13 @@ def verwaiste_notizen_loeschen() -> int:
         haushalt__kundennummer=models.OuterRef("kundennummer"),
         datum__gte=models.OuterRef("krank_von"),
     )
+    # … und Notizen mit Verfallstag, z. B. „Neuer Ausweis ist gedruckt“ (in derselben Abfrage)
     weg += notizen_in_papierkorb(
-        Notiz.objects.filter(krank_von__isnull=False).filter(models.Exists(abgeholt))
+        Notiz.objects.filter(
+            (models.Q(krank_von__isnull=False) & models.Exists(abgeholt))
+            | models.Q(loeschen_am__lte=timezone.localdate())
+        )
     )
-    # Notizen mit Verfallstag, z. B. „Neuer Ausweis ist gedruckt“
-    weg += notizen_in_papierkorb(Notiz.objects.filter(loeschen_am__lte=timezone.localdate()))
     return weg
 
 
