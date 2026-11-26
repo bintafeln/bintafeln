@@ -20,6 +20,7 @@
     <dt>Kennzeichen</dt><dd>{{ fahrzeug.kennzeichen|default:"–" }}</dd>
     <dt>Fahrzeugart</dt><dd>{{ fahrzeug.typ|default:"–" }}</dd>
     <dt>Erstzulassung</dt><dd>{{ fahrzeug.erstzulassung|date:"d.m.Y"|default:"–" }}</dd>
+    <dt>Nächster TÜV</dt><dd>{% if fahrzeug.tuev_bis %}{{ fahrzeug.tuev_bis|date:"d.m.Y" }}{% if fahrzeug.tuev_stand == "abgelaufen" %} <span class="marke-warnung">abgelaufen</span>{% elif fahrzeug.tuev_stand == "bald" %} <span class="marke-warnung">bald fällig</span>{% endif %}{% else %}–{% endif %}</dd>
     <dt>Kilometerstand</dt><dd>{% if fahrzeug.kilometerstand is not None %}{{ fahrzeug.kilometerstand }} km{% else %}–{% endif %}</dd>
     {% if fahrzeug.verkauft_am %}<dt>Verkauft am</dt><dd>{{ fahrzeug.verkauft_am|date:"d.m.Y" }}</dd>{% endif %}
   </dl>

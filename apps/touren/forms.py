@@ -314,10 +314,12 @@ class FahrzeugForm(forms.ModelForm):
 
     class Meta:
         model = Fahrzeug
-        fields = ["name", "kennzeichen", "typ", "erstzulassung", "kilometerstand", "reihenfolge",
+        fields = ["name", "kennzeichen", "typ", "erstzulassung", "tuev_bis", "kilometerstand",
+                  "reihenfolge",
                   "aktiv", "verkauft_am"]  # fmt: skip
         widgets = {
             "erstzulassung": DatumEingabe(),
+            "tuev_bis": DatumEingabe(),
             "verkauft_am": DatumEingabe(),
             "typ": forms.TextInput(attrs={"list": "fz-arten", "autocomplete": "off"}),
         }

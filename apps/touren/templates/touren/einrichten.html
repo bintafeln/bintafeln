@@ -78,7 +78,7 @@
   <p><a class="knopf" href="{% url 'touren:fahrzeug_neu' %}">＋ Neues Fahrzeug</a></p>
   {% if fahrzeuge %}
   <div class="tabelle-rahmen"><table class="tabelle" id="fahrzeuge-tabelle">
-    <thead><tr><th>Fahrzeug</th><th>Kennzeichen</th><th>Fahrzeugart</th><th>Erstzulassung</th><th class="zahl">Kilometerstand</th><th>Papiere</th></tr></thead>
+    <thead><tr><th>Fahrzeug</th><th>Kennzeichen</th><th>Fahrzeugart</th><th>Erstzulassung</th><th>Nächster TÜV</th><th class="zahl">Kilometerstand</th><th>Papiere</th></tr></thead>
     <tbody>{% for f in fahrzeuge %}{% include "touren/_fahrzeug_zeile.html" %}{% endfor %}</tbody>
   </table></div>
   {% else %}<p class="hinweis">Noch kein Fahrzeug angelegt.</p>{% endif %}

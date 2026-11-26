@@ -476,7 +476,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   das Recht `touren.besetzung` hat; Änderung als `Ersatz` im Fahrerplan); eigene `fahrtage` einer
   Tour aus dem Fahrerplan grenzen ein („Montag Nordtour“ ↔ „Nordtour“,
   `importieren_touren.wochentag_im_namen()`).
-  Fahrzeuge (ADR 0160): `Fahrzeug.typ` frei mit Vorschlägen, `erstzulassung`; Papiere als
+  Fahrzeuge (ADR 0160): `Fahrzeug.typ` frei mit Vorschlägen, `erstzulassung`, nächster TÜV
+  `tuev_bis` (`tuev_stand`: bald fällig ab 60 Tagen vorher / abgelaufen, in Liste und Seite); Papiere als
   `FahrzeugDokument` (verschlüsselt über `privatdateien`, sehen mit `touren.planen` oder
   `touren.fahrten`, ändern nur mit `touren.planen`). Unter „Einrichten“ nur die Liste; anlegen
   und ändern je Fahrzeug auf eigener Seite (`views_fahrten.fahrzeug`/`fahrzeug_neu`, `FahrzeugForm`).
