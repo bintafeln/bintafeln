@@ -46,6 +46,7 @@ def test_einstellungen_speichern(admin_client):
             "verstorben_loeschen_monate": "3",
             "herausnehmen_nach_tagen": "56",
             "herausnehmen_sperre_monate": "12",
+            "ausweis_notiz_tage": "14",
             "verlegung_vorlauf_wochen": "6",
             "historie_aufbewahren_jahre": "5",
             "verlaengern_regel": "alle",

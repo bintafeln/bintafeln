@@ -197,7 +197,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Einkommensart vieler Haushalte auf einmal ändern (nach Alter der Hauptperson, erst ansehen, dann
   ändern, in Portionen) in `apps/kunden/views_einkommensart.py` (ADR 0146).
   Notizen an die Ausgabestelle (`Notiz.an_stelle`, Startseite, Antwort beim Ausweisdruck) in
-  `apps/kunden/an_stelle.py`; feste Notiz-Vorlagen zu `FESTE_ANLIEGEN` (ADR 0070).
+  `apps/kunden/an_stelle.py`; die Antwort „Neuer Ausweis ist gedruckt“ bekommt `Notiz.loeschen_am`
+  (`KundenEinstellungen.ausweis_notiz_tage`, Vorgabe 14) und geht dann still in den Papierkorb; feste Notiz-Vorlagen zu `FESTE_ANLIEGEN` (ADR 0070).
   Sammeldruck „Alle gemeldeten Ausweise“ lässt sich als Ganzes zurücknehmen (`Ausweisdruck`,
   `an_stelle.druck_bestaetigen()`/`druck_zuruecknehmen()`, Kasten auf der Nachrichtenseite; ADR 0167).
   Nachricht einer Ausgabestelle an die Verwaltung ohne Kunden (`StellenNachricht`, Startseite,

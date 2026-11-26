@@ -102,6 +102,12 @@ class KundenEinstellungen(models.Model):
         help_text="„Kunden herausnehmen“ setzt den Ausweis auf gestern und sperrt ab heute für "
         "so viele Monate. Erst danach kann sich der Kunde wieder anmelden.",
     )  # fmt: skip
+    ausweis_notiz_tage = models.PositiveSmallIntegerField(
+        "Notiz „Neuer Ausweis ist gedruckt“ löschen nach (Tagen)", default=14,
+        validators=[MaxValueValidator(365)],
+        help_text="Die Notiz, die der Ausweisdruck von selbst an die Ausgabestelle schreibt, geht "
+        "nach so vielen Tagen in den Papierkorb. 0 = bleibt, bis sie jemand löscht.",
+    )  # fmt: skip
     verlegung_vorlauf_wochen = models.PositiveSmallIntegerField(
         "Platz bei geplantem Umzug reservieren (Wochen vorher)", default=6,
         validators=[MaxValueValidator(52)],
@@ -852,6 +858,9 @@ class Notiz(models.Model):
     krank_von = models.DateField("Abwesend von", null=True, blank=True)
     krank_bis = models.DateField("Abwesend bis", null=True, blank=True)
     krank_grund = models.CharField("Grund", max_length=20, blank=True, choices=ABWESENHEIT_GRUENDE)
+    # Vom Programm geschriebene Notiz mit Verfallstag (z. B. „Neuer Ausweis ist gedruckt“): geht an
+    # diesem Tag von selbst in den Papierkorb
+    loeschen_am = models.DateField("Löschen am", null=True, blank=True)
 
     class Meta:
         verbose_name = "Notiz"
@@ -1150,6 +1159,8 @@ def verwaiste_notizen_loeschen() -> int:
     weg += notizen_in_papierkorb(
         Notiz.objects.filter(krank_von__isnull=False).filter(models.Exists(abgeholt))
     )
+    # Notizen mit Verfallstag, z. B. „Neuer Ausweis ist gedruckt“
+    weg += notizen_in_papierkorb(Notiz.objects.filter(loeschen_am__lte=timezone.localdate()))
     return weg
 
 
