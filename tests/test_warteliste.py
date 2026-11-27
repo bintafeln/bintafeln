@@ -559,6 +559,40 @@ def test_ausnahme_nur_wenn_alle_erwachsenen_sie_erfuellen():
     assert hinw[0]["art"] == "ok" and "direkt verlängern" in hinw[0]["text"]
 
 
+def test_ausnahme_zaehlt_auch_die_personen_im_antrag():
+    """Im Kundenstamm steht nur die frühere Hauptperson (über 60); im Antrag meldet sie sich mit
+    einer jüngeren erwachsenen Person an. Dann gilt die Ausnahme nicht: Die Bedingung muss für
+    den Haushalt von heute stimmen, nicht nur für den früheren."""
+    from apps.antraege.models import AntragPerson
+
+    heute = timezone.localdate()
+    h = Haushalt.objects.create(kundennummer="903", ausweis_gueltig_bis=heute - dt.timedelta(60))
+    alt = dt.date(heute.year - 63, 1, 1)
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Beispiel",
+                          geburtsdatum=alt)  # fmt: skip
+    a = antrag(geburtsdatum=alt)
+    # allein: Ausnahme gilt (die Hauptperson im Antrag ist dieselbe wie im Kundenstamm)
+    hinw = ablauf.hinweise(h, h.hauptperson, heute, antrag=a)
+    assert hinw[0]["art"] == "ok" and "direkt verlängern" in hinw[0]["text"]
+    # ein Kind im Antrag ändert daran nichts
+    AntragPerson.objects.create(antrag=a, vorname="Kim", nachname="Beispiel",
+                                geburtsdatum=dt.date(heute.year - 9, 5, 5))  # fmt: skip
+    assert ablauf.hinweise(h, h.hauptperson, heute, antrag=a)[0]["art"] == "ok"
+    # eine jüngere erwachsene Person im Antrag: keine Ausnahme, die Sperrzeit gilt
+    AntragPerson.objects.create(antrag=a, vorname="Paul", nachname="Beispiel",
+                                geburtsdatum=dt.date(heute.year - 51, 2, 17))  # fmt: skip
+    hinw = ablauf.hinweise(h, h.hauptperson, heute, antrag=a)
+    assert hinw[0]["art"] == "sperr" and "Sperrzeit bis" in hinw[0]["text"]
+    assert any("Paul Beispiel (51 Jahre, im Antrag)" in x["text"] for x in hinw)
+    assert ablauf.folge(hinw).startswith("Wartezeit bis")
+    # so entscheidet auch „Ja, derselbe Haushalt“: Wartezeit statt direkt verlängern
+    meldung = ablauf.entscheiden(a, "903", True, "chefin", heute)
+    assert "Wartezeit bis" in meldung
+    assert "direkt verlängern" not in a.anmerkungen.latest("pk").text
+    # ohne Antrag (z. B. reine Auskunft zum Kundenstamm) bleibt es bei dessen Personen
+    assert ablauf.hinweise(h, h.hauptperson, heute)[0]["art"] == "ok"
+
+
 def test_gesperrte_werden_nicht_eingeladen():
     """Ein gesperrter Haushalt gilt im Abgleich nie als einladbar: „derselbe Haushalt“ setzt die
     Wartezeit bis nach dem Ablauf der Sperre – auch wenn sonst eine Ausnahme gälte."""

@@ -462,13 +462,17 @@ def _alter(geburt: dt.date | None, heute: dt.date) -> int | None:
     return heute.year - geburt.year - ((heute.month, heute.day) < (geburt.month, geburt.day))
 
 
-def _ausnahme(haushalt, heute, e) -> tuple[list[str], list[str]]:
+def _ausnahme(haushalt, heute, e, antrag=None) -> tuple[list[str], list[str]]:
     """Ausnahme von der Sperrzeit: (Gründe, wer sie nicht erfüllt).
 
     Die Ausnahme gilt nur, wenn **jede erwachsene Person** des Haushalts eine der Bedingungen
     erfüllt (Alter ab ``ausnahme_ab_alter`` oder das Ja/Nein-Feld, z. B. „Schwerbehindert“; am
     Haushalt gesetzt gilt das Feld für alle). Ist eine Person jünger und hat das Merkmal nicht,
-    greift die Ausnahme für den ganzen Haushalt nicht. Kinder zählen nicht mit."""
+    greift die Ausnahme für den ganzen Haushalt nicht. Kinder zählen nicht mit.
+
+    Mit ``antrag`` zählen auch dessen Personen: Wer sich neu anmeldet, kommt mit dem Haushalt
+    von heute – der Kundenstamm kennt oft nur den früheren (z. B. allein die Hauptperson). Wer
+    dort mit demselben Geburtsdatum steht, ist schon beurteilt; für die übrigen zählt das Alter."""
     feld = e.ausnahme_feld if e.ausnahme_feld and e.ausnahme_feld.aktiv else None
     if not e.ausnahme_ab_alter and feld is None:
         return [], []
@@ -486,6 +490,18 @@ def _ausnahme(haushalt, heute, e) -> tuple[list[str], list[str]]:
             gruende.append(f"{alter} Jahre")
         else:
             fehlt.append(f"{name} ({alter} Jahre)" if alter is not None else name)
+    if antrag is not None:
+        bekannt = {p.geburtsdatum for p in haushalt.personen.all() if p.geburtsdatum}
+        for p in [antrag, *antrag.personen.all()]:
+            alter = _alter(p.geburtsdatum, heute)
+            if p.geburtsdatum in bekannt or (alter is not None and alter <= kind_bis):
+                continue
+            if e.ausnahme_ab_alter and alter is not None and alter >= e.ausnahme_ab_alter:
+                gruende.append(f"{alter} Jahre")
+            else:
+                name = f"{p.vorname} {p.nachname}".strip()
+                fehlt.append(f"{name} ({alter} Jahre, im Antrag)" if alter is not None
+                             else f"{name} (im Antrag)")  # fmt: skip
     if fehlt or not gruende:
         return [], fehlt
     return list(dict.fromkeys(gruende)), []
@@ -502,11 +518,12 @@ def _sperre_bis(haushalt, heute) -> tuple[bool, dt.date | None]:
     return True, max(s.bis for s in aktive)
 
 
-def hinweise(haushalt, person, heute, e=None) -> list[dict]:
-    """Was der Treffer im Kundenstamm für den Antrag bedeutet: {text, art} (ok/info/sperr)."""
+def hinweise(haushalt, person, heute, e=None, antrag=None) -> list[dict]:
+    """Was der Treffer im Kundenstamm für den Antrag bedeutet: {text, art} (ok/info/sperr).
+    ``antrag``: Seine Personen zählen bei der Ausnahme von der Sperrzeit mit."""
     e = e or WartelisteEinstellungen.laden()
     erg = []
-    frei, fehlt = _ausnahme(haushalt, heute, e)
+    frei, fehlt = _ausnahme(haushalt, heute, e, antrag)
     gesperrt, sperre_ende = _sperre_bis(haushalt, heute)
     if gesperrt:
         # Gesperrte werden nicht eingeladen: Wartezeit bis zum Ablauf der Sperre (unbefristet:
@@ -557,7 +574,7 @@ def _offene_treffer(a, heute, e) -> list[dict]:
     treffer = [t for t in aufnahme.treffer(a)
                if t["haushalt"].kundennummer not in entschieden]  # fmt: skip
     for t in treffer:
-        t["hinweise"] = hinweise(t["haushalt"], t["person"], heute, e)
+        t["hinweise"] = hinweise(t["haushalt"], t["person"], heute, e, a)
         t["folge"] = folge(t["hinweise"])
     return treffer
 
@@ -644,7 +661,7 @@ def entscheiden(a, kundennummer: str, gleich: bool, von: str, heute=None) -> str
     h = Haushalt.objects.filter(kundennummer=kundennummer).first()
     if h is None:
         raise ValueError(f"Kunde {kundennummer} gibt es nicht mehr.")
-    hinw = hinweise(h, h.hauptperson, heute)
+    hinw = hinweise(h, h.hauptperson, heute, antrag=a)
     texte = "; ".join(x["text"] for x in hinw)
     anmerken(a, f"Abgleich: derselbe Haushalt wie Kunde {kundennummer} ({texte}).", von)
     sperre = _wartezeit_bis(hinw)
