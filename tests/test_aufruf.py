@@ -1246,7 +1246,8 @@ def test_homepage_zeigt_nur_die_aufgerufenen_nummern(modul_an, mitte, tag_daten)
     assert "Zurzeit keine Ausgabe" in c.get(url).content.decode()
     cache.clear()
     seite = c.get(url).content.decode()
-    assert "Bitte eintreten" in seite and all(n in seite for n in d["current_numbers"])
+    assert "Jetzt sind dran" in seite and all(n in seite for n in d["current_numbers"])
+    assert "Nächste Ausgabe" not in seite
     assert not any(n in seite for n in d["next_numbers"])  # nicht, wer danach kommt
     assert "Erika" not in seite and "csrf" not in seite.lower() and "<form" not in seite
     teil = c.get(url, {"teil": "1"}).content.decode()  # nur der Kasten zum Nachladen
@@ -1261,6 +1262,51 @@ def test_homepage_zeigt_nur_die_aufgerufenen_nummern(modul_an, mitte, tag_daten)
     cache.clear()
     assert "Ausgabe für heute beendet" in c.get(url).content.decode()
     assert c.post(url).status_code == 405  # nur lesen
+
+
+def test_homepage_naechste_ausgabe(mitte):
+    from apps.aufruf import homepage
+    from apps.ausgabe.models import Schliesszeit, Sonderausgabe
+
+    montag = dt.date(2026, 11, 30)  # ein Montag
+    zeit = lambda tag, h, m=0: timezone.make_aware(dt.datetime.combine(tag, dt.time(h, m)))  # noqa: E731
+    assert homepage.naechste_ausgabe(mitte, zeit(montag, 9)) is None  # keine Gruppe
+    gruppe(mitte, "Früh", (12, 0), tage="Mo, Mi")
+    gruppe(mitte, "Spät", (13, 30), tage="Mo, Fr")
+    # heute vor dem Beginn: die früheste Gruppe des Tages
+    n = homepage.naechste_ausgabe(mitte, zeit(montag, 9))
+    assert n == {"tag": montag, "beginn": dt.time(12, 0), "ziel": zeit(montag, 12)}
+    # kurz nach dem Beginn noch heute, eine Stunde später der nächste Tag
+    assert homepage.naechste_ausgabe(mitte, zeit(montag, 12, 30))["tag"] == montag
+    mittwoch = montag + dt.timedelta(days=2)
+    assert homepage.naechste_ausgabe(mitte, zeit(montag, 13, 1))["tag"] == mittwoch
+    # Ausgabe heute beendet: heute zählt nicht mehr
+    assert homepage.naechste_ausgabe(mitte, zeit(montag, 9), heute_mit=False)["tag"] == mittwoch
+    # Schließzeit wird übersprungen, ebenso ein Tag, den eine Sonderausgabe leer lässt
+    Schliesszeit.objects.create(ausgabestelle=mitte, von=mittwoch, bis=mittwoch)
+    freitag = montag + dt.timedelta(days=4)
+    n = homepage.naechste_ausgabe(mitte, zeit(montag, 14))
+    assert n["tag"] == freitag and n["beginn"] == dt.time(13, 30)
+    Sonderausgabe.objects.create(ausgabestelle=mitte, datum=freitag)
+    assert homepage.naechste_ausgabe(mitte, zeit(montag, 14))["tag"] == montag + dt.timedelta(7)
+    # Countdown in Tagen, Stunden, Minuten – ohne Sekunden
+    ziel = zeit(mittwoch, 12)
+    assert homepage.countdown(ziel, zeit(montag, 9, 45)) == "noch 2 Tage, 2 Std., 15 Min."
+    assert homepage.countdown(ziel, zeit(mittwoch, 11, 0)) == "noch 1 Std., 0 Min."
+    assert homepage.countdown(ziel, zeit(mittwoch, 11, 58) + dt.timedelta(seconds=30)) == (
+        "noch 1 Min."
+    )
+    assert homepage.countdown(ziel, zeit(mittwoch, 12)) == "gleich geht es los"
+    assert homepage.countdown(None, zeit(mittwoch, 12)) == ""
+
+
+def test_homepage_zeigt_naechste_ausgabe_mit_countdown(modul_an, mitte):
+    morgen = heute() + dt.timedelta(days=1)
+    gruppe(mitte, "Morgen", (11, 15), tage=WOCHENTAGE[morgen.weekday()])
+    e = _homepage(mitte)
+    seite = Client().get(reverse("aufruf:homepage", args=[e.homepage_schluessel])).content.decode()
+    assert "Zurzeit keine Ausgabe" in seite and "Nächste Ausgabe:" in seite and "11:15 Uhr" in seite
+    assert 'class="countdown" data-ziel="' in seite and "noch " in seite and "Stand " in seite
 
 
 def test_homepage_nur_mit_eigenem_schluessel_und_nur_eingeschaltet(modul_an, mitte, tag_daten):

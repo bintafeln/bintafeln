@@ -566,6 +566,39 @@ def test_homepage_anzeige_laedt_die_nummern_nach(seite, admin):
     )
 
 
+def test_homepage_anzeige_zaehlt_bis_zur_naechsten_ausgabe(seite, admin):
+    from django.core.cache import cache
+
+    from apps.aufruf.models import AufrufEinstellungen
+    from apps.ausgabe.ampel import WOCHENTAGE
+    from apps.core.models import TafelEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.module = ["aufruf"]
+    t.save()
+    stelle = Ausgabestelle.objects.create(name="Mitte")
+    morgen = timezone.localdate() + dt.timedelta(days=1)
+    Kundengruppe.objects.create(
+        kuerzel="M", name="Morgen", ausgabestelle=stelle,
+        wochentage=WOCHENTAGE[morgen.weekday()], uhrzeit=dt.time(11, 15),
+    )  # fmt: skip
+    e = AufrufEinstellungen.laden(stelle)
+    e.homepage = True
+    e.save()
+    cache.clear()
+    seite.goto(reverse("aufruf:homepage", args=[e.homepage_schluessel]))
+    countdown = seite.locator("#stand .countdown")
+    muster = re.compile(r"^noch (\d+ Tage?, )?(\d+ Std\., )?\d+ Min\.$")
+    expect(countdown).to_have_text(muster)
+    # Nach dem Nachladen des Kastens zählt der Browser weiter
+    seite.wait_for_function(
+        "() => performance.getEntriesByType('resource').some(r => r.name.includes('teil=1'))",
+        timeout=15000,
+    )
+    expect(countdown).to_have_text(muster)
+    expect(seite.locator("#stand")).to_contain_text("Nächste Ausgabe:")
+
+
 def test_handy_steuerung_zeigt_kiosk_meldungen(angemeldet, admin, benutzer_mit_rolle):
     from apps.aufruf import ablauf
     from apps.aufruf.models import AufrufEinstellungen
