@@ -1,3 +1,6 @@
+import re
+from urllib.parse import urlsplit
+
 from django import forms
 
 from apps.aufruf.models import TAGE, AufrufEinstellungen, AufrufInfo, HandyEinstellungen
@@ -6,6 +9,8 @@ from apps.kunden.models import Ausgabestelle, Zusatzfeld
 
 INFO_MAX_BYTES = 10 * 1024 * 1024
 BILDTYPEN = (".jpg", ".jpeg", ".png", ".webp")
+# Rechnername mit optionalem Port – nichts, was in einer Kopfzeile etwas anderes bedeuten könnte
+HOSTNAME = re.compile(r"[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?(:\d{1,5})?")
 
 
 class EinstellungenForm(forms.ModelForm):
@@ -13,7 +18,8 @@ class EinstellungenForm(forms.ModelForm):
         model = AufrufEinstellungen
         fields = ["aktiv", "anzahl", "vorrang_feld", "vorrang_symbol", "eingelassene_ausblenden",
                   "spaetzuender_versatz", "zu_spaet_minuten", "beenden_nach_minuten",
-                  "info_rotation", "wochentag_probe", "reihenfolge_mail"]  # fmt: skip
+                  "info_rotation", "wochentag_probe", "reihenfolge_mail", "homepage",
+                  "homepage_adresse"]  # fmt: skip
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -22,6 +28,22 @@ class EinstellungenForm(forms.ModelForm):
         feld.empty_label = "– kein Vorrang –"
         self.fields["wochentag_probe"].choices = [("", "– aus (heutiger Wochentag) –"),
                                                   *TAGE]  # fmt: skip
+
+    def clean_homepage_adresse(self):
+        """Je Adresse nur der Anfang (https://name): Er steht in der Erlaubnis zum Einbetten."""
+        ergebnis = []
+        for wert in re.split(r"[\s,;]+", self.cleaned_data.get("homepage_adresse") or ""):
+            if not wert:
+                continue
+            teile = urlsplit(wert if "://" in wert else f"https://{wert}")
+            if teile.scheme not in ("http", "https") or not HOSTNAME.fullmatch(teile.netloc):
+                raise forms.ValidationError(
+                    "Bitte die Adresse der Homepage angeben, z. B. https://www.beispiel-tafel.de"
+                )
+            adresse = f"{teile.scheme}://{teile.netloc.lower()}"
+            if adresse not in ergebnis:
+                ergebnis.append(adresse)
+        return " ".join(ergebnis)
 
 
 class InfoForm(forms.ModelForm):

@@ -118,6 +118,21 @@ class AufrufEinstellungen(models.Model):
         "Kundennummern, mit Markierung der zurückgestellten) als CSV an diese Adresse geschickt. "
         "Leer = aus.",
     )  # fmt: skip
+    homepage = models.BooleanField(
+        "Aufgerufene Nummern auf der Homepage zeigen", default=False,
+        help_text="Eine kleine öffentliche Seite zeigt während der Ausgabe nur die gerade "
+        "aufgerufenen Kundennummern, sonst „Zurzeit keine Ausgabe“. Sie hat einen eigenen Link, "
+        "der sonst nichts kann, und lässt sich in die eigene Homepage einbetten (ADR 0181).",
+    )  # fmt: skip
+    homepage_schluessel = models.CharField(
+        "Schlüssel der Homepage-Anzeige", max_length=64, blank=True, editable=False
+    )
+    homepage_adresse = models.CharField(
+        "Adressen der Homepage", max_length=500, blank=True,
+        help_text="Z. B. https://www.beispiel-tafel.de – nur Seiten unter dieser Adresse dürfen "
+        "die Anzeige einbetten. Mehrere Adressen mit Leerzeichen trennen (etwa zusätzlich eine "
+        "Testversion der Homepage). Leer: Die Anzeige lässt sich nur direkt öffnen.",
+    )  # fmt: skip
     layout = models.JSONField("Monitor-Aufteilung", default=dict, blank=True)
 
     class Meta:
@@ -126,6 +141,11 @@ class AufrufEinstellungen(models.Model):
 
     def __str__(self):
         return f"Aufruf {self.ausgabestelle}"
+
+    def save(self, *args, **kwargs):
+        if self.homepage and not self.homepage_schluessel:
+            self.homepage_schluessel = neuer_schluessel()
+        super().save(*args, **kwargs)
 
     @classmethod
     def laden(cls, stelle: Ausgabestelle) -> "AufrufEinstellungen":

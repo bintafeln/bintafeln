@@ -539,6 +539,33 @@ def test_aufruf_unter_dem_menue(angemeldet, admin, benutzer_mit_rolle):
     expect(leiste.locator(".aufruf-leiste-nummern")).not_to_contain_text(erste, timeout=3000)
 
 
+def test_homepage_anzeige_laedt_die_nummern_nach(seite, admin):
+    """Die öffentliche Anzeige für die Homepage (ADR 0181) holt sich den neuen Stand selbst."""
+    from django.core.cache import cache
+
+    from apps.aufruf import ablauf, homepage
+    from apps.aufruf.models import AufrufEinstellungen
+    from apps.core.models import TafelEinstellungen
+
+    stelle = _haushalte(8)
+    t = TafelEinstellungen.laden()
+    t.module = ["aufruf"]
+    t.save()
+    e = AufrufEinstellungen.laden(stelle)
+    e.homepage = True
+    e.save()
+    cache.clear()
+    seite.goto(f"/aufruf/homepage/{e.homepage_schluessel}/")
+    kasten = seite.locator("#stand")
+    expect(kasten).to_contain_text("Zurzeit keine Ausgabe")
+    tag = ablauf.starten(stelle, timezone.localdate())
+    erste = ablauf.stand_fuer_anzeige(tag, e, timezone.localdate())["current_numbers"][0]
+    cache.clear()
+    expect(kasten.locator(".nummern span").first).to_have_text(
+        erste, timeout=(homepage.NEU_LADEN + 5) * 1000
+    )
+
+
 def test_handy_steuerung_zeigt_kiosk_meldungen(angemeldet, admin, benutzer_mit_rolle):
     from apps.aufruf import ablauf
     from apps.aufruf.models import AufrufEinstellungen

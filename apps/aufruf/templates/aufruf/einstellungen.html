@@ -25,11 +25,13 @@
             <li>Nummern-Anzeige: <a href="{% url 'aufruf:anzeige' e.schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:anzeige' e.schluessel %}</a></li>
             <li>Kiosk (Karte scannen): <a href="{% url 'aufruf:kiosk' e.schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:kiosk' e.schluessel %}</a></li>
             <li>Abfrage: <a href="{% url 'aufruf:abfrage' e.schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:abfrage' e.schluessel %}</a></li>
+            {% if e.homepage %}<li>Für die Homepage (nur die aufgerufenen Nummern): <a href="{% url 'aufruf:homepage' e.homepage_schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:homepage' e.homepage_schluessel %}</a></li>{% endif %}
           </ul>
           {% endwith %}
         </td>
         <td>
 <a class="leise" href="{% url 'aufruf:schluessel_neu' s.pk %}">Links der Geräte ungültig machen …</a>
+{% if e.homepage %}<form method="post" action="{% url 'aufruf:homepage_schluessel_neu' s.pk %}" class="inline" onsubmit="return confirm('Neuen Link für die Homepage erzeugen? Der alte zeigt danach nichts mehr.')">{% csrf_token %}<button type="submit" class="link-knopf">Neuer Link für die Homepage</button></form>{% endif %}
         </td>
       </tr>
     {% empty %}

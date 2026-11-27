@@ -1,0 +1,11 @@
+{% if stand.art == "nummern" %}
+  <p class="titel">Bitte eintreten</p>
+  <p class="nummern">{% for n in stand.nummern %}<span>{{ n }}</span>{% endfor %}</p>
+{% elif stand.art == "gleich" %}
+  <p class="titel">Die Ausgabe läuft</p>
+  <p class="ruhe">Gleich werden die nächsten Nummern aufgerufen.</p>
+{% elif stand.art == "beendet" %}
+  <p class="titel">Ausgabe für heute beendet</p>
+{% else %}
+  <p class="titel">Zurzeit keine Ausgabe</p>
+{% endif %}
