@@ -178,8 +178,10 @@ def _sig_abgleich():
     a = _offene().aggregate(n=Count("pk"), m=Max("pk"))
     letzte = Wartestand.objects.aggregate(t=Max("geaendert_am"))["t"]
     h = Haushalt.objects.aggregate(n=Count("pk"), t=Max("geaendert_am"))
+    # „abg2“: Seit die Personen im Antrag bei der Ausnahme mitzählen, gelten ältere gespeicherte
+    # Ergebnisse nicht mehr – die neue Kennung lässt sie einmal neu rechnen.
     return (
-        "abg", a["n"], a["m"] or 0, _ts(letzte),
+        "abg2", a["n"], a["m"] or 0, _ts(letzte),
         AbgleichEntscheidung.objects.count(), h["n"], _ts(h["t"]),
     )  # fmt: skip
 
