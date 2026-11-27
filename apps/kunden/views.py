@@ -17,7 +17,7 @@ from django.views.decorators.http import require_POST
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.ausgabe.konto import mit_bar_gezahlt
 from apps.ausgabe.models import AusgabeEinstellungen
-from apps.core import listen, listenauswahl, listenexport, papierkorb, sicherung
+from apps.core import karten, listen, listenauswahl, listenexport, papierkorb, sicherung
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import (
@@ -560,6 +560,7 @@ def haushalt(request, kundennummer):
         besondere_kategorie=zeigt_art9,
     )
     erwachsene, kinder = h.groesse(einstellungen.kind_bis_alter, heute)
+    anschrift = karten.anschrift(h.strasse, h.plz, h.ort)
     return render(
         request,
         "kunden/haushalt.html",
@@ -574,6 +575,9 @@ def haushalt(request, kundennummer):
             "erwachsene": erwachsene,
             "kinder": kinder,
             "sperren": sperren,
+            # Anschrift in Google Maps: nur für die, die sie sehen dürfen
+            "karte": karten.zeigen(anschrift) if "kunden.kontakt" in darf else "",
+            "karte_route": karten.route(anschrift) if "kunden.kontakt" in darf else "",
             "herausnehmen": "kunden.herausnehmen" in darf and herausnehmen.faellig(h, heute),
             "herausnahme": herausnehmen.laufende(h, heute)
             if "kunden.herausnehmen" in darf

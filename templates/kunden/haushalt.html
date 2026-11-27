@@ -52,7 +52,8 @@
       <dt>Einkommensart</dt><dd>{{ h.einkommensart|default:"–" }}</dd>
     {% endif %}
     {% if "kunden.kontakt" in rechte %}
-      <dt>Anschrift</dt><dd>{{ h.strasse|default:"–" }}{% if h.plz or h.ort %}, {{ h.plz }} {{ h.ort }}{% endif %}</dd>
+      <dt>Anschrift</dt><dd>{{ h.strasse|default:"–" }}{% if h.plz or h.ort %}, {{ h.plz }} {{ h.ort }}{% endif %}
+        {% if karte %}<span class="anschrift-karte"><a href="{{ karte }}" target="_blank" rel="noopener noreferrer" title="Öffnet die Anschrift in Google Maps">📍 Karte</a>{% if karte_route %} · <a href="{{ karte_route }}" target="_blank" rel="noopener noreferrer" title="Route und Entfernung von der Anschrift der Tafel in Google Maps">Entfernung von der Tafel</a>{% endif %}</span>{% endif %}</dd>
       {% if einstellungen.telefon_erfassen %}<dt>Telefon</dt><dd>{{ h.telefon|default:"–" }}</dd>{% endif %}
       {% if einstellungen.email_erfassen %}<dt>E-Mail</dt><dd>{{ h.email|default:"–" }}</dd>{% endif %}
     {% endif %}

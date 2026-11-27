@@ -60,7 +60,10 @@
 <p>Oben die wichtigsten Knöpfe (z. B. „Zum Einlass“{% if "kunden.ausweis" in rechte %}, „Ausweis drucken“{% endif %}{% if "kunden.bearbeiten" in rechte %}, „Bearbeiten“{% endif %}),
   rote Hinweise bei Sperre oder abgelaufenem Ausweis. Darunter, je nach Ihren Rechten:</p>
 <ul>
-  <li>Angaben: Ausgabestelle, Kundengruppe, Ausweis gültig bis, Haushaltsgröße{% if "kunden.stammdaten" in rechte %}, Status, Kunde seit, Einkommensart{% endif %}{% if "kunden.kontakt" in rechte %}, Anschrift und Kontakt{% endif %}</li>
+  <li>Angaben: Ausgabestelle, Kundengruppe, Ausweis gültig bis, Haushaltsgröße{% if "kunden.stammdaten" in rechte %}, Status, Kunde seit, Einkommensart{% endif %}{% if "kunden.kontakt" in rechte %}, Anschrift und Kontakt. Neben der Anschrift öffnet
+    <strong>„📍 Karte“</strong> sie in Google Maps, <strong>„Entfernung von der Tafel“</strong> die Route von der
+    Anschrift Ihrer Tafel (aus „Einstellungen → Tafel“) mit Entfernung und Fahrzeit. An Google geht erst etwas, wenn
+    Sie den Link antippen{% endif %}</li>
   <li>Personen und Abholberechtigte</li>
   <li>Sperren{% if "kunden.sperren_alle" in rechte %} (auch vergangene) und Ausnahmen{% else %} (nur aktive){% endif %}</li>
   <li>Letzte Abholungen und Notizen</li>
