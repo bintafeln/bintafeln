@@ -1201,3 +1201,102 @@ def test_reihenfolge_mail_ueber_api_beim_abschluss(modul_an, admin_client, mitte
     assert django_mail.outbox[0].attachments[0][0].endswith(".csv")
     post("api_weiter")  # weiter nach Abschluss: kein zweiter Versand
     assert len(django_mail.outbox) == 1
+
+
+# ── Aufgerufene Nummern auf der Homepage (ADR 0181) ──────────────────────────
+
+
+def _homepage(mitte, adresse="https://www.beispiel-tafel.example"):
+    from django.core.cache import cache
+
+    cache.clear()
+    e = AufrufEinstellungen.laden(mitte)
+    e.homepage, e.homepage_adresse = True, adresse
+    e.save()
+    return e
+
+
+def test_homepage_zeigt_nur_die_aufgerufenen_nummern(modul_an, mitte, tag_daten):
+    from django.core.cache import cache
+
+    e = _homepage(mitte)
+    assert e.homepage_schluessel and e.homepage_schluessel != e.schluessel
+    c = Client()
+    url = reverse("aufruf:homepage", args=[e.homepage_schluessel])
+    antwort = c.get(url)
+    assert "Zurzeit keine Ausgabe" in antwort.content.decode()
+    # Einbetten nur von der eingetragenen Homepage, sonst bleibt alles gesperrt
+    assert antwort["Content-Security-Policy"] == (
+        "frame-ancestors https://www.beispiel-tafel.example"
+    )
+    assert "X-Frame-Options" not in antwort
+    assert c.get(reverse("aufruf:monitor", args=[e.schluessel]))["X-Frame-Options"] == "DENY"
+    tag = ablauf.starten(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    # Der Stand gilt ein paar Sekunden für alle Besucher
+    assert "Zurzeit keine Ausgabe" in c.get(url).content.decode()
+    cache.clear()
+    seite = c.get(url).content.decode()
+    assert "Bitte eintreten" in seite and all(n in seite for n in d["current_numbers"])
+    assert not any(n in seite for n in d["next_numbers"])  # nicht, wer danach kommt
+    assert "Erika" not in seite and "csrf" not in seite.lower() and "<form" not in seite
+    teil = c.get(url, {"teil": "1"}).content.decode()  # nur der Kasten zum Nachladen
+    assert "<html" not in teil and d["current_numbers"][0] in teil
+    # Alle Aufgerufenen schon am Einlass: keine Nummer, aber die Ausgabe läuft
+    for n in d["current_numbers"]:
+        Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=n), datum=heute())
+    cache.clear()
+    assert "Gleich werden die nächsten Nummern aufgerufen" in c.get(url).content.decode()
+    while not ablauf.stand_fuer_anzeige(ablauf.weiter(mitte, heute()), e, heute())["finished"]:
+        pass
+    cache.clear()
+    assert "Ausgabe für heute beendet" in c.get(url).content.decode()
+    assert c.post(url).status_code == 405  # nur lesen
+
+
+def test_homepage_nur_mit_eigenem_schluessel_und_nur_eingeschaltet(modul_an, mitte, tag_daten):
+    e = _homepage(mitte, adresse="")
+    c = Client()
+    url = reverse("aufruf:homepage", args=[e.homepage_schluessel])
+    antwort = c.get(url)
+    assert antwort.status_code == 200
+    assert antwort["Content-Security-Policy"] == "frame-ancestors 'none'"  # ohne Adresse nie
+    # Der Schlüssel der Geräte öffnet die Homepage-Seite nicht – und umgekehrt
+    assert c.get(reverse("aufruf:homepage", args=[e.schluessel])).status_code == 404
+    assert c.get(reverse("aufruf:monitor", args=[e.homepage_schluessel])).status_code == 404
+    assert c.get(reverse("aufruf:anzeige_stand", args=[e.homepage_schluessel])).status_code == 404
+    e.homepage = False
+    e.save()
+    assert c.get(url).status_code == 404
+    e.homepage, e.aktiv = True, False  # kein Aufruf an der Ausgabestelle
+    e.save()
+    assert c.get(url).status_code == 404
+
+
+def test_homepage_einstellen_und_neuer_link(modul_an, admin_client, mitte):
+    url = reverse("aufruf:einstellungen_stelle", args=[mitte.pk])
+    felder = {"aktiv": "on", "anzahl": 3, "spaetzuender_versatz": 30, "zu_spaet_minuten": 15,
+              "beenden_nach_minuten": 90, "homepage": "on"}  # fmt: skip
+    antwort = admin_client.post(url, {**felder, "homepage_adresse": "javascript:alert(1)"})
+    assert "Bitte die Adresse der Homepage angeben" in antwort.content.decode()
+    antwort = admin_client.post(url, {**felder, "homepage_adresse": "https://x.example 'self' *"})
+    assert "Bitte die Adresse der Homepage angeben" in antwort.content.decode()
+    # Nur der Anfang der Adresse bleibt stehen, auch wenn jemand eine ganze Seite einträgt
+    # und mehrere sind möglich, z. B. zusätzlich eine Testversion der Homepage
+    admin_client.post(url, {
+        **felder,
+        "homepage_adresse": "WWW.Beispiel-Tafel.example/nummern.html, http://test.example:8080",
+    })  # fmt: skip
+    e = AufrufEinstellungen.laden(mitte)
+    assert e.homepage
+    assert e.homepage_adresse == "https://www.beispiel-tafel.example http://test.example:8080"
+    kopf = Client().get(reverse("aufruf:homepage", args=[e.homepage_schluessel]))
+    assert kopf["Content-Security-Policy"] == f"frame-ancestors {e.homepage_adresse}"
+    alt = e.homepage_schluessel
+    seite = admin_client.get(reverse("aufruf:einstellungen")).content.decode()
+    assert reverse("aufruf:homepage", args=[alt]) in seite
+    admin_client.post(reverse("aufruf:homepage_schluessel_neu", args=[mitte.pk]))
+    e.refresh_from_db()
+    assert e.homepage_schluessel != alt
+    assert Client().get(reverse("aufruf:homepage", args=[alt])).status_code == 404
+    assert Client().get(reverse("aufruf:homepage", args=[e.homepage_schluessel])).status_code == 200

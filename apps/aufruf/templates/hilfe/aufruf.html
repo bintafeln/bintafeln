@@ -124,6 +124,25 @@
     die Kundennummern aufgerufen wurden. Zurückgestellte Kunden sind mit „ja“, dem Versatz und der Uhrzeit
     markiert. Die Datei enthält nur Kundennummern, keine Namen. Leer = aus.</li>
 </ul>
+<h3>Aufgerufene Nummern auf der eigenen Homepage</h3>
+<p>Kunden können auf der Homepage der Tafel sehen, welche Nummern gerade aufgerufen werden. Unter „Einstellungen →
+  Aufruf, Monitor und Kiosk“ bei der Ausgabestelle auf „ändern“ und <strong>„Aufgerufene Nummern auf der Homepage
+  zeigen“</strong> anhaken. Danach steht bei den Links der Ausgabestelle ein weiterer: „Für die Homepage“.</p>
+<ul>
+  <li>Die Seite hinter diesem Link zeigt <strong>nur</strong> die gerade aufgerufenen Kundennummern. Läuft keine
+    Ausgabe, steht dort „Zurzeit keine Ausgabe“, danach „Ausgabe für heute beendet“. Keine Namen, nicht wer danach
+    kommt, keine Knöpfe. Sie aktualisiert sich von selbst.</li>
+  <li>Der Link hat einen <strong>eigenen Schlüssel</strong>. Die Links für Monitor, Anzeige und Kiosk gehören nie auf
+    eine öffentliche Seite – mit ihnen käme man auch an Kiosk und Abfrage.</li>
+  <li><strong>Einbetten:</strong> Tragen Sie bei „Adresse der Homepage“ die Adresse Ihrer Homepage ein, z. B.
+    <code>https://www.beispiel-tafel.de</code>. Mehrere Adressen trennen Sie mit Leerzeichen, etwa wenn es zusätzlich eine Testversion der Homepage gibt.
+    Nur Seiten unter diesen Adressen dürfen die Anzeige einbetten, und zwar
+    so: <code>&lt;iframe src="(der Link für die Homepage)" title="Aufgerufene Kundennummern"&gt;&lt;/iframe&gt;</code>.
+    Ohne Eintrag lässt sich die Seite nur direkt öffnen.</li>
+  <li><strong>„Neuer Link für die Homepage“</strong> macht den alten Link ungültig, falls er einmal an die falsche
+    Stelle geraten ist. Haken wieder entfernen schaltet die Seite ganz ab.</li>
+</ul>
+{% hilfe_bild "aufruf-homepage" "So sieht die Anzeige für die Homepage aus: ① die gerade aufgerufenen Kundennummern – sonst nichts." %}
 <h3>Wartezeit aufs Handy</h3>
 <p>Kunden sehen auf ihrem eigenen Handy, wie viele noch vor ihnen sind und ungefähr wie lange es dauert. Ein- und ausschalten
   zentral unter „Einstellungen → Aufruf, Monitor und Kiosk“ im Abschnitt „Wartezeit aufs Handy“: <em>aus</em>, <em>an

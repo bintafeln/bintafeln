@@ -55,6 +55,7 @@ OEFFENTLICH = {
     "aufruf:anzeige_abfrage",
     "aufruf:anzeige_layout",
     "aufruf:anzeige_datei",
+    "aufruf:homepage",  # nur die aufgerufenen Nummern, eigener Schlüssel (ADR 0181)
     # Aushang-Monitor ohne Anmeldung, nur mit dem Schlüssel im Link (ADR 0080)
     "aushang:anzeige",
     "aushang:platz",  # Ändern nur mit persönlicher PIN

@@ -442,7 +442,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Texte in `apps/aufruf/warten_texte/`, immer Deutsch plus zweite Sprache über `views_warten._zweite()`
   und die Vorlage `aufruf/_zwei.html`, ADR 0090; Push-Nachrichten an Kunden über
   `apps/aufruf/push.py` (wann wer was bekommt; Technik in `apps/core/push.py`), ausgelöst nach
-  `ablauf.weiter()`/`starten()`, ADR 0134). `warteliste` (ADR 0051, Regeln in `apps/warteliste/ablauf.py`,
+  `ablauf.weiter()`/`starten()`, ADR 0134; aufgerufene Nummern für die Homepage der Tafel über
+  `apps/aufruf/homepage.py` – eigener Schlüssel, liest nur, einbettbar nur von
+  `AufrufEinstellungen.homepage_adresse`, ADR 0181; den Geräte-Schlüssel nie öffentlich verwenden). `warteliste` (ADR 0051, Regeln in `apps/warteliste/ablauf.py`,
   `Wartestand` je Antrag; Mails deutsch + Sprache aus `sprachen.mail_sprachen()`, Texte je
   Sprache in `apps/warteliste/uebersetzungen/` bzw. `WartelisteText`). `wetter` (ADR 0053, Abruf bei Open-Meteo nur im Server in
   `apps/wetter/wetter.py`, in Tests `wetter._json` ersetzen). `wochenuebersicht` (ADR 0054,

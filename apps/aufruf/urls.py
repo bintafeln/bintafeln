@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.aufruf import views, views_anzeige, views_einstellungen
+from apps.aufruf import views, views_anzeige, views_einstellungen, views_homepage
 
 app_name = "aufruf"
 
@@ -29,6 +29,10 @@ urlpatterns = [
          name="anzeige_abfrage"),
     path("anzeige/<str:schluessel>/layout/", views_anzeige.layout, name="anzeige_layout"),
     path("anzeige/<str:schluessel>/info/<int:pk>/", views_anzeige.datei, name="anzeige_datei"),
+    # Aufgerufene Nummern für die Homepage der Tafel: eigener Schlüssel, nur lesen (ADR 0181)
+    path("homepage/<str:schluessel>/", views_homepage.anzeige, name="homepage"),
+    path("einstellungen/<int:pk>/homepage-schluessel/", views_homepage.schluessel_neu,
+         name="homepage_schluessel_neu"),
     # Steuerung (angemeldet, mit Recht): der Schlüssel der Ausgabestelle statt ihrer Nummer, damit
     # sich die Adressen nicht erraten lassen. Steht am Ende, weil <str:…> sonst die festen
     # Adressen oben (einstellungen/, anzeige/ …) abfangen würde.

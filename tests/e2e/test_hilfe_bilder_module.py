@@ -348,6 +348,23 @@ def test_hilfe_bild_aufruf(angemeldet, admin, muster):
         Marke(titel.filter(has_text="Kundennummer-Abfrage"), nummer=3, von="rechts", laenge=40),
     )
 
+    # Aufgerufene Nummern für die Homepage der Tafel (ADR 0181)
+    from django.core.cache import cache
+
+    e = _E.laden(stelle)
+    e.homepage = True
+    e.save()
+    cache.clear()
+    seite.set_viewport_size({"width": 520, "height": 300})
+    seite.goto(reverse("aufruf:homepage", args=[e.homepage_schluessel]))
+    kasten = seite.locator("#stand")
+    aufnehmen(
+        seite,
+        "aufruf-homepage",
+        kasten,
+        Marke(kasten.locator(".nummern"), "rahmen", 1),
+    )
+
 
 def test_hilfe_bild_aushang(angemeldet, admin, muster, benutzer_mit_rolle, recht_geben):
     from apps.adressen.models import Adresse
