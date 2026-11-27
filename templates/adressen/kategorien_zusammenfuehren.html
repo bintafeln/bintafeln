@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titel %}Kategorien zusammenführen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'kunden:liste' 'adresskategorien' %}">← Adresskategorien</a></p>
+  <h1>Kategorien zusammenführen</h1>
+  <p>Für zwei Kategorien, die dasselbe meinen. Alle Adressen der wegfallenden Kategorie bekommen die bleibende;
+    die wegfallende kommt in den Papierkorb.</p>
+  <form method="get" id="wahl">
+    <div class="feld"><label for="weg">Diese Kategorie fällt weg</label>
+      <select name="weg" id="weg" required>
+        <option value="">– bitte wählen –</option>
+        {% for k in kategorien %}{% if k.name not in feste %}<option value="{{ k.pk }}"{% if weg.pk == k.pk %} selected{% endif %}>{{ k.name }}{% if not k.aktiv %} (inaktiv){% endif %}</option>{% endif %}{% endfor %}
+      </select></div>
+    <div class="feld"><label for="bleibt">Diese Kategorie bleibt</label>
+      <select name="bleibt" id="bleibt" required>
+        <option value="">– bitte wählen –</option>
+        {% for k in kategorien %}<option value="{{ k.pk }}"{% if bleibt.pk == k.pk %} selected{% endif %}>{{ k.name }}{% if not k.aktiv %} (inaktiv){% endif %}</option>{% endfor %}
+      </select></div>
+    {% if fehler %}<div class="feld hat-fehler"><small class="fehler">{{ fehler }}</small></div>{% endif %}
+    <button type="submit" class="knopf knopf-zweitrangig" data-ziel="ergebnis">Ansehen</button>
+  </form>
+  <div id="ergebnis">
+  {% if zahlen %}
+    <h2>Das würde geschehen</h2>
+    <p><strong>{{ zahlen.adressen }}</strong> Adresse{{ zahlen.adressen|pluralize:"n" }} mit „{{ weg.name }}“
+      {% if zahlen.adressen == 1 %}bekommt{% else %}bekommen{% endif %} die Kategorie „{{ bleibt.name }}“{% if zahlen.schon %}
+      ({{ zahlen.schon }} davon {% if zahlen.schon == 1 %}hat{% else %}haben{% endif %} sie schon){% endif %}.
+      „{{ weg.name }}“ kommt danach in den Papierkorb.</p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="weg" value="{{ weg.pk }}">
+      <input type="hidden" name="bleibt" value="{{ bleibt.pk }}">
+      <button type="submit" class="knopf">„{{ weg.name }}“ mit „{{ bleibt.name }}“ zusammenführen</button>
+    </form>
+  {% endif %}
+  </div>
+</section>
+{% endblock %}
