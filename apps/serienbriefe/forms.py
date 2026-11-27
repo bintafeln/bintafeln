@@ -87,12 +87,16 @@ class AuswahlForm(forms.Form):
         widget=Mehrfachauswahl(leer="alle Kundengruppen"), queryset=None,
     )  # fmt: skip
 
-    def __init__(self, *args, benutzer=None, **kwargs):
+    def __init__(self, *args, benutzer=None, liste=0, **kwargs):
+        """``liste``: Zahl der Adressen einer aus dem Adressbuch mitgebrachten Liste (0 = keine)."""
         super().__init__(*args, **kwargs)
         from apps.kunden.models import Kundengruppe
 
-        quellen = [q for q in QUELLEN if q[0] != "kunden"
-                   or rollen.hat_recht(benutzer, "serienbriefe.kunden")]  # fmt: skip
+        kunden = rollen.hat_recht(benutzer, "serienbriefe.kunden")
+        quellen = [q for q in QUELLEN if q[0] != "liste" and (q[0] != "kunden" or kunden)]
+        if liste:
+            name = dict(QUELLEN)["liste"]
+            quellen.append(("liste", f"{name} ({liste} Adresse{'' if liste == 1 else 'n'})"))
         self.fields["quelle"].choices = quellen
         self.fields["quelle"].initial = quellen[0][0]
         heute = timezone.localdate().year

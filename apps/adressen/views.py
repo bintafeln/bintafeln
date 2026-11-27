@@ -521,6 +521,12 @@ def importieren_ansicht(request):
     })  # fmt: skip
 
 
+def _ohne_aktion(params) -> str:
+    kopie = params.copy()
+    kopie.pop("aktion", None)
+    return kopie.urlencode()
+
+
 DRUCK_VORGABE = ["nachname", "vorname", "telefon", "mobil", "email", "rollen"]
 
 
@@ -543,6 +549,27 @@ def druckliste(request):
     spalten = [(k, t) for k, t in katalog if k in dl.SPALTEN_FEST or k in gewaehlt]
     f, adressen = dl.filtern(request, darf_mitarbeit)
     ids = [int(i) for i in request.GET.getlist("id") if i.isdigit()]
+
+    if request.GET.get("aktion") == "serienbrief":
+        # Die Angehakten (ohne Haken: die ganze gefilterte Liste) als Empfänger eines Serienbriefs.
+        # Nur für diese Sitzung gemerkt, nichts wird gespeichert.
+        from django.core.exceptions import PermissionDenied
+
+        from apps.serienbriefe import empfaenger as emp
+
+        if not rollen.hat_recht(request.user, "serienbriefe.erstellen"):
+            raise PermissionDenied
+        gewaehlte = list((adressen.filter(pk__in=ids) if ids else adressen)
+                         .values_list("pk", flat=True)[: emp.LISTE_HOECHSTENS + 1])  # fmt: skip
+        if not gewaehlte:
+            messages.error(request, "Keine Personen für diese Auswahl.")
+        elif len(gewaehlte) > emp.LISTE_HOECHSTENS:
+            messages.error(request, f"Die Liste ist zu lang (mehr als {emp.LISTE_HOECHSTENS} "
+                           "Personen). Bitte enger filtern.")  # fmt: skip
+        else:
+            request.session[emp.LISTE_SITZUNG] = gewaehlte
+            return redirect(reverse("serienbriefe:erstellen") + "?liste=1")
+        return redirect(f"{reverse('adressen:druckliste')}?{_ohne_aktion(request.GET)}")
 
     if request.GET.get("aktion") == "pdf":
         auswahl = list(adressen.filter(pk__in=ids) if ids else adressen)
@@ -572,4 +599,5 @@ def druckliste(request):
         "format": "a3" if request.GET.get("format") == "a3" else "a4",
         "ausrichtung": "hoch" if request.GET.get("ausrichtung") == "hoch" else "quer",
         "leer": request.GET.get("leer", "0"), "leer_titel": request.GET.get("leer_titel", ""),
+        "darf_serienbrief": rollen.hat_recht(request.user, "serienbriefe.erstellen"),
     })  # fmt: skip

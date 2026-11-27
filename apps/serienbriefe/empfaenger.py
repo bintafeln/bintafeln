@@ -20,7 +20,13 @@ QUELLEN = [
     ("ehemalige", "Ehemalige Ehrenamtliche"),
     ("spender", "Spender eines Jahres"),
     ("kunden", "Kunden (Haushalte)"),
+    # nur zur Wahl, solange eine Liste aus dem Adressbuch mitgebracht wurde (``LISTE_SITZUNG``)
+    ("liste", "Zusammengestellte Liste aus dem Adressbuch"),
 ]
+# Unter diesem Namen liegen die Adressen einer im Adressbuch zusammengestellten Liste in der
+# Sitzung – für diesen einen Brief, nichts wird dauerhaft gespeichert.
+LISTE_SITZUNG = "serienbrief_liste"
+LISTE_HOECHSTENS = 2000
 PLATZHALTER = [
     ("anrede", "Briefanrede, z. B. „Sehr geehrte Frau Muster,“"),
     ("anrede_du", "persönliche Anrede mit Vornamen: „Liebe Erika,“ bzw. „Lieber Max,“"),
@@ -151,11 +157,13 @@ def suchen(quelle: str, d: dict, benutzer=None) -> list[Empfaenger]:
     email = d.get("versandart") == "email"
     einwilligung = d.get("nur_einwilligung", True)
     ergebnis = []
-    if quelle in ("adressen", "spender"):
+    if quelle in ("adressen", "spender", "liste"):
         adressen = Adresse.objects.prefetch_related("kategorien")
         if quelle == "adressen":
             if d.get("kategorien"):
                 adressen = adressen.filter(kategorien__in=d["kategorien"])
+        elif quelle == "liste":
+            adressen = adressen.filter(pk__in=d.get("liste_ids") or [])
         else:
             mindest = d.get("mindestbetrag") or Decimal("0.01")
             adressen = adressen.annotate(
