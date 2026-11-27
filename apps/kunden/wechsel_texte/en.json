@@ -1,6 +1,7 @@
 {
   "gruss": "Hello,",
   "angebot": "We can offer you a place",
+  "genehmigt": "Your request to change has been approved",
   "ab": "The change applies from {ab}.",
   "bitte": "Please reply by {bis}. The change only takes effect once you confirm; until then everything stays as it is.",
   "ja": "Yes, I want to change",

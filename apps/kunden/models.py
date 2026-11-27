@@ -1000,6 +1000,8 @@ class Wechselwunsch(models.Model):
         choices=[("ja", "vom Kunden bestätigt"), ("nein", "vom Kunden abgelehnt")],
     )  # fmt: skip
     angebot_antwort_am = models.DateTimeField("Antwort am", null=True, blank=True)
+    # Der Wunsch ist genehmigt, der Kunde muss nur noch bestätigen (ADR 0182) – sonst ein Angebot
+    angebot_genehmigt = models.BooleanField("Genehmigt, wartet auf Bestätigung", default=False)
 
     class Meta:
         verbose_name = "Wechselwunsch"
@@ -1024,7 +1026,8 @@ class Wechselwunsch(models.Model):
         if not self.angebot_am:
             return ""
         was = f"{self.angebot_text}, ab {self.angebot_ab:%d.%m.%Y}" if self.angebot_ab else ""
-        am = f"angeboten am {timezone.localtime(self.angebot_am):%d.%m.%Y}"
+        wort = "genehmigt" if self.angebot_genehmigt else "angeboten"
+        am = f"{wort} am {timezone.localtime(self.angebot_am):%d.%m.%Y}"
         if self.angebot_antwort:
             return f"{was} – {am}, {self.get_angebot_antwort_display()}"
         if self.angebot_laeuft:
@@ -1519,6 +1522,8 @@ class GeplanterWechsel(models.Model):
     erledigt_am = models.DateField("Ausgeführt am", null=True, blank=True, editable=False)
     eingetragen_von = models.CharField("Eingetragen von", max_length=150, blank=True)
     eingetragen_am = models.DateTimeField("Eingetragen am", auto_now_add=True)
+    # Am Stichtag „Neuen Ausweis drucken“ melden (genehmigter Wechselwunsch, ADR 0182)
+    ausweis_melden = models.BooleanField("Neuen Ausweis melden", default=False)
 
     class Meta:
         verbose_name = "Geplanter Gruppenwechsel"

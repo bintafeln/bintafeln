@@ -1,6 +1,7 @@
 {
   "gruss": "Bonjour,",
   "angebot": "Nous pouvons vous proposer une place",
+  "genehmigt": "Votre demande de changement a été acceptée",
   "ab": "Le changement s’applique à partir du {ab}.",
   "bitte": "Merci de répondre avant le {bis}. Le changement n’est valable qu’après votre confirmation ; d’ici là, rien ne change.",
   "ja": "Oui, je souhaite changer",

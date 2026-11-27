@@ -5,7 +5,7 @@
   <h1>Wechselwünsche der Kunden</h1>
   <p class="hinweis">Möchte ein Kunde Uhrzeit, Tag oder Ausgabestelle wechseln, trägt der Einlass das beim Kunden unter
     „Will wechseln“ ein. Hier entscheiden Sie. Der Kunde bekommt die Antwort per E-Mail; steht keine Adresse bei ihm,
-    sagt das Programm das. Mit „Platz anbieten“ bekommt der Kunde eine E-Mail und bestätigt selbst über einen Link ({{ angebot_tage }} Tage Zeit; bei „Ja“ zieht er von selbst um). Entschiedene Wünsche werden nach {{ tage }} Tagen gelöscht.</p>
+    sagt das Programm das. Nach „Genehmigen“ bestätigt der Kunde den Wechsel über einen Link in der E-Mail und zieht erst dann um; ohne E-Mail-Adresse gilt der Wechsel sofort. Der neue Ausweis steht danach von selbst bei den gemeldeten Ausweisen. Mit „Platz anbieten“ bekommt der Kunde eine E-Mail und bestätigt selbst über einen Link ({{ angebot_tage }} Tage Zeit; bei „Ja“ zieht er von selbst um). Entschiedene Wünsche werden nach {{ tage }} Tagen gelöscht.</p>
 
   <h2>Offen{% if offene %} ({{ offene|length }}){% endif %}</h2>
   {% for w in offene %}
@@ -15,7 +15,7 @@
       <dt>Jetzt</dt><dd>{{ w.jetzt }}</dd>
       <dt>Wunsch</dt><dd><strong>{{ w.wunsch }}</strong>{% if w.anmerkung %}<br><small>{{ w.anmerkung }}</small>{% endif %}</dd>
       <dt>Eingetragen</dt><dd>{{ w.erstellt_am|date:"d.m.Y H:i" }} von {{ w.von }}{% if w.stelle %} ({{ w.stelle.name }}){% endif %}</dd>
-{% if w.angebot_stand %}      <dt>Angebot</dt><dd>{% if w.angebot_laeuft %}<span class="marke-ok">läuft</span>{% elif w.angebot_antwort == "nein" %}<span class="marke-warnung">abgelehnt</span>{% else %}<span class="marke-warnung">keine Antwort</span>{% endif %} {{ w.angebot_stand }}{% if w.angebot_laeuft %}<br><small class="leise">Der Platz ist so lange reserviert. Bestätigt der Kunde, zieht er von selbst um.</small>{% endif %}</dd>
+{% if w.angebot_stand %}      <dt>{% if w.angebot_genehmigt %}Genehmigt{% else %}Angebot{% endif %}</dt><dd>{% if w.angebot_laeuft %}<span class="marke-ok">{% if w.angebot_genehmigt %}wartet auf Bestätigung{% else %}läuft{% endif %}</span>{% elif w.angebot_antwort == "nein" %}<span class="marke-warnung">abgelehnt</span>{% else %}<span class="marke-warnung">keine Antwort</span>{% endif %} {{ w.angebot_stand }}{% if w.angebot_laeuft %}<br><small class="leise">Der Platz ist so lange reserviert. Bestätigt der Kunde, zieht er von selbst um.</small>{% endif %}</dd>
 {% endif %}      <dt>Erreichbar</dt><dd>{% if w.kontakt.email %}<span class="marke-ok">E-Mail</span>{% else %}<span class="marke-warnung">keine E-Mail – kein Rückschreiben möglich</span>{% endif %}
         {% if w.kontakt.telefon %}<span class="marke-ok">Telefon</span>{% else %}<span class="marke-warnung">kein Telefon</span>{% endif %}</dd>
     </dl>
@@ -33,7 +33,12 @@
       <div class="feld"><label for="antwort-{{ w.pk }}">Zusatz für den Kunden (freiwillig, steht in der E-Mail)</label>
         <input type="text" name="antwort" id="antwort-{{ w.pk }}" maxlength="500"></div>
       <div class="aktionsleiste">
-        <button type="submit" name="genehmigen" value="1" class="knopf">✓ Genehmigen</button>
+        {% if not w.kontakt.email %}<button type="submit" name="genehmigen" value="1" class="knopf" title="Ohne E-Mail-Adresse kann der Kunde nicht bestätigen – der Wechsel gilt sofort">✓ Genehmigen (gilt sofort)</button>
+        {% else %}
+        {% if not w.angebot_laeuft %}<button type="submit" name="genehmigen" value="1" class="knopf" title="Der Kunde bekommt eine E-Mail und bestätigt über einen Link; erst dann zieht er um">✓ Genehmigen</button>{% endif %}
+        <button type="submit" name="sofort" value="1" class="knopf knopf-zweitrangig" title="Der Kunde zieht gleich um, ohne über den Link zu bestätigen – z. B. wenn er am Telefon oder am Einlass zugesagt hat"
+                onclick="return confirm('Ohne die Bestätigung des Kunden genehmigen? Er zieht dann wie gewählt um.')">✓ Ohne Bestätigung genehmigen</button>
+        {% endif %}
         {% if w.angebot_laeuft %}{# läuft schon #}
         {% elif w.kontakt.email %}<button type="submit" name="anbieten" value="1" class="knopf knopf-zweitrangig" title="Zeigt erst die E-Mail; der Kunde bestätigt über einen Link">✉ Platz anbieten …</button>
         {% else %}<button type="button" class="knopf knopf-zweitrangig" disabled title="Ohne E-Mail-Adresse geht kein Angebot per E-Mail">✉ Platz anbieten</button>{% endif %}

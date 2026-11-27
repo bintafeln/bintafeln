@@ -55,6 +55,25 @@ def ausweis_text(h: Haushalt) -> str:
     return AUSWEIS_TEXTE[1]
 
 
+def ausweis_melden(h, von: str, grund: str = "") -> bool:
+    """Trägt für den Haushalt „Neuen Ausweis drucken“ ein, als hätte die Ausgabestelle es
+    gemeldet: Er steht dann bei den gemeldeten Ausweisen und geht beim Sammeldruck mit. Nichts,
+    wenn dieselbe Meldung schon offen ist. Für Fälle, in denen das Programm selbst weiß, dass der
+    Ausweis nicht mehr stimmt (genehmigter Wechsel, ADR 0182)."""
+    if Nachricht.objects.filter(kundennummer=h.kundennummer, anliegen=AUSWEIS,
+                                erledigt_am__isnull=True).exists():  # fmt: skip
+        return False
+    gruppe = h.kundengruppe
+    Nachricht.objects.create(
+        kundennummer=h.kundennummer,
+        anliegen=AUSWEIS,
+        text=grund[:1000],
+        von=von[:150],
+        stelle_id=gruppe.ausgabestelle_id if gruppe else None,
+    )
+    return True
+
+
 def ausweis_gedruckt(haushalte, benutzer, merken: bool = False) -> int:
     """Beim Ausweisdruck: Wer „Neuen Ausweis drucken“ gemeldet hat, bekommt die Antwort-Notiz;
     die Meldung ist erledigt, die gemeldete Notiz (Vorlage mit diesem Anliegen) gestrichen.

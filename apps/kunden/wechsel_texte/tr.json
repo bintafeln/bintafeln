@@ -1,6 +1,7 @@
 {
   "gruss": "Merhaba,",
   "angebot": "Size bir yer önerebiliriz",
+  "genehmigt": "Değişiklik talebiniz onaylandı",
   "ab": "Değişiklik {ab} tarihinden itibaren geçerlidir.",
   "bitte": "Lütfen {bis} tarihine kadar yanıt verin. Değişiklik ancak siz onayladıktan sonra geçerli olur; o zamana kadar her şey olduğu gibi kalır.",
   "ja": "Evet, değiştirmek istiyorum",

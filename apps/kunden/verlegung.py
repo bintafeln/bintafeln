@@ -26,15 +26,17 @@ def offener(haushalt):
     )
 
 
-def planen(haushalt, ziel_gruppe, ab: dt.date, von: str = ""):
+def planen(haushalt, ziel_gruppe, ab: dt.date, von: str = "", ausweis_melden: bool = False):
     """Plant die Verlegung eines Haushalts in ``ziel_gruppe`` zum Stichtag ``ab``. Ein schon
-    vorhandener offener Plan wird ersetzt (je Haushalt höchstens einer)."""
+    vorhandener offener Plan wird ersetzt (je Haushalt höchstens einer). ``ausweis_melden``: am
+    Stichtag steht der Haushalt bei den Ausweisen, die zu drucken sind."""
     from apps.kunden.models import GeplanterWechsel
 
     GeplanterWechsel.objects.filter(haushalt=haushalt, erledigt_am__isnull=True).delete()
     return GeplanterWechsel.objects.create(
-        haushalt=haushalt, ziel_gruppe=ziel_gruppe, ab=ab, eingetragen_von=von[:150]
-    )
+        haushalt=haushalt, ziel_gruppe=ziel_gruppe, ab=ab, eingetragen_von=von[:150],
+        ausweis_melden=ausweis_melden,
+    )  # fmt: skip
 
 
 def entfernen(haushalt) -> int:
@@ -78,6 +80,11 @@ def anwenden(heute: dt.date | None = None) -> int:
             text=f"Ausweis drucken (Umzug zu {wechsel.ziel_gruppe.name})"[:1000],
             verfasst_von="automatisch",
         )
+        if wechsel.ausweis_melden:
+            from apps.kunden import an_stelle
+
+            an_stelle.ausweis_melden(h, wechsel.eingetragen_von or "automatisch",
+                                     f"Wechsel zu {wechsel.ziel_gruppe.name}")  # fmt: skip
         wechsel.erledigt_am = heute
         wechsel.save(update_fields=["erledigt_am"])
         anzahl += 1

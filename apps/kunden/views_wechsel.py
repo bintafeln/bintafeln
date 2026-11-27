@@ -169,9 +169,22 @@ def entscheiden(request, pk):
                 w = wechsel.anbieten(w, request.user, gruppe, ab, antwort, _link(request))
                 messages.success(request, _angeboten(w))
                 return redirect("kunden:wechselwuensche")
-            w = wechsel.genehmigen(w, request.user, gruppe, ab, antwort)
-            messages.success(request, f"Wechselwunsch zu {w.kundennummer} genehmigt: "
-                             f"{w.neue_gruppe}. E-Mail an den Kunden: {w.mail_stand}.")  # fmt: skip
+            if "sofort" in request.POST:  # ohne Bestätigung des Kunden, z. B. nach einem Anruf
+                w = wechsel.genehmigen(w, request.user, gruppe, ab, antwort)
+            else:
+                w = wechsel.genehmigen_und_fragen(w, request.user, gruppe, ab, antwort,
+                                                  _link(request))  # fmt: skip
+            if w.status == Wechselwunsch.Status.GENEHMIGT:
+                messages.success(request, f"Wechselwunsch zu {w.kundennummer} genehmigt: "
+                                 f"{w.neue_gruppe}. E-Mail an den Kunden: {w.mail_stand}. Der "
+                                 "neue Ausweis steht bei den gemeldeten Ausweisen"
+                                 + ("." if w.ab <= timezone.localdate()
+                                    else f" ab dem {w.ab:%d.%m.%Y}."))  # fmt: skip
+            else:
+                messages.success(request, f"Genehmigt ({w.angebot_text}). Der Kunde "
+                                 f"{w.kundennummer} hat eine E-Mail bekommen und bestätigt bis "
+                                 f"{w.angebot_bis:%d.%m.%Y} über den Link; erst dann zieht er um. "
+                                 "So lange ist der Platz reserviert.")  # fmt: skip
     except wechsel.WechselFehler as grund:
         messages.error(request, str(grund))
     return redirect("kunden:wechselwuensche")

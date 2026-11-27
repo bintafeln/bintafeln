@@ -1,6 +1,7 @@
 {
   "gruss": "Guten Tag,",
   "angebot": "Wir können Ihnen einen Platz anbieten",
+  "genehmigt": "Ihr Wunsch zu wechseln ist genehmigt",
   "ab": "Der Wechsel gilt ab dem {ab}.",
   "bitte": "Bitte antworten Sie bis zum {bis}. Erst mit Ihrer Bestätigung gilt der Wechsel; bis dahin bleibt alles, wie es ist.",
   "ja": "Ja, ich möchte wechseln",
