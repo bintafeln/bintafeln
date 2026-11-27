@@ -318,14 +318,23 @@ def _codes_anzeigen(request, codes):
 def zwei_faktor_einrichten(request):
     if not zwei_faktor.erlaubt(request.user):
         raise Http404
-    if zwei_faktor.app_geraet(request.user) is not None:
+    # Schon eingerichtet: nur weiter, wenn „Neu einrichten“ gerade mit einem Code freigegeben wurde
+    neu = zwei_faktor.app_geraet(request.user) is not None
+    if neu and not zwei_faktor.neu_freigegeben(request):
         return redirect("konten:mein_konto")
     geraet = zwei_faktor.neues_app_geraet(request.user)
     form = CodeForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         if zwei_faktor.einrichtung_bestaetigen(geraet, form.cleaned_data["code"]):
+            zwei_faktor.neu_erledigt(request)
             otp_login(request, geraet)
-            messages.success(request, "Zwei-Faktor-Anmeldung ist eingerichtet.")
+            messages.success(
+                request,
+                "Zwei-Faktor-Anmeldung ist neu eingerichtet. Die bisherige App und die alten "
+                "Notfallcodes gelten nicht mehr."
+                if neu
+                else "Zwei-Faktor-Anmeldung ist eingerichtet.",
+            )
             return _codes_anzeigen(request, zwei_faktor.notfallcodes_erzeugen(request.user))
         form.add_error("code", "Der Code stimmt nicht. Bitte den aktuellen Code der App eingeben.")
     return render(
@@ -337,8 +346,29 @@ def zwei_faktor_einrichten(request):
             "schluessel": zwei_faktor.schluessel_als_text(geraet),
             "einrichtungs_link": geraet.config_url,
             "pflicht": zwei_faktor.ist_pflicht(request.user),
+            "neu": neu,
         },
     )
+
+
+@require_POST
+@login_required
+@nicht_in_demo
+@sensitive_post_parameters("code")
+def zwei_faktor_neu(request):
+    """„Mein Konto“: Zwei-Faktor neu einrichten (neues Handy, andere App). Erst mit einem
+    gültigen Code – aus der bisherigen App oder ein Notfallcode – geht es zur Einrichtung; das
+    bisherige Gerät gilt, bis das neue bestätigt ist."""
+    if zwei_faktor.app_geraet(request.user) is None:
+        return redirect("konten:zwei_faktor_einrichten")
+    form = CodeForm(request.POST)
+    if form.is_valid() and match_token(
+        request.user, zwei_faktor.code_bereinigen(form.cleaned_data["code"])
+    ):
+        zwei_faktor.neu_freigeben(request)
+        return redirect("konten:zwei_faktor_einrichten")
+    messages.error(request, "Der Code stimmt nicht. Es bleibt alles, wie es ist.")
+    return redirect("konten:mein_konto")
 
 
 @require_POST

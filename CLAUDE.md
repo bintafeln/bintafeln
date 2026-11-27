@@ -413,7 +413,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `SpeicherWarnung`, Balken auf „Speicher und Fotos“, Hinweis auf der Startseite. In Tests
   `speicherplatz._platte` ersetzen.
 - Zwei-Faktor: Logik in `apps/konten/zwei_faktor.py`, Durchsetzung in
-  `apps.konten.middleware.ZweiFaktorMiddleware`. In Tests Benutzer mit der Fixture `anmelden`
+  `apps.konten.middleware.ZweiFaktorMiddleware`. Selbst neu einrichten (neues Handy, ADR 0183):
+  nur nach einem gültigen Code (`neu_freigeben()`), das alte Gerät gilt bis zur Bestätigung des neuen. In Tests Benutzer mit der Fixture `anmelden`
   anmelden (verifizierte Sitzung); ein bloßes `force_login` landet bei Pflicht-Rollen auf der
   Einrichtungsseite.
 - Neue Modelle mit Personen- oder Stammdaten bei django-auditlog registrieren

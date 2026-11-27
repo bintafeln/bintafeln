@@ -230,3 +230,64 @@ def test_datenbank_cache_funktioniert():
         assert cache.get("probe") == 2
         cache.delete("probe")
         assert cache.get("probe") is None
+
+
+def test_zwei_faktor_neu_einrichten(client, admin, anmelden):
+    """„Mein Konto → Zwei-Faktor neu einrichten“ (neues Handy): nur mit einem gültigen Code, und
+    die bisherige App gilt, bis die neue bestätigt ist – auch bei Pflicht."""
+    from django_otp.plugins.otp_static.models import StaticToken
+
+    from apps.konten import zwei_faktor
+
+    alt = TOTPDevice.objects.create(user=admin, name="App", confirmed=True)
+    notfall = zwei_faktor.notfallcodes_erzeugen(admin)
+    anmelden(client, admin)
+    konto, neu = reverse("konten:mein_konto"), reverse("konten:zwei_faktor_neu")
+    einrichten = reverse("konten:zwei_faktor_einrichten")
+    assert zwei_faktor.ist_pflicht(admin)
+    assert "Zwei-Faktor neu einrichten" in client.get(konto).content.decode()
+    # ohne Freigabe kommt man nicht zur Einrichtung; ein falscher Code gibt nichts frei
+    assert client.get(einrichten).url == konto
+    assert client.post(neu, {"code": "000000"}).url == konto
+    assert client.get(einrichten).url == konto
+    assert not TOTPDevice.objects.filter(user=admin, confirmed=False).exists()
+    # (nach einem Fehlversuch sperrt django-otp kurz – Schutz vor Durchprobieren)
+    from django_otp.plugins.otp_static.models import StaticDevice
+
+    for g in [*TOTPDevice.objects.filter(user=admin), *StaticDevice.objects.filter(user=admin)]:
+        g.throttle_reset()
+    # mit einem Notfallcode: weiter zur Einrichtung, die alte App gilt noch
+    assert client.post(neu, {"code": notfall[0]}).url == einrichten
+    seite = client.get(einrichten).content.decode()
+    assert "Zwei-Faktor neu einrichten" in seite and "Die bisherige App gilt noch" in seite
+    geraet = TOTPDevice.objects.get(user=admin, confirmed=False)
+    assert TOTPDevice.objects.filter(pk=alt.pk, confirmed=True).exists()
+    # falscher Code der neuen App: nichts ändert sich
+    client.post(einrichten, {"code": "000000"})
+    assert TOTPDevice.objects.filter(pk=alt.pk, confirmed=True).exists()
+    geraet.refresh_from_db()
+    geraet.throttle_reset()
+    totp = TOTP(geraet.bin_key, geraet.step, geraet.t0, geraet.digits, geraet.drift)
+    antwort = client.post(einrichten, {"code": f"{totp.token():0{geraet.digits}d}"})
+    assert antwort.status_code == 200 and "Notfallcode" in antwort.content.decode()
+    # jetzt gilt nur noch das neue Gerät, mit neuen Notfallcodes
+    assert list(TOTPDevice.objects.filter(user=admin)) == [geraet]
+    geraet.refresh_from_db()
+    assert geraet.confirmed
+    neue = set(StaticToken.objects.filter(device__user=admin).values_list("token", flat=True))
+    assert len(neue) == 10 and not neue & set(notfall)
+    assert client.session.get("otp_device_id") == geraet.persistent_id
+    # die Freigabe ist verbraucht
+    assert client.get(einrichten).url == konto
+    # nach 15 Minuten verfällt eine Freigabe von selbst
+    sitzung = client.session
+    sitzung[zwei_faktor.NEU_SITZUNG] = 1.0
+    sitzung.save()
+    assert client.get(einrichten).url == konto
+
+
+def test_zwei_faktor_neu_ohne_einrichtung_fuehrt_zur_einrichtung(client, admin, benutzer_mit_rolle):
+    b = benutzer_mit_rolle("ohne2fa", rollen.AUSGABE)
+    client.force_login(b)
+    antwort = client.post(reverse("konten:zwei_faktor_neu"), {"code": "123456"})
+    assert antwort.url == reverse("konten:zwei_faktor_einrichten")
