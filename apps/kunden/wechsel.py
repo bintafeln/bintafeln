@@ -510,6 +510,45 @@ def angebot_beantworten(wunsch: Wechselwunsch, ja: bool) -> Wechselwunsch:
                       von=f"{wunsch.angebot_von} (vom Kunden bestätigt)"[:150])  # fmt: skip
 
 
+ANGEBOT_ZEIGEN_TAGE = 14  # so lange steht ein beantwortetes/abgelaufenes Angebot am Kunden
+
+
+def angebot_am_kunden(kundennummer: str, heute: dt.date | None = None) -> Wechselwunsch | None:
+    """Das jüngste Angebot eines Platzes für die Kundenseite („Angaben“): solange es läuft, und
+    noch 14 Tage nach der Antwort bzw. dem Ablauf der Frist."""
+    heute = heute or timezone.localdate()
+    w = (
+        Wechselwunsch.objects.filter(kundennummer=kundennummer, angebot_am__isnull=False)
+        .select_related("angebot_gruppe__ausgabestelle")
+        .order_by("-angebot_am")
+        .first()
+    )
+    if w is None or w.angebot_laeuft:
+        return w
+    zuletzt = (timezone.localtime(w.angebot_antwort_am).date() if w.angebot_antwort_am
+               else w.angebot_bis)  # fmt: skip
+    grenze = heute - dt.timedelta(days=ANGEBOT_ZEIGEN_TAGE)
+    return w if zuletzt and zuletzt >= grenze else None
+
+
+@transaction.atomic
+def angebot_zusage_eintragen(wunsch: Wechselwunsch, benutzer) -> Wechselwunsch:
+    """Der Kunde hat auf anderem Weg zugesagt (Antwort-Mail, Telefon, am Einlass) statt über den
+    Link: Die Verwaltung trägt die Zusage ein. Wirkt wie die Bestätigung über den Link – der
+    Kunde zieht zum angebotenen Datum um und bekommt die Bestätigung."""
+    wunsch = Wechselwunsch.objects.select_for_update().get(pk=wunsch.pk)
+    if not wunsch.angebot_laeuft:
+        raise WechselFehler("Dieses Angebot gilt nicht mehr.")
+    gruppe = wunsch.angebot_gruppe
+    if gruppe is None:
+        raise WechselFehler("Die angebotene Kundengruppe gibt es nicht mehr.")
+    wunsch.angebot_antwort, wunsch.angebot_antwort_am = "ja", timezone.now()
+    wunsch.save(update_fields=["angebot_antwort", "angebot_antwort_am"])
+    ab = max(wunsch.angebot_ab or timezone.localdate(), timezone.localdate())
+    return genehmigen(wunsch, None, gruppe, ab, wunsch.angebot_zusatz,
+                      von=f"{_name(benutzer)} (Zusage des Kunden eingetragen)"[:150])  # fmt: skip
+
+
 # --- Von der Tafel aus: Platz anbieten oder vormerken, ohne dass der Kunde gefragt hat ---------
 
 

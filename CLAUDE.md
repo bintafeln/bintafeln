@@ -184,6 +184,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Sprache des Kunden: Texte in `apps/kunden/wechsel_texte/<code>.json` – neue Texte in allen Dateien.
   Vor dem Senden immer die Vorschau (`angebot_vorschau()`); nur freie Plätze (`angebot_pruefen()`).
   Von der Tafel aus (Kundenseite, Art `tafel`): `von_uns_anbieten()`, volle Gruppe nur `vormerken()`.
+  Auf der Kundenseite unter „Angaben“: `wechsel.angebot_am_kunden()` (läuft / bis 14 Tage nach
+  Antwort oder Ablauf); Zusage auf anderem Weg trägt die Verwaltung über
+  `angebot_zusage_eintragen()` ein (Recht `kunden.wechsel_entscheiden`).
   Status nach Sperre und Ausweis (ADR 0176): `apps/kunden/status.py` – laufende `Sperre` → „gesperrt“
   (geht vor), Ausweis abgelaufen → „pausiert“, sonst „aktiv“; nur für Aktive und vom Programm
   Umgestellte (`Haushalt.status_automatisch`), Schalter
