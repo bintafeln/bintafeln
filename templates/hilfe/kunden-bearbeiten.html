@@ -4,11 +4,11 @@
   <li><strong>Hauptperson</strong> – ihr Name kommt auf den Kundenausweis.</li>
   <li><strong>Anschrift und Kontakt</strong>.</li>
   <li><strong>Weitere Angaben</strong> der Tafel, z. B. Ernährung oder Haustiere (welche, stellt die Tafel unter
-    „Einstellungen → Kundenstamm und Zusatzfelder“ ein). Dazu <strong>Behinderung (Art. 9)</strong>: keine Angabe,
+    „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“ ein). Dazu <strong>Behinderung (Art. 9)</strong>: keine Angabe,
     keine Behinderung oder der Grad der Behinderung (GdB); ist ein GdB gewählt, kreuzen Sie die Merkzeichen aus dem
     Schwerbehindertenausweis an (z. B. G, aG, Bl, mehrere zugleich) und ggf. „Schwerbehindertenausweis vorgelegt“.
     Ob die Person dann als <strong>schwerbehindert</strong> gilt (Merkmal am Einlass, Symbol auf dem Ausweis, Vorrang
-    beim Aufruf), legt die Tafel unter „Einstellungen → Kundenstamm“ fest: ab welchem GdB (Vorgabe 50), ob eines
+    beim Aufruf), legt die Tafel unter „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“ fest: ab welchem GdB (Vorgabe 50), ob eines
     bestimmter Merkzeichen nötig ist und ob der Ausweis vorgelegt sein muss. Bl und TBl zählen außerdem als „Blind“;
     Blind, Taub und Stumm bleiben eigene Merkmale.</li>
   <li><strong>Angehörige</strong> mit Geburtsdatum, Staatsangehörigkeit und Behinderung (wie bei der Hauptperson);
@@ -50,9 +50,9 @@
   automatisch aus der Kundengruppe, damit das Maximum einer Gruppe nie überschritten wird: bei einer Änderung sofort
   (mit Meldung), beim Import und täglich für abgelaufene Ausweise. Wird der Kunde wieder aktiv oder der Ausweis
   verlängert, die Kundengruppe neu wählen. Ohne Datum „Ausweis gültig bis“ bleibt die Gruppe. Eine Tafel kann das unter
-  „Einstellungen → Kunden → Kundenstamm“ abschalten („… in der Kundengruppe lassen“).</p>
+  „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“ abschalten („… in der Kundengruppe lassen“).</p>
 {% if "kunden.herausnehmen" in rechte %}<h3>Kunden herausnehmen (lange nicht gekommen)</h3>
-<p>Hat ein Kunde seit der eingestellten Zeit nicht abgeholt (Vorgabe 56 Tage, „Einstellungen → Kunden → Kundenstamm“) oder
+<p>Hat ein Kunde seit der eingestellten Zeit nicht abgeholt (Vorgabe 56 Tage, „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“) oder
   noch nie, steht auf seiner Seite oben rechts in der Karte „Angaben“ der Knopf <strong>„Kunden herausnehmen“</strong>.
   Die Rückfrage zeigt den letzten Besuch und die <strong>Notizen</strong> – dort stehen Krankmeldungen und Abwesenheiten;
   wer sich gemeldet hat, wird nicht herausgenommen. Mit der Bestätigung passiert in einem Schritt: Der Ausweis gilt nur
@@ -66,7 +66,7 @@
 {% hilfe_bild "kunden-herausnehmen-frage" "① Begründung (vorbelegt), ② erst jetzt wird herausgenommen." %}{% endif %}
 <h3>Status: aktiv nur mit gültigem Ausweis</h3>
 <p>Der Status eines Kunden ist <strong>aktiv</strong>, <strong>pausiert</strong>, <strong>gesperrt</strong>,
-  <strong>beendet</strong> oder <strong>verstorben</strong>. Ist unter „Einstellungen → Kunden → Kundenstamm“ der Schalter
+  <strong>beendet</strong> oder <strong>verstorben</strong>. Ist unter „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“ der Schalter
   <strong>„Kunden mit abgelaufenem Ausweis auf ‚pausiert‘ setzen“</strong> an, gilt: Läuft der Ausweis ab, steht der Kunde
   ab dem nächsten Tag von selbst auf „pausiert“; wird der Ausweis verlängert, ist er wieder „aktiv“. Jede solche Änderung
   steht in der Historie. Eine eingetragene, laufende <strong>Sperre</strong> geht vor: Wer gesperrt ist, steht auf
@@ -82,7 +82,7 @@
   endete („früher“ = schon vor Einführung dieser Liste).</p>
 {% if not kundenstamm_selbst_gefuehrt %}<div class="achtung">Solange der Kundenstamm noch aus dem bisherigen Programm importiert wird, ersetzt der nächste
   Import Änderungen – außer Sie wählen dort „bintafeln-Stand behalten“. Hat die Tafel die Daten übernommen,
-  lässt sich das unter „Einstellungen → Kundenstamm“ mit „Kundenstamm wird in bintafeln selbst geführt“ abschalten;
+  lässt sich das unter „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“ mit „Kundenstamm wird in bintafeln selbst geführt“ abschalten;
   dann verschwindet dieser Hinweis und der Import ist gesperrt.</div>{% endif %}{% endif %}
 {% if "kunden.loeschen" in rechte %}<h3>Löschen</h3>
 <p>„Löschen …“ zeigt zuerst, was alles mitgelöscht wird (Personen, Abholungen, Notizen, Dokumente, Historie …). Erst
@@ -97,7 +97,7 @@
   (auch bei fremden Kunden), und erledigt die Nachricht.</p>
 <p>Über die Startseite schreiben Ausgabestellen auch <strong>ohne Kunden</strong> (Betreff und Text, z. B. „Kühlschrank
   defekt“). Diese Nachrichten kommen zusätzlich per E-Mail – an die E-Mail der Tafel aus den Tafel-Einstellungen oder an
-  die unter „Einstellungen → Mail-Empfänger“ gewählten Personen – und stehen hier unter dem Reiter „ohne Kunde“.
+  die unter „Einstellungen → Tafel → Mail-Empfänger“ gewählten Personen – und stehen hier unter dem Reiter „ohne Kunde“.
   Die Antwort erscheint auf der Startseite der Ausgabestelle, bis dort jemand sie als gelesen markiert; auch hier
   hakt „✓ erledigt“ eine Nachricht ohne Antwort ab.</p>
 <p><strong>Post an Ausgabestellen (die Eule):</strong> Unter „Einstellungen → Ausgabe → Post an Ausgabestellen“ schreiben Sie selbst an eine,
@@ -146,14 +146,14 @@
   Verfasser bleiben, der Eintrag steht danach unter „Kunden → Notizen“ und beim Kunden bei den Notizen. Das hilft,
   wenn bei der Übernahme aus dem bisherigen Programm Notizen als Anmerkungen angekommen sind: suchen oder sortieren,
   anhaken, umwandeln. Wird der Kundenstamm später noch einmal mit Anmerkungen eingelesen, kommen die umgewandelten
-  Einträge wieder als Anmerkungen dazu; dann vorher unter „Einstellungen → Kundenstamm“ „Interne Anmerkungen
+  Einträge wieder als Anmerkungen dazu; dann vorher unter „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“ „Interne Anmerkungen
   importieren“ ausschalten.</p>
 {% hilfe_bild "anmerkungen-liste" "① Nach Ausgabestelle und Zeitraum filtern oder suchen, ② Anmerkungen anhaken, ③ „Angehakte löschen“ legt sie in den Papierkorb, ④ „Herunterladen …“ für CSV, PDF oder E-Mail." %}{% endif %}
 {% if "kunden.bearbeiten" in rechte %}<h3>Ausweise zusammen verlängern</h3>
 <p>Melden Ausgabestellen „Bescheid geprüft – Ausweis verlängern“ (im Nachrichten-Fenster oder mit einem Notiz-Knopf,
-  bei dem unter „Einstellungen → Notiz-Vorlagen“ „Meldet der Verwaltung“ gewählt ist), stehen diese Haushalte unter „Kunden → Ausweise
+  bei dem unter „Einstellungen → Kunden → Notiz-Vorlagen“ „Meldet der Verwaltung“ gewählt ist), stehen diese Haushalte unter „Kunden → Ausweise
   verlängern“ auf einer Seite (die Zahl im Menü zeigt, wie viele). bintafeln prüft jeden Haushalt nach den Bedingungen
-  in „Einstellungen → Kundenstamm“:</p>
+  in „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“:</p>
 <ul>
   <li><strong>Verlängern nur, wenn</strong>: ohne Bedingung, <em>jede</em> Person im Haushalt erfüllt eine Bedingung,
     oder <em>mindestens eine</em> Person. Bedingungen je Person sind ein Mindestalter (z. B. 60) oder Ja/Nein-Zusatzfelder

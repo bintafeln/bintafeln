@@ -1,9 +1,9 @@
 """Einstellungen der Statistik (ADR 0036): welche Diagramme die Tafel sehen möchte.
 
-Tafelweit (nicht je Person): Ein Admin wählt unter „Einstellungen → Statistik", welche der
-einzelnen Grafiken auf der Statistik-Seite und im PDF-Jahresbericht erscheinen. Gespeichert wird
-die Menge der *ausgeblendeten* Diagramme über ihren Schlüssel (``DIAGRAMME`` in ``views.py``);
-unbekannte Schlüssel schaden nicht. Leer = alle sichtbar (Vorgabe).
+Tafelweit (nicht je Person): Ein Admin wählt unter „Einstellungen → Auswertungen → Statistik",
+welche der einzelnen Grafiken auf der Statistik-Seite und im PDF-Jahresbericht erscheinen.
+Gespeichert wird die Menge der *ausgeblendeten* Diagramme über ihren Schlüssel (``DIAGRAMME`` in
+``views.py``); unbekannte Schlüssel schaden nicht. Leer = alle sichtbar (Vorgabe).
 """
 
 from django.db import models

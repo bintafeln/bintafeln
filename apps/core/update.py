@@ -312,8 +312,8 @@ def sicherheit_melden(w: Warnung | None) -> None:
         "",
         *(f"- {h.text} (behoben ab {h.version})" for h in w.hinweise),
         *([""] if w.hinweise else []),
-        "Bitte bald aktualisieren: in bintafeln unter Einstellungen → Update oder auf dem Server "
-        "mit ./betrieb update.",
+        "Bitte bald aktualisieren: in bintafeln unter Einstellungen → Systemsteuerung → Update "
+        "oder auf dem Server mit ./betrieb update.",
     ]
     from apps.core import benachrichtigung
 

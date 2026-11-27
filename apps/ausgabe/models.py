@@ -428,7 +428,8 @@ class Sonderaktion(models.Model):
     nur_mit_kindern = models.BooleanField(
         "Nur Haushalte mit Kindern",
         default=False,
-        help_text="Kinder bis zum Alter aus „Einstellungen → Kundenstamm → Kind bis“.",
+        help_text="Kinder bis zum Alter aus „Einstellungen → Kunden → Kundenstamm und "
+        "Zusatzfelder → Kind bis“.",
     )
 
     ausgabestellen = models.ManyToManyField(

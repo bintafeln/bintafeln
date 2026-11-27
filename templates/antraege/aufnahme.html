@@ -160,7 +160,7 @@
         <option value="">– bitte wählen –</option>
         {% for art in arten %}<option value="{{ art.pk }}"{% if art.pk == art_gewaehlt %} selected{% endif %}>{{ art.bezeichnung }}</option>{% endfor %}
       </select>
-      {% if "einstellungen.listen" in rechte %}<small class="hilfe">Die Liste pflegt der Admin unter Einstellungen → Einkommensarten.</small>{% endif %}
+      {% if "einstellungen.listen" in rechte %}<small class="hilfe">Die Liste pflegt der Admin unter Einstellungen → Kunden → Einkommensarten.</small>{% endif %}
     </div>
     <div class="feld">
       <label for="gueltig_bis">Ausweis gültig bis</label>
@@ -168,7 +168,7 @@
         {% for wert, titel in gueltigkeiten %}<option value="{{ wert }}"{% if wert == gueltig_gewaehlt %} selected{% endif %}>{{ titel }}</option>{% endfor %}
         <option value="eigenes"{% if gueltig_eigen %} selected{% endif %}>eigenes Datum …</option>
       </select>
-      <small class="hilfe">{% if bisher_gueltig %} Bisher gültig bis {{ bisher_gueltig|date:"d.m.Y" }}.{% endif %}{% if "einstellungen.kundenstamm" in rechte %} Den Vorschlag stellt der Admin unter Einstellungen → Kundenstamm ein.{% endif %}</small>
+      <small class="hilfe">{% if bisher_gueltig %} Bisher gültig bis {{ bisher_gueltig|date:"d.m.Y" }}.{% endif %}{% if "einstellungen.kundenstamm" in rechte %} Den Vorschlag stellt der Admin unter Einstellungen → Kunden → Kundenstamm und Zusatzfelder ein.{% endif %}</small>
     </div>
     <div class="feld">
       <label for="gueltig_eigenes">Eigenes Datum</label>

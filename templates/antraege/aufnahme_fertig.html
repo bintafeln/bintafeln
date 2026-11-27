@@ -8,7 +8,7 @@
   <h2>Kundenausweis drucken</h2>
   <p class="hinweis">Das PDF öffnet sich in einem neuen Fenster. Im Druckdialog den Drucker wählen,
     z. B. den Kartendrucker, und in <strong>100 % Größe</strong> drucken.{% if "einstellungen.ausweis" in rechte %} Für Kartendrucker unter
-    Einstellungen → Kundenausweis „Kartengröße“ einstellen.{% endif %}</p>
+    Einstellungen → Kunden → Kundenausweis „Kartengröße“ einstellen.{% endif %}</p>
   <div class="aktionen">
     <a class="knopf knopf-gross" href="{% url 'kunden:ausweis' h.kundennummer %}" target="_blank" rel="noopener">Ausweis drucken (PDF)</a>
     <a class="knopf knopf-zweitrangig" href="{% url 'kunden:haushalt' h.kundennummer %}">Zum Kunden</a>

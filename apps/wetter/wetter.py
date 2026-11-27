@@ -108,7 +108,7 @@ def anzeige(benutzer) -> dict:
     stelle = stelle_fuer(benutzer)
     if stelle is None:
         return {"grund": "Keine aktive Ausgabestelle mit PLZ oder Ort – bitte unter "
-                         "Einstellungen → Ausgabestellen eintragen."}  # fmt: skip
+                         "Einstellungen → Ausgabe → Ausgabestellen eintragen."}  # fmt: skip
     daten = aktuell(stelle)
     if daten:
         return {"wetter": daten}

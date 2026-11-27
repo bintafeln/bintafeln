@@ -613,7 +613,7 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
             )
         v.erklaerung.append(
             "Schließzeiten der Ausgabestelle zählen nur, wenn sie unter „Einstellungen → "
-            "Schließzeiten“ eingetragen sind."
+            "Ausgabe → Schließzeiten“ eingetragen sind."
         )
         ergebnis.append(v)
     if not ergebnis:

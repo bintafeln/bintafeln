@@ -820,8 +820,8 @@ def _verschieben_knopf(tag, e, haushalt) -> dict:
             f"Kunde {haushalt.kundennummer} kommt zurück in die Warteschlange: {versatz} wartende "
             "Nummern hinter den gerade aufgerufenen. Monitor und Ampel zeigen ihn dann als „noch "
             "nicht dran“, bis er wieder aufgerufen wird. Das geht einmal am Tag. Die Zahl steht "
-            "unter Einstellungen → Aufruf, Monitor und Kiosk („Zu spät Gekommene: Plätze nach "
-            "hinten“)."
+            "unter Einstellungen → Monitore → Aufruf, Monitor und Kiosk („Zu spät Gekommene: "
+            "Plätze nach hinten“)."
         ),
     }
 

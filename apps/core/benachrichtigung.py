@@ -35,8 +35,8 @@ HAEUFIGKEITEN = [
 @dataclass(frozen=True)
 class Empfaengerwahl:
     """Mail an eine Gruppe: Wer sie bekommt, stellt die Tafel zentral unter „Einstellungen →
-    Mail-Empfänger“ ein (ADR 0125). ``berechtigte()`` liefert die Konten, die zur Wahl stehen;
-    ``leer`` sagt, wer die Mail ohne Auswahl bekommt. Ohne ``lesen``/``speichern`` liegt die
+    Tafel → Mail-Empfänger“ ein (ADR 0125). ``berechtigte()`` liefert die Konten, die zur Wahl
+    stehen; ``leer`` sagt, wer die Mail ohne Auswahl bekommt. Ohne ``lesen``/``speichern`` liegt die
     Auswahl in ``MailEmpfaenger``; bestehende Felder (Anträge, Fahrdienst) geben beide an."""
 
     # None: keine Auswahl von Personen, nur „wie vorgesehen“ oder niemand

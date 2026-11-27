@@ -42,9 +42,8 @@ def _bereit(e: SpendenEinstellungen) -> None:
     fehlt = e.fehlende_angaben()
     if fehlt:
         raise BestaetigungsFehler(
-            "Für Zuwendungsbestätigungen fehlen noch Angaben unter „Einstellungen → Spenden“: "
-            + ", ".join(fehlt)
-            + "."
+            "Für Zuwendungsbestätigungen fehlen noch Angaben unter „Einstellungen → Verein → "
+            "Spenden und Zuwendungsbestätigungen“: " + ", ".join(fehlt) + "."
         )
 
 
