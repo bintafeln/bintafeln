@@ -1,9 +1,10 @@
 """Aushang-Seite „Fortschritt der Ausgabe“ (ADR 0135): ein Monitor in der Verteilung zeigt groß,
 wie weit die Ausgabe einer Ausgabestelle heute ist, z. B. „200 von 225“.
 
-Läuft heute an der Ausgabestelle der Aufruf (Modul ``aufruf``, Tag gestartet), zählt, wer nicht
-mehr in der Schlange wartet (wer schon vorher eingelassen wurde, zählt mit), von den heute
-möglichen Haushalten – dieselben Zahlen wie in der Leiste am Einlass (``ablauf.zaehler``).
+Läuft heute an der Ausgabestelle der Aufruf (Modul ``aufruf``, Tag gestartet), zählt, wer schon
+aufgerufen wurde (auch die gerade angezeigten; wer schon vorher eingelassen wurde, zählt mit),
+von den heute möglichen Haushalten – dieselben Zahlen wie in der Leiste am Einlass
+(``ablauf.zaehler``).
 Sonst – ohne Aufruf oder vor dem Start – wie viele heute abgeholt haben von den
 heute erwarteten Haushalten, wie der Fortschritt in der Kopfzeile am Einlass (ADR 0067). Nur
 Zahlen, keine Namen oder Kundennummern.

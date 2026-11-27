@@ -241,27 +241,36 @@ def test_zaehler_zaehlt_eingelassene(mitte, tag_daten):
     assert d["total_completed"] == 2 and d["total_numbers"] == 9  # Zähler sofort gewachsen
 
 
-def test_aufgerufen_gesamt_ist_alles_was_nicht_mehr_wartet(mitte, tag_daten):
-    """„x/y aufgerufen“ in der Leiste: y ist die Zahl aus der Kopfzeile am Einlass, x alles, was
-    nicht mehr in der Schlange steht. Die gerade angezeigten Nummern zählen noch nicht; wer schon
-    vor seinem Aufruf eingelassen wurde, zählt mit (sonst fehlten am Ende viele)."""
+def test_aufgerufen_gesamt_zaehlt_jeden_der_aufgerufen_wurde(mitte, tag_daten):
+    """„x/y aufgerufen“ in der Leiste: y ist die Zahl aus der Kopfzeile am Einlass, x jeder, der
+    schon aufgerufen wurde – auch die gerade angezeigten Nummern, die noch nicht am Einlass
+    waren. Wer schon vor seinem Aufruf eingelassen wurde, zählt mit (sonst fehlten am Ende viele).
+    Die Kopfzeile zählt nur die am Einlass Angenommenen."""
     from apps.ausgabe import stelle as stellen
 
     e = AufrufEinstellungen.laden(mitte)  # anzahl = 3, zwei Gruppen mit zusammen 9 Nummern
     tag = ablauf.starten(mitte, heute())
     d = ablauf.stand_fuer_anzeige(tag, e, heute())
-    assert (d["aufgerufen_gesamt"], d["gesamt_heute"]) == (0, 9)  # drei stehen an, keiner durch
-    assert d["gesamt_heute"] == stellen.fortschritt(mitte, heute()).erwartet  # wie die Kopfzeile
-    # Jemand weit hinten in der Schlange wird schon eingelassen: zählt sofort als durch
+    assert (d["aufgerufen_gesamt"], d["gesamt_heute"]) == (3, 9)  # drei sind aufgerufen
+    f = stellen.fortschritt(mitte, heute())
+    assert d["gesamt_heute"] == f.erwartet and f.abgeholt == 0  # Kopfzeile: keiner
+    # Einer der Aufgerufenen wird angenommen: aufgerufen bleibt, die Kopfzeile zählt ihn
+    Abholung.objects.create(
+        haushalt=Haushalt.objects.get(kundennummer=d["current_numbers"][0]), datum=heute()
+    )
+    tag = ablauf.aktualisieren(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["aufgerufen_gesamt"] == 3 and stellen.fortschritt(mitte, heute()).abgeholt == 1
+    # Jemand weit hinten in der Schlange wird schon eingelassen: zählt sofort mit
     hinten = tag.stand["gruppen"][1]["wartend"][-1]
     Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=hinten), datum=heute())
     tag = ablauf.aktualisieren(mitte, heute())
     d = ablauf.stand_fuer_anzeige(tag, e, heute())
-    assert (d["aufgerufen_gesamt"], d["gesamt_heute"]) == (1, 9)
-    tag = ablauf.weiter(mitte, heute())  # die ersten drei sind durch
+    assert (d["aufgerufen_gesamt"], d["gesamt_heute"]) == (4, 9)
+    tag = ablauf.weiter(mitte, heute())  # die nächsten der laufenden Gruppe werden aufgerufen
     d = ablauf.stand_fuer_anzeige(tag, e, heute())
-    assert d["aufgerufen_gesamt"] == 4
-    assert ablauf.zaehler(tag, heute()) == (4, 9)  # dieselben Zahlen für den Aushang-Monitor
+    assert d["aufgerufen_gesamt"] == 3 + len(tag.stand["gruppen"][0]["wartend"][:3]) + 1
+    assert ablauf.zaehler(tag, heute()) == (d["aufgerufen_gesamt"], 9)  # wie am Aushang
     while not ablauf.stand_fuer_anzeige(tag, e, heute())["finished"]:
         tag = ablauf.weiter(mitte, heute())
     d = ablauf.stand_fuer_anzeige(tag, e, heute())

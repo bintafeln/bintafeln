@@ -627,27 +627,35 @@ def aktualisieren(stelle, datum) -> AufrufTag | None:
     return tag
 
 
-def zaehler(tag, datum) -> tuple[int, int]:
+def zaehler(tag, datum, einstellungen=None) -> tuple[int, int]:
     """(aufgerufen, gesamt) für „228/230 aufgerufen“ – in der Leiste am Einlass und auf dem
     Aushang-Monitor dieselben Zahlen.
 
     ``gesamt`` ist die Zahl aus der Kopfzeile am Einlass (``stelle.fortschritt``: die heute
     möglichen Haushalte), damit überall derselbe Nenner steht; ohne sie die Zahl der Nummern in
-    der Aufrufliste. ``aufgerufen`` ist alles, was nicht mehr wartet: Wer noch in der Schlange
-    steht – auch die gerade angezeigten Nummern –, zählt noch nicht; wer schon vor seinem Aufruf
-    eingelassen wurde, zählt mit."""
+    der Aufrufliste. ``aufgerufen`` ist jeder, der schon aufgerufen wurde – auch die Nummern, die
+    gerade unter „Bitte eintreten“ stehen und noch nicht am Einlass waren; wer schon vor seinem
+    Aufruf eingelassen wurde, zählt mit. Die Kopfzeile zählt dagegen nur, wer am Einlass
+    angenommen wurde: Die Zahl hier ist deshalb nie kleiner."""
     from apps.ausgabe import stelle as stellen
 
     gruppen = tag.stand.get("gruppen", [])
     schlange = [x for g in gruppen for x in g["wartend"]]
+    index = tag.stand.get("index", 0)
+    gezeigt = set()
+    if tag.gestartet_am is not None and index < len(gruppen):
+        e = einstellungen or AufrufEinstellungen.laden(tag.ausgabestelle)
+        gezeigt = set(gruppen[index]["wartend"][: e.anzahl])
     # Wer schon abgeholt hat, wartet nicht mehr – auch wenn der Abgleich ihn erst gleich aus der
     # Schlange nimmt
-    wartend = len(schlange) - len(_eingelassen_heute(datum, schlange))
+    durch = set(_eingelassen_heute(datum, schlange)) | gezeigt
+    wartend = len([x for x in schlange if x not in durch])
     f = stellen.fortschritt(tag.ausgabestelle, datum)
     gesamt = (
         f.erwartet
         if f is not None
-        else wartend + sum(len(g["aufgerufen"]) + len(g.get("eingelassen", [])) for g in gruppen)
+        else len(schlange)
+        + sum(len(g["aufgerufen"]) + len(g.get("eingelassen", [])) for g in gruppen)
     )
     gesamt = max(gesamt, wartend)
     return gesamt - wartend, gesamt
@@ -675,7 +683,7 @@ def stand_fuer_anzeige(tag, einstellungen, datum, eingelassene_zeigen=False) -> 
     gesamt = len(alle_nummern)
     erledigt = len(_eingelassen_heute(datum, alle_nummern))
     kann_zurueck = bool(s["rueckgaengig"])
-    aufgerufen_gesamt, gesamt_heute = zaehler(tag, datum)
+    aufgerufen_gesamt, gesamt_heute = zaehler(tag, datum, einstellungen)
     # Lange keine Aktivität → Ausgabe gilt als beendet (ADR 0050); zum Weitermachen „Fortsetzen“.
     if beendet_durch_inaktivitaet(tag, einstellungen, datum):
         return {"finished": True, "beendet_inaktiv": True, "selected_day": tag_name,
