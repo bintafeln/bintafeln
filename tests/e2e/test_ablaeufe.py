@@ -596,7 +596,7 @@ def test_homepage_anzeige_zaehlt_bis_zur_naechsten_ausgabe(seite, admin):
         timeout=15000,
     )
     expect(countdown).to_have_text(muster)
-    expect(seite.locator("#stand")).to_contain_text("Nächste Ausgabe:")
+    expect(seite.locator("#stand")).to_contain_text("Nächste Ausgabe der Ausgabestelle Mitte:")
 
 
 def test_handy_steuerung_zeigt_kiosk_meldungen(angemeldet, admin, benutzer_mit_rolle):

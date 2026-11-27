@@ -8,7 +8,7 @@
 {% else %}
   <p class="titel">{% if stand.art == "beendet" %}Ausgabe für heute beendet{% else %}Zurzeit keine Ausgabe{% endif %}</p>
   {% with n=stand.naechste %}{% if n %}
-    <p class="text">{% if heute %}Die Ausgabe beginnt heute{% if n.beginn %} um {{ n.beginn|time:"H:i" }} Uhr{% endif %}.{% else %}Nächste Ausgabe: <strong>{{ n.tag|date:"l, j. F" }}{% if n.beginn %}, {{ n.beginn|time:"H:i" }} Uhr{% endif %}</strong>{% endif %}</p>
+    <p class="text">{% if heute %}Die Ausgabe der Ausgabestelle {{ stelle.name }} beginnt heute{% if n.beginn %} um {{ n.beginn|time:"H:i" }} Uhr{% endif %}.{% else %}Nächste Ausgabe der Ausgabestelle {{ stelle.name }}: <strong>{{ n.tag|date:"l, j. F" }}{% if n.beginn %}, {{ n.beginn|time:"H:i" }} Uhr{% endif %}</strong>{% endif %}</p>
     {% if n.ziel %}<p class="countdown" data-ziel="{{ n.ziel|date:"c" }}">{{ bis_dahin }}</p>{% endif %}
   {% elif stand.art == "beendet" %}
     <p class="text">Vielen Dank für Ihren Besuch.</p>
