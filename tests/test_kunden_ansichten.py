@@ -555,3 +555,31 @@ def test_kontostand_ohne_buchung_zeigt_null(admin_client):
     assert seite.count("0,00 €") >= 2 and "<dd>–</dd>" not in seite.split("Kontostand")[1][:60]
     zeile = export.zeile(h, ["kontostand"], {"kunden.konto"}, {}, 18, None)
     assert zeile == ["0,00"]
+
+
+def test_anschrift_in_google_maps_und_entfernung_von_der_tafel(admin_client):
+    """Neben der Anschrift: Link zur Karte und – wenn die Tafel ihre Anschrift eingetragen hat –
+    zur Route von dort (Google Maps nennt die Entfernung). Nur Links, erst beim Antippen."""
+    from apps.core import karten
+    from apps.core.models import TafelEinstellungen
+
+    h = Haushalt.objects.create(kundennummer="2001", strasse="Musterweg 5", plz="12345",
+                                ort="Musterstadt")  # fmt: skip
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Alex", nachname="Probe")
+    ohne = Haushalt.objects.create(kundennummer="2002", ort="Musterstadt")
+    Person.objects.create(haushalt=ohne, ist_hauptperson=True, vorname="Kim", nachname="Probe")
+    # ohne Anschrift der Tafel: nur die Karte
+    inhalt = admin_client.get(detail("2001")).content.decode()
+    assert "📍 Karte" in inhalt and "Entfernung von der Tafel" not in inhalt
+    assert "query=Musterweg+5%2C+12345+Musterstadt" in inhalt
+    t = TafelEinstellungen.laden()
+    t.strasse, t.plz, t.ort = "Hauptstraße 1", "12345", "Musterstadt"
+    t.save()
+    inhalt = admin_client.get(detail("2001")).content.decode()
+    assert "Entfernung von der Tafel" in inhalt
+    assert "origin=Hauptstra%C3%9Fe+1%2C+12345+Musterstadt" in inhalt
+    assert "destination=Musterweg+5%2C+12345+Musterstadt" in inhalt
+    assert 'rel="noopener noreferrer"' in inhalt
+    # ohne Straße gibt es nichts zu zeigen
+    assert "📍 Karte" not in admin_client.get(detail("2002")).content.decode()
+    assert karten.zeigen("") == "" and karten.route("", "x") == "" and karten.route("x", "") == ""
