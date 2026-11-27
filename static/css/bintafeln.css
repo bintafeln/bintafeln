@@ -148,7 +148,11 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .platte-balken span { display: block; height: 100%; background: var(--akzent); }
 .platte-balken.platte-knapp span { background: #d9a400; }
 .platte-balken.platte-dringend span { background: var(--fehler); }
-.anschrift-karte { display: inline-block; margin-left: .5rem; font-size: .9rem; white-space: nowrap; }
+/* kleiner Knopf neben der Anschrift: Route von der Tafel in Google Maps */
+.anschrift-karte { display: inline-flex; align-items: center; gap: .3rem; margin-left: .5rem; padding: .1rem .55rem;
+  font-size: .9rem; white-space: nowrap; text-decoration: none; color: var(--akzent-dunkel);
+  border: 1px solid var(--akzent); border-radius: 999px; background: var(--flaeche); vertical-align: baseline; }
+.anschrift-karte:hover, .anschrift-karte:focus-visible { background: var(--flaeche-2); text-decoration: none; }
 .ausweisdruck { margin: .75rem 0; padding: .6rem .8rem; border: 1px solid var(--rand); border-radius: var(--radius);
   background: var(--flaeche-2); }
 .ausweisdruck h2 { font-size: 1.05rem; margin: 0 0 .25rem; }
