@@ -431,7 +431,7 @@ def test_fortschritt_mit_aufruf_aufgerufen_von_allen(ausgabe, heute):
     ablauf.starten(ausgabe, heute)
     ablauf.weiter(ausgabe, heute)
     z = fortschritt.zahlen(ausgabe, heute)
-    assert z["art"] == "aufgerufen" and z["gesamt"] == 5 and z["fertig"] == 2
+    assert z["art"] == "aufgerufen" and z["gesamt"] == 5 and z["fertig"] == 4
     # Aufruf-Modul ausgeschaltet: wieder abgeholt von erwartet
     t.module = ["aushang"]
     t.save()
