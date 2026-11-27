@@ -123,6 +123,7 @@ urlpatterns = [
     path("wechselwuensche/", views_wechsel.liste, name="wechselwuensche"),
     path("wechselwuensche/<int:pk>/", views_wechsel.entscheiden, name="wechsel_entscheiden"),
     # öffentlich: Link aus der Mail mit dem Angebot, der Schlüssel ist der Zugang (ADR 0175)
+    path("wechselwuensche/<int:pk>/zusage/", views_wechsel.angebot_zusage, name="angebot_zusage"),
     path("wechsel/<str:schluessel>/", views_wechsel.angebot, name="wechsel_angebot"),
     path("notizen/", views_notizen.liste, name="notizen"),
     path("notizen/loeschen/", views_notizen.loeschen, name="notizen_loeschen"),

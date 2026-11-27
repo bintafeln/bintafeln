@@ -30,6 +30,7 @@ from apps.kunden import (
     verlaengerung,
     verlegung,
     views_dokumente,
+    wechsel,
     zugang,
 )
 from apps.kunden import auskunft as kunden_auskunft
@@ -566,6 +567,7 @@ def haushalt(request, kundennummer):
             "h": h,
             "einstellungen": einstellungen,
             "geplanter_wechsel": verlegung.offener(h),
+            "angebot": wechsel.angebot_am_kunden(h.kundennummer, heute),
             "hauptperson": next((p for p in personen if p[0].ist_hauptperson), None),
             "angehoerige": [p for p in personen if not p[0].ist_hauptperson],
             "haushalt_zusatz": haushalt_zusatz,

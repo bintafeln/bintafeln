@@ -553,3 +553,42 @@ def test_von_der_tafel_aus_anbieten_und_vormerken(admin_client, admin, lage, rec
     konto = benutzer_mit_rolle("emil", "Büro")
     client = anmelden(Client(), konto)
     assert client.get(seite).status_code == 403
+
+
+def test_angebot_steht_in_den_angaben_und_zusage_von_hand(admin_client, admin, lage, anmelden,
+                                                          benutzer_mit_rolle):  # fmt: skip
+    """Auf der Kundenseite steht unter „Angaben“, dass ein Platz angeboten wurde. Antwortet der
+    Kunde nicht über den Link, sondern z. B. mit einer Mail, trägt die Verwaltung die Zusage ein."""
+    from django.test import Client
+
+    from apps.konten import rollen
+
+    h = lage["h"]
+    seite_url = reverse("kunden:haushalt", args=[h.kundennummer])
+    assert "Angebotener Platz" not in admin_client.get(seite_url).content.decode()
+    w, _schluessel, _post = _angebot(admin_client, admin, lage)
+    seite = admin_client.get(seite_url).content.decode()
+    assert "Angebotener Platz" in seite and "wartet auf Antwort" in seite
+    assert "Mi 14:00" in seite and f"Antwort bis {w.angebot_bis:%d.%m.%Y}" in seite
+    zusage = reverse("kunden:angebot_zusage", args=[w.pk])
+    assert zusage in seite and "Zusage des Kunden eintragen" in seite
+    # ohne das Recht: kein Knopf, kein Eintragen
+    buero = anmelden(Client(), benutzer_mit_rolle("ohne", rollen.AUSGABE))
+    assert buero.post(zusage).status_code == 403
+    assert admin_client.get(zusage).status_code == 405
+    django_mail.outbox.clear()
+    antwort = admin_client.post(zusage, follow=True)
+    assert "Zusage eingetragen" in antwort.content.decode()
+    w.refresh_from_db()
+    h.refresh_from_db()
+    assert w.status == "genehmigt" and w.angebot_antwort == "ja"
+    assert "Zusage des Kunden eingetragen" in w.entschieden_von
+    assert h.kundengruppe == lage["mi14"]
+    assert len(django_mail.outbox) == 1  # der Kunde bekommt die Bestätigung
+    seite = admin_client.get(seite_url).content.decode()
+    assert "vom Kunden bestätigt" in seite and "Zusage des Kunden eintragen" not in seite
+    # ein zweites Mal geht nicht
+    assert "gilt nicht mehr" in admin_client.post(zusage, follow=True).content.decode()
+    # 15 Tage nach der Antwort steht das Angebot nicht mehr in den Angaben
+    spaeter = timezone.localdate() + dt.timedelta(days=wechsel.ANGEBOT_ZEIGEN_TAGE + 1)
+    assert wechsel.angebot_am_kunden(h.kundennummer, spaeter) is None

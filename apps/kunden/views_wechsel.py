@@ -274,3 +274,19 @@ def angebot(request, schluessel):
         "w": w, "tafel": tafel, "fehler": fehler, "vorwahl": request.GET.get("antwort", ""),
         "s2": s2, "t2": t2,
     })  # fmt: skip
+
+
+@require_POST
+@entscheiden_recht
+def angebot_zusage(request, pk):
+    """Kundenseite, „Angaben“: Der Kunde hat das Angebot auf anderem Weg bestätigt (z. B. mit
+    einer Antwort-Mail) – die Verwaltung trägt die Zusage ein."""
+    w = get_object_or_404(Wechselwunsch, pk=pk)
+    try:
+        w = wechsel.angebot_zusage_eintragen(w, request.user)
+    except wechsel.WechselFehler as grund:
+        messages.error(request, str(grund))
+    else:
+        messages.success(request, f"Zusage eingetragen: {w.neue_gruppe or w.angebot_text}"
+                         + (f" ab {w.ab:%d.%m.%Y}" if w.ab else "") + ".")  # fmt: skip
+    return redirect("kunden:haushalt", w.kundennummer)
