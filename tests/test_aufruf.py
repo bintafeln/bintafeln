@@ -1305,7 +1305,8 @@ def test_homepage_zeigt_naechste_ausgabe_mit_countdown(modul_an, mitte):
     gruppe(mitte, "Morgen", (11, 15), tage=WOCHENTAGE[morgen.weekday()])
     e = _homepage(mitte)
     seite = Client().get(reverse("aufruf:homepage", args=[e.homepage_schluessel])).content.decode()
-    assert "Zurzeit keine Ausgabe" in seite and "Nächste Ausgabe:" in seite and "11:15 Uhr" in seite
+    assert "Zurzeit keine Ausgabe" in seite and "11:15 Uhr" in seite
+    assert f"Nächste Ausgabe der Ausgabestelle {mitte.name}:" in seite
     assert 'class="countdown" data-ziel="' in seite and "noch " in seite and "Stand " in seite
 
 
