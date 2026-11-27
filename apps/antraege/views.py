@@ -35,7 +35,7 @@ from apps.antraege.models import (
     AntragText,
     in_papierkorb,
 )
-from apps.core import html, listen, listenauswahl, listenexport, privatdateien
+from apps.core import html, karten, listen, listenauswahl, listenexport, privatdateien
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 
@@ -182,6 +182,7 @@ def antrag(request, pk):
     accessed.send(sender=Antrag, instance=a)  # Aufruf im Änderungsprotokoll
     davor = Antrag.objects.filter(ANSICHTEN["offen"][1], eingegangen_am__lt=a.eingegangen_am)
     e = AntragEinstellungen.laden()
+    anschrift = karten.anschrift(a.strasse, a.plz, a.ort)
     # Zum Durchblättern: voriger/nächster Antrag nach Antragsnummer (über alle Anträge).
     voriger = naechster = None
     if a.laufnummer is not None:
@@ -194,6 +195,9 @@ def antrag(request, pk):
         "sprache": sprachen.sprache(a.sprache),
         "platz": davor.count() + 1 if a.status in Antrag.OFFEN else None,
         "gebiet_grund": gebiet.grund(e, a),
+        # Knopf „Karte“ neben der Anschrift, wie auf der Kundenseite
+        "karte": karten.zeigen(anschrift),
+        "karte_route": karten.route(anschrift),
         "status_auswahl": Antrag.Status.choices,
         "ausweis_pruefen": ausweis_pruefung.aktiv(e),
         "voriger": voriger,

@@ -53,7 +53,7 @@
     {% endif %}
     {% if "kunden.kontakt" in rechte %}
       <dt>Anschrift</dt><dd>{{ h.strasse|default:"–" }}{% if h.plz or h.ort %}, {{ h.plz }} {{ h.ort }}{% endif %}
-        {% if karte %}<a class="anschrift-karte" href="{{ karte_route|default:karte }}" target="_blank" rel="noopener noreferrer" title="{% if karte_route %}Route und Entfernung von der Tafel in Google Maps{% else %}Öffnet die Anschrift in Google Maps{% endif %}"><span aria-hidden="true">🗺️</span> Karte</a>{% endif %}</dd>
+        {% include "includes/karte_knopf.html" %}</dd>
       {% if einstellungen.telefon_erfassen %}<dt>Telefon</dt><dd>{{ h.telefon|default:"–" }}</dd>{% endif %}
       {% if einstellungen.email_erfassen %}<dt>E-Mail</dt><dd>{{ h.email|default:"–" }}</dd>{% endif %}
     {% endif %}
