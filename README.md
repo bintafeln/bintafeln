@@ -242,6 +242,21 @@ sed -i "s|^DJANGO_SECRET_KEY=.*|DJANGO_SECRET_KEY=$(openssl rand -hex 32)|" .env
 sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 24)|" .env
 ```
 
+Die beiden `sed`-Zeilen tragen die Schlüssel von selbst ein; abtippen muss man nichts. Danach
+stehen in der `.env` zwei Zeilen dieser Art – ein langer Zufallswert hinter dem Gleichheitszeichen,
+ohne Leerzeichen und ohne Anführungszeichen:
+
+```ini
+DJANGO_SECRET_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+POSTGRES_PASSWORD=0123456789abcdef0123456789abcdef0123456789abcdef
+```
+
+Das ist nur ein **Beispiel, wie es aussieht** – diese Werte nicht übernehmen. Jede Installation
+braucht eigene, zufällige Werte. Prüfen lässt sich das mit
+`grep -E "^(DJANGO_SECRET_KEY|POSTGRES_PASSWORD)=" .env` (zeigt die beiden Zeilen an). Wer lieber
+von Hand einträgt: mit `openssl rand -hex 32` einen Wert erzeugen und hinter `DJANGO_SECRET_KEY=`
+einfügen, mit `openssl rand -hex 24` einen zweiten für `POSTGRES_PASSWORD=`.
+
 Weitere Werte (Domain, Ports, Zeitzone) bei Bedarf in `.env` anpassen – siehe Kommentare
 in der Datei.
 
