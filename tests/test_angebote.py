@@ -148,7 +148,7 @@ def test_einlass_zeigt_stand_und_traegt_ein(client, admin, benutzer_mit_rolle, a
     anmelden(client, benutzer_mit_rolle("anton", rollen.AUSGABE))
     karte = client.get(reverse("ausgabe:empfang"), {"nummer": "4711"}, **HX).content.decode()
     assert "Kochkurs Frühjahr – 0 von 3 Interessierten" in karte
-    assert "Interesse eintragen …" in karte and "4 Abende, dienstags 17 Uhr" in karte
+    assert "Interesse eintragen" in karte and "4 Abende, dienstags 17 Uhr" in karte
     url = reverse("angebote:eintragen", args=[a.pk, "4711"])
     assert url in karte
     # der Knopf führt zur Auswahl der Person; die Hauptperson ist vorbelegt
@@ -162,7 +162,7 @@ def test_einlass_zeigt_stand_und_traegt_ein(client, admin, benutzer_mit_rolle, a
     assert Interesse.objects.first().eingetragen_von == "anton"
     karte = client.get(reverse("ausgabe:empfang"), {"nummer": "4711"}, **HX).content.decode()
     assert "2 von 3 Interessierten. Eingetragen: Erika Probe4711, Max Probe4711" in karte
-    assert "Eintrag ändern …" in karte
+    assert "Eintrag ändern" in karte
     # schon eingetragen: austragen (in den Papierkorb), dann zurück zum Einlass
     seite = client.get(url).content.decode()
     assert "Schon eingetragen" in seite and "Alle Personen dieses Haushalts" in seite

@@ -8,7 +8,7 @@
     {# Beide Aufklapper teilen sich einen name, damit sich beim Öffnen des einen das andere schließt. #}
     <div class="listen-werkzeuge-reihe">
       <details class="listen-werkzeuge" name="antraege-werkzeuge">
-        <summary class="knopf knopf-zweitrangig">⬇ Herunterladen …</summary>
+        <summary class="knopf knopf-zweitrangig">⬇ Herunterladen</summary>
         <div class="listen-werkzeuge-inhalt">
           {% include "includes/listen_export.html" %}
         </div>
@@ -16,7 +16,7 @@
       {% if "antraege.bearbeiten" in rechte %}
         {# Selten gebrauchte Werkzeuge (Import, Sammelprüfung) dezent eingeklappt – neue Anträge werden ohnehin automatisch geprüft. #}
         <details class="listen-werkzeuge" name="antraege-werkzeuge">
-          <summary class="knopf knopf-zweitrangig">Importieren &amp; prüfen …</summary>
+          <summary class="knopf knopf-zweitrangig">Importieren &amp; prüfen</summary>
           <div class="listen-werkzeuge-inhalt">
             <a class="knopf knopf-zweitrangig" href="{% url 'antraege:antraege_importieren' %}">Anträge importieren</a>
             <a class="knopf knopf-zweitrangig" href="{% url 'antraege:nachweise_importieren' %}">Nachweise importieren</a>

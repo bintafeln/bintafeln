@@ -121,7 +121,7 @@
     {% csrf_token %}
     <div class="feld"><label for="neu-code">Code aus der App oder Notfallcode *</label>
       <input type="text" name="code" id="neu-code" autocomplete="one-time-code" inputmode="text" required></div>
-    <button type="submit" class="knopf knopf-zweitrangig">Zwei-Faktor neu einrichten …</button>
+    <button type="submit" class="knopf knopf-zweitrangig">Zwei-Faktor neu einrichten</button>
   </form>
   {% if not zwei_faktor_pflicht %}
   <h2>Zwei-Faktor abschalten</h2>

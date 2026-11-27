@@ -71,7 +71,7 @@
           {% with feld=form.von %}{% include "includes/feld.html" %}{% endwith %}
           {% with feld=form.bis %}{% include "includes/feld.html" %}{% endwith %}
         </div>
-        <button type="submit" class="knopf einladen-knopf" formaction="{% url 'warteliste:einladen' %}" title="Zeigt erst, wer eingeladen wird, und ein Beispiel der Mail; gesendet wird danach mit „Jetzt senden“">Einladen …</button>
+        <button type="submit" class="knopf einladen-knopf" formaction="{% url 'warteliste:einladen' %}" title="Zeigt erst, wer eingeladen wird, und ein Beispiel der Mail; gesendet wird danach mit „Jetzt senden“">Einladen</button>
       </div>
       <div class="feld feld-haken einladen-mail"><label for="{{ form.mail.id_for_label }}">{{ form.mail }} {{ form.mail.label }}</label><small class="hilfe">{{ form.mail.help_text }}</small></div>
       {% endwith %}

@@ -31,7 +31,7 @@
     <div class="feld"><label for="antwort">Zusatz (freiwillig) – steht beim Anbieten in der E-Mail, beim Vormerken als Anmerkung am Vorgang</label>
       <input type="text" name="antwort" id="antwort" maxlength="500" value="{{ eingaben.antwort|default:'' }}"></div>
     <div class="aktionsleiste">
-      <button type="submit" name="anbieten" value="1" class="knopf"{% if not erreichbar.email %} disabled{% endif %}>Vorschau der E-Mail …</button>
+      <button type="submit" name="anbieten" value="1" class="knopf"{% if not erreichbar.email %} disabled{% endif %}>Vorschau der E-Mail</button>
       <button type="submit" name="vormerken" value="1" class="knopf knopf-zweitrangig">Nur vormerken</button>
     </div>
   </form>

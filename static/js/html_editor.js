@@ -238,7 +238,7 @@
         '<p class="hinweis grafik-ausrichtung">Ausrichten wie Text: Grafik antippen, dann „Links“, „Mitte“ oder „Rechts“.</p>' +
         '<div class="grafik-auswahl"><p class="hinweis">Antippen fügt die Grafik an der Schreibmarke ein.</p>' +
         '<ul class="grafik-liste"></ul>' +
-        '<label class="knopf knopf-zweitrangig grafik-hochladen">Neue Grafik hochladen …' +
+        '<label class="knopf knopf-zweitrangig grafik-hochladen">Neue Grafik hochladen' +
         '<input type="file" accept="image/png,image/jpeg,application/pdf" hidden></label>' +
         '<label class="grafik-freistellen"><input type="checkbox"> Hintergrund durchsichtig machen (Unterschrift, Stempel)</label>' +
         '<p class="hinweis">PNG, JPG oder PDF (davon die erste Seite).</p></div>' +

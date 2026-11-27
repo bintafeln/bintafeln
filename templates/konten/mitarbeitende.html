@@ -11,7 +11,7 @@
       {% include "includes/herunterladen.html" %}
       {% if not archiv %}
       <details class="listen-werkzeuge">
-        <summary class="knopf knopf-zweitrangig">Mehr …</summary>
+        <summary class="knopf knopf-zweitrangig">Mehr</summary>
         <div class="listen-werkzeuge-inhalt">
           <a class="knopf knopf-zweitrangig" href="{% url 'konten:zugaenge_freigeben' %}">Online-Zugänge freigeben</a>
           {% if "einstellungen.personal" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'konten:personal_einstellungen' %}">Fristen einstellen</a>{% endif %}
@@ -59,7 +59,7 @@
     {% filter_zuruecksetzen "sort" %}
   </form>
   <div id="ergebnis">
-  {# Formular hinter „Herunterladen …“ (CSV, PDF, E-Mail): schickt Suche und Sortierung mit #}
+  {# Formular hinter „Herunterladen“ (CSV, PDF, E-Mail): schickt Suche und Sortierung mit #}
   {% auswahl_formular "" %}
   <div class="liste-aktionen">
     <span class="hinweis">{{ zeilen|length }} Kont{{ zeilen|length|pluralize:"o,en" }}</span>

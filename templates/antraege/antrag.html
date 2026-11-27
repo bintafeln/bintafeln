@@ -18,7 +18,7 @@
     {% if "antraege.loeschen" in rechte %}
     <form method="post" action="{% url 'antraege:papierkorb' a.pk %}" class="inline"
           onsubmit="return confirm(this.dataset.frage)" data-frage="Antrag {{ a.nummer }} von {{ a.name }} in den Papierkorb legen?">
-      {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Löschen …</button>
+      {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Löschen</button>
     </form>
     {% endif %}
   </div>

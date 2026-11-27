@@ -22,7 +22,7 @@
   {% else %}
     <p class="sicherung sicherung-veraltet">Keiner Kundengruppe zugeordnet.</p>
   {% endif %}
-  <p><a class="knopf knopf-zweitrangig" href="{% url 'kunden:kundengruppe_aendern' h.kundennummer %}">Kundengruppe ändern …</a></p>
+  <p><a class="knopf knopf-zweitrangig" href="{% url 'kunden:kundengruppe_aendern' h.kundennummer %}">Kundengruppe ändern</a></p>
   <p class="hinweis">Die Auswahl zeigt – wie bei der Aufnahme – alle Gruppen mit freiem Platz samt
     Belegung und Termin, mit Filter nach Wochentag.</p>
   <h3>Bisherige Gruppen</h3>
@@ -88,7 +88,7 @@
   <p class="hinweis">Löscht den Haushalt mit Personen, Abholberechtigten, Sperren, Ausnahmen,
     Abholungen, Anmerkungen und Notizen. Kontobuchungen bleiben für die Kasse erhalten. Vor dem
     Löschen zeigt eine Seite genau, was gelöscht wird.</p>
-  <a class="knopf knopf-gefahr" href="{% url 'kunden:haushalt_loeschen' h.kundennummer %}">Haushalt löschen …</a>
+  <a class="knopf knopf-gefahr" href="{% url 'kunden:haushalt_loeschen' h.kundennummer %}">Haushalt löschen</a>
 </section>
 </div>
 {% endblock %}

@@ -1,6 +1,6 @@
 """Knöpfe und Felder, die mit ``form="…"`` an einem Formular hängen, brauchen dieses Formular auf
 derselben Seite – sonst passiert beim Klicken nichts (so fehlte es in den Team-Listen hinter
-„Herunterladen …“). Der Test geht mit den erfundenen Demo-Daten durch das ganze Programm."""
+„Herunterladen“). Der Test geht mit den erfundenen Demo-Daten durch das ganze Programm."""
 
 import re
 from html.parser import HTMLParser
