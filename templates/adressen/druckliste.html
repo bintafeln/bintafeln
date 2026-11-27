@@ -8,7 +8,8 @@
     <a class="knopf knopf-zweitrangig" href="{% url 'adressen:liste' %}">← Adressbuch</a></div>
   <p class="hinweis">Liste zusammenstellen: filtern, einzelne Personen anhaken, Spalten wählen – und
     als PDF in <strong>A4 oder A3</strong>, <strong>hoch oder quer</strong> drucken. Ohne Haken kommt
-    die ganze gefilterte Liste aufs Blatt, sonst nur die angehakten.</p>
+    die ganze gefilterte Liste aufs Blatt, sonst nur die angehakten.{% if darf_serienbrief %}
+    <strong>„Serienbrief an diese Personen“</strong> nimmt dieselbe Auswahl als Empfänger eines Serienbriefs.{% endif %}</p>
   <form method="get" id="druck" data-auswahl>
     <div class="filter-kompakt">
       {% if darf_mitarbeit %}
@@ -44,6 +45,7 @@
         <label><input type="radio" name="ausrichtung" value="hoch"{% if ausrichtung == "hoch" %} checked{% endif %}> hoch</label></span>
       {% include "includes/leerspalten.html" %}
       <button type="submit" name="aktion" value="pdf" class="knopf" formtarget="_blank">🖨 Als PDF drucken</button>
+      {% if darf_serienbrief %}<button type="submit" name="aktion" value="serienbrief" class="knopf knopf-zweitrangig" title="Die angehakten Personen als Empfänger eines Serienbriefs – ohne Haken die ganze gefilterte Liste">✉ Serienbrief an diese Personen</button>{% endif %}
       <span class="hinweis" data-auswahl-zahl="druck"></span>
     </div>
 

@@ -629,7 +629,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   verschieben in der Vorschau über `static/js/brief_frei.js` (die Live-Vorschau zeichnet sie nicht
   selbst). `grafiken.speichern(..., freistellen=True)` macht Weiß durchsichtig; PDF → erste Seite.
   Empfänger: Quellen in `empfaenger.QUELLEN`/`suchen()` (auch Ehrenamtliche und ehemalige
-  Ehrenamtliche wie die Listen unter „Verein/Team“); in der Vorschau jeder Empfänger zum An- und
+  Ehrenamtliche wie die Listen unter „Verein/Team“; Quelle `liste`: die im Adressbuch unter „Liste
+  zusammenstellen“ gewählten Personen, nur in der Sitzung unter `emp.LISTE_SITZUNG`, nie gespeichert); in der Vorschau jeder Empfänger zum An- und
   Abhaken (`an`, gilt nur zur selben Auswahl: `views._auswahl_kennung()`); abgewählter Haken „nur
   mit Einwilligung“ wird je Konto gemerkt (`Benutzer.listen_filter`).
 - Spenden: `Spende.fremdbeleg` (ADR 0128) kennzeichnet Spenden mit Beleg aus einem anderen

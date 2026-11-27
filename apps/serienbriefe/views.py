@@ -157,7 +157,7 @@ def _einwilligung_gemerkt(benutzer) -> bool:
 def _einwilligung_merken(benutzer, d: dict) -> None:
     """Merkt am Konto, wenn der Haken abgewählt wurde (und vergisst es, wenn er wieder sitzt).
     Nur bei Empfängern, bei denen der Haken überhaupt zur Wahl steht."""
-    if d["quelle"] not in ("adressen", "spender"):
+    if d["quelle"] not in ("adressen", "spender", "liste"):
         return
     gemerkt = dict(benutzer.listen_filter or {})
     if d.get("nur_einwilligung"):
@@ -178,7 +178,8 @@ def _auswahl_kennung(d: dict) -> str:
 
     teile = []
     for name in ("quelle", "versandart", "jahr", "kategorien", "nur_einwilligung",
-                 "mindestbetrag", "mitgliedsarten", "nur_offen", "kundengruppen"):  # fmt: skip
+                 "mindestbetrag", "mitgliedsarten", "nur_offen", "kundengruppen",
+                 "liste_ids"):  # fmt: skip
         wert = d.get(name)
         if hasattr(wert, "values_list"):
             wert = sorted(wert.values_list("pk", flat=True))
@@ -201,13 +202,20 @@ def _beschreibung(d: dict) -> str:
 @never_cache
 @rollen.recht_erforderlich("serienbriefe.erstellen")
 def erstellen(request):
-    form = AuswahlForm(request.POST or None, benutzer=request.user, initial={
+    # Im Adressbuch zusammengestellte Liste: gilt für diese Sitzung, gespeichert wird sie nicht
+    liste_ids = sorted(request.session.get(emp.LISTE_SITZUNG) or [])
+    initial = {
         "vorlage": request.GET.get("vorlage"),
         "nur_einwilligung": _einwilligung_gemerkt(request.user),
-    })  # fmt: skip
-    kontext = {"form": form}
+    }
+    if liste_ids and request.GET.get("liste"):
+        initial["quelle"] = "liste"
+    form = AuswahlForm(request.POST or None, benutzer=request.user, liste=len(liste_ids),
+                       initial=initial)  # fmt: skip
+    kontext = {"form": form, "liste_anzahl": len(liste_ids)}
     if request.method == "POST" and form.is_valid():
         d = form.cleaned_data
+        d["liste_ids"] = liste_ids if d["quelle"] == "liste" else []
         _einwilligung_merken(request.user, d)
         alle = emp.suchen(d["quelle"], d, request.user)
         erreichbar, ohne = emp.aufteilen(alle, d["versandart"])

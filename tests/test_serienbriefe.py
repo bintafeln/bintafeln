@@ -197,6 +197,52 @@ def test_einzelne_empfaenger_abhaken(admin_client, daten, pdf_text):
     assert all(an for _, an in anders.context["liste"])
 
 
+def test_liste_aus_dem_adressbuch_als_empfaenger(
+    admin_client, client, anmelden, benutzer_mit_rolle, daten, django_user_model, pdf_text
+):
+    """„Liste zusammenstellen“ im Adressbuch → „Serienbrief an diese Personen“: genau die
+    Angehakten sind die Empfänger. Die Liste liegt nur in der Sitzung."""
+    anna = _helfer(django_user_model, "Anna", "Aktiv")
+    fritz = _helfer(django_user_model, "Fritz", "Fest", art="fest")
+    _helfer(django_user_model, "Gerd", "Gesperrt")
+    druckliste = reverse("adressen:druckliste")
+    vorlage = Vorlage.objects.get(name="Dank für Spenden")
+    # ohne mitgebrachte Liste steht der Empfängerkreis nicht zur Wahl
+    assert "Zusammengestellte Liste" not in admin_client.get(URL).content.decode()
+    assert 'value="serienbrief"' in admin_client.get(druckliste).content.decode()
+    antwort = admin_client.get(druckliste, {"aktion": "serienbrief", "id": [anna.pk, fritz.pk]})
+    assert antwort.status_code == 302 and antwort.url == URL + "?liste=1"
+    seite = admin_client.get(antwort.url).content.decode()
+    assert "Zusammengestellte Liste aus dem Adressbuch (2 Adressen)" in seite
+    assert '<option value="liste" selected>' in seite
+    form = {"vorlage": vorlage.pk, "quelle": "liste", "versandart": "brief", "jahr": JAHR}
+    vorschau = admin_client.post(URL, form)
+    assert [e.name for e, _ in vorschau.context["liste"]] == ["Anna Aktiv", "Fritz Fest"]
+    text = pdf_text(admin_client.post(URL, form | {"schritt": "pdf"}))
+    assert "Anna Aktiv" in text and "Fritz Fest" in text and "Gesperrt" not in text
+    assert Versand.objects.get().auswahl == "Zusammengestellte Liste aus dem Adressbuch"
+    # „Nur mit Einwilligung“ gilt auch hier, wenn der Haken sitzt
+    mit = admin_client.post(URL, form | {"nur_einwilligung": "on"})
+    assert mit.context["liste"] == []
+    # ohne Haken: die ganze gefilterte Liste
+    admin_client.get(druckliste, {"aktion": "serienbrief", "suche": "Gesperrt"})
+    assert [e.name for e, _ in admin_client.post(URL, form).context["liste"]] == ["Gerd Gesperrt"]
+    # nichts gefunden: zurück zur Liste, die alte Auswahl bleibt
+    leer = admin_client.get(druckliste, {"aktion": "serienbrief", "suche": "gibtesnicht"})
+    assert leer.status_code == 302 and leer.url.startswith(druckliste)
+    assert "aktion" not in leer.url
+    # eine andere Sitzung hat die Liste nicht; eine gebaute Anfrage findet ohne sie niemanden
+    anmelden(client, benutzer_mit_rolle("zweite", rollen.ADMIN))
+    assert "Zusammengestellte Liste" not in client.get(URL).content.decode()
+    assert "Bitte eine gültige Auswahl" in client.post(URL, form).content.decode()
+    # ohne das Recht für Serienbriefe: kein Knopf, kein Weg
+    anmelden(client, benutzer_mit_rolle("nurlesen", rollen.AUSGABE))
+    recht_seite = client.get(druckliste)
+    if recht_seite.status_code == 200:
+        assert 'value="serienbrief"' not in recht_seite.content.decode()
+    assert client.get(druckliste, {"aktion": "serienbrief"}).status_code == 403
+
+
 def test_einwilligungs_haken_wird_gemerkt(admin, admin_client, daten):
     vorlage = Vorlage.objects.get(name="Dank für Spenden")
     assert admin_client.get(URL).context["form"]["nur_einwilligung"].value() is True
