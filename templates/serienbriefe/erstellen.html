@@ -44,7 +44,7 @@
 <div class="seiten-raster">
 <section class="karte" id="ergebnis-vorschau">
   <h2><span data-sb-anzahl>{{ erreichbar|length }}</span> von {{ liste|length }} Empfängern</h2>
-  {% if d.versandart == "email" and not mail_bereit %}<p class="meldung error">Es ist noch kein Mailserver eingerichtet{% if "einstellungen.mail" in rechte %} („Einstellungen → E-Mail“){% endif %}.</p>{% endif %}
+  {% if d.versandart == "email" and not mail_bereit %}<p class="meldung error">Es ist noch kein Mailserver eingerichtet{% if "einstellungen.mail" in rechte %} („Einstellungen → Tafel → E-Mail“){% endif %}.</p>{% endif %}
   {% if ohne %}<p class="meldung error">{{ ohne|length }} ohne {% if d.versandart == "email" %}E-Mail-Adresse{% else %}vollständige Anschrift{% endif %} (werden übersprungen):
     {% for e in ohne|slice:":20" %}{{ e.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if ohne|length > 20 %} …{% endif %}</p>{% endif %}
   {% if liste %}

@@ -1,7 +1,6 @@
 {% load handbuch %}
 <p>Die Ampel fasst alle Regeln zusammen. Darunter steht immer, <em>warum</em> sie so steht.
-  {% if "einstellungen.ausgabe" in rechte %}Die Texte dieser Meldungen lassen sich unter „Einstellungen → Ausgabe, Ampel
-  und Beiträge“ in eigenen Worten formulieren (leer = Standard), z. B. „Bitte am {tage} kommen“.{% endif %}</p>
+  {% if "einstellungen.ausgabe" in rechte %}Die Texte dieser Meldungen lassen sich unter „Einstellungen → Ausgabe → Ausgabe, Ampel und Beiträge“ in eigenen Worten formulieren (leer = Standard), z. B. „Bitte am {tage} kommen“.{% endif %}</p>
 <h3>Rot – keine Abholung</h3>
 <ul>
   <li>Sperre (mit Zeitraum und, wenn eingestellt, Begründung) oder Status „gesperrt“/„beendet“</li>
@@ -14,11 +13,11 @@
 <p>Gelb und Grün leuchten zusammen: Die Abholung kann eingetragen werden, vorher bitte den Hinweis beachten.</p>
 {% hilfe_bild "ampel-gelb" "① Gelb und Grün leuchten, ② darunter steht der Grund (hier: Ausweis läuft bald ab), ③ „Abholung eintragen“ ist trotzdem möglich." %}
 <ul>
-  <li>Ausweis läuft bald ab (Vorwarnung, standardmäßig <strong>5 Wochen</strong> vor Ablauf; einstellbar unter „Einstellungen → Ausgabe, Ampel und Beiträge“, 0 = keine Vorwarnung) – Kunden bitten, Nachweise ins Büro zu bringen</li>
+  <li>Ausweis läuft bald ab (Vorwarnung, standardmäßig <strong>5 Wochen</strong> vor Ablauf; einstellbar unter „Einstellungen → Ausgabe → Ausgabe, Ampel und Beiträge“, 0 = keine Vorwarnung) – Kunden bitten, Nachweise ins Büro zu bringen</li>
   <li>Andere Ausgabestelle als vorgesehen, oder heute nicht dran (wenn nur als Hinweis eingestellt)</li>
   <li>Status „pausiert“</li>
   <li>Kundengruppe ohne Wochentage – bintafeln kann nicht prüfen, ob der Kunde heute dran ist. Unter „Einstellungen →
-    Kundengruppen“ die Wochentage anhaken (für „jeden Tag“ alle).</li>
+    Kunden → Kundengruppen“ die Wochentage anhaken (für „jeden Tag“ alle).</li>
 </ul>
 <h3>Grün – alles in Ordnung</h3>
 <p>Auch Grün mit dem Hinweis „Ausnahme für heute erteilt“: Büro oder Admin haben eine Terminregel für heute aufgehoben.</p>

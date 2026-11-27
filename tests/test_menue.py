@@ -324,3 +324,84 @@ def test_touren_als_eigener_hauptbereich(admin, benutzer_mit_rolle):
 
 def test_ohne_modul_kein_bereich_touren(admin):
     assert "Touren" not in [b["titel"] for b in menue_fuer(admin)]
+
+
+# ── Klick-Folgen in Handbuch und Meldungen stimmen mit dem Menü überein ───────────────────────
+
+# Menüs anderer Programme und Einträge, die nur manche Konten oder Installationen haben
+FREMDE_PFADE = (
+    "Einstellungen → Spalten",  # „Erweiterte Einstellungen → Spalten“ in WISO MeinVerein
+    "Einstellungen → Sicherheit",  # Nextcloud
+    "Dienstpläne → Meine Arbeitszeit",  # nur, wer selbst stempelt
+    "Einstellungen → Tafel → Gemeldete Tafeln",  # nur beim Herausgeber (ADR 0089)
+)
+
+
+def _menuepfade(benutzer) -> set[tuple[str, ...]]:
+    """Alle Wege durchs Menü als („Einstellungen“, „Verein“, „Adresskategorien“)."""
+    anfrage = RequestFactory().get("/")
+    anfrage.user = benutzer
+    wege = set()
+
+    def eintraege(liste, weg):
+        for e in liste:
+            wege.add((*weg, e["titel"]))
+            eintraege(e.get("kinder") or [], (*weg, e["titel"]))
+
+    for bereich in menue(anfrage):
+        gruppen = bereich.get("gruppen") or bereich.get("abschnitte") or []
+        if not gruppen:
+            eintraege(bereich.get("eintraege") or [], (bereich["titel"],))
+        for g in gruppen:
+            weg = (bereich["titel"], g["titel"]) if g.get("titel") else (bereich["titel"],)
+            eintraege(g.get("eintraege") or [], weg)
+    return wege
+
+
+def test_klickfolgen_in_texten_stimmen_mit_dem_menue(admin):
+    """Steht irgendwo „Einstellungen → Adresskategorien“, findet man es nicht: Im Menü heißt der
+    Weg „Einstellungen → Verein → Adresskategorien“. Jede Klick-Folge in Vorlagen, Handbuch und
+    Meldungen muss deshalb – ab dem Hauptbereich – ein Weg durchs Menü sein. Hinter dem Eintrag
+    darf es auf der Seite weitergehen („… → Tafel und Module → Zusätzliche Module“), und ein
+    Eintrag darf abgekürzt sein („Touren → Einrichten“)."""
+    import re
+    from pathlib import Path
+
+    from django.conf import settings
+
+    t = TafelEinstellungen.laden()
+    t.module = [m.rsplit(".", 1)[-1] for m in settings.BINTAFELN_MODULE]
+    t.save()
+    wege = _menuepfade(admin)
+    bereiche = {w[0] for w in wege}
+    # Abgekürzt bis zum Doppelpunkt oder zur Klammer: „Einrichten: Warengruppen, …“ → „Einrichten“
+    wege |= {(*w[:-1], re.split(r":| \(", w[-1])[0]) for w in wege}
+    vorsilben = {w[:n] for w in wege for n in range(2, len(w) + 1)}
+    texte = sorted((" → ".join(w) for w in vorsilben), key=len, reverse=True)
+    eintraege = {" → ".join(w) for w in wege}
+
+    wurzel = Path(settings.BASE_DIR)
+    dateien = [*wurzel.glob("templates/**/*.html"), *wurzel.glob("apps/**/*.html"),
+               *wurzel.glob("apps/**/*.py")]  # fmt: skip
+    falsch = []
+    for datei in dateien:
+        name = datei.relative_to(wurzel).as_posix()
+        if "/migrations/" in name or name == "apps/core/menue.py":
+            continue
+        text = datei.read_text(encoding="utf-8")
+        if "→" not in text:
+            continue
+        text = re.sub(r"\s+", " ", text)
+        text = re.sub(r'"\s*f?"', "", text)  # zusammengesetzte Zeichenketten im Code
+        text = re.sub(r"</?(strong|em|b|i|code)>", "", text).replace("&amp;", "&")
+        for bereich in bereiche:
+            muster = r"(?<![\wäöüÄÖÜß-])(?<!→ )" + re.escape(bereich) + " → "
+            for treffer in re.finditer(muster, text):
+                rest = text[treffer.start() : treffer.start() + 140]
+                if rest.startswith(FREMDE_PFADE):
+                    continue
+                weg = next((x for x in texte if rest.startswith(x)), None)
+                # kein Weg – oder nur eine Gruppe, hinter der es mit etwas Unbekanntem weitergeht
+                if weg is None or (weg not in eintraege and rest[len(weg) :].startswith(" → ")):
+                    falsch.append(f"{name}: {rest[:80]}")
+    assert not falsch, "Klick-Folgen, die es im Menü so nicht gibt:\n" + "\n".join(falsch)

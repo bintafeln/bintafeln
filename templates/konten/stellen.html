@@ -19,7 +19,7 @@
         <td>{{ s.anschrift|default:"–" }}</td>
         <td>{% if s.konto %}{% if s.konto.is_active %}<span class="marke-ok">eingerichtet</span>{% else %}<span class="marke-warnung">gesperrt</span>{% endif %}{% else %}<span class="hinweis">kein Konto</span>{% endif %}</td></tr>
       {% empty %}
-      <tr><td colspan="3" class="hinweis">Noch keine Ausgabestellen – bitte unter „Kunden → Ausgabestellen“ anlegen.</td></tr>
+      <tr><td colspan="3" class="hinweis">Noch keine Ausgabestellen – bitte unter „Einstellungen → Ausgabe → Ausgabestellen“ anlegen.</td></tr>
       {% endfor %}
     </tbody>
   </table>

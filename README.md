@@ -127,7 +127,7 @@ erfundenen Haushalten; wie man eine eigene einrichtet, steht in
 - **Sicherung:** täglich und verschlüsselt, mit Wiederherstellung und Update per Befehl
   (`./betrieb`). Die Startseite zeigt Admins den Stand der Sicherung.
 - **Kundenstamm (im Aufbau):** Datenmodell für Haushalte, Personen, Abholberechtigte, Sperren,
-  Anmerkungen und Kundengruppen. Unter „Einstellungen → Kundenstamm“ legt ein Admin fest, welche
+  Anmerkungen und Kundengruppen. Unter „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“ legt ein Admin fest, welche
   Angaben erfasst werden, und richtet eigene **Zusatzfelder** ein (z. B. „Schwerbehindert“).
   **Import** mit Prüfbericht unter „Kunden“; Liste und Suche folgen.
 - **Hilfe im Programm:** ein ausführliches Handbuch („Hilfe“ im Menü), das nur die Kapitel
@@ -348,7 +348,7 @@ alle Server-Prozesse und übersteht ein Update.
 
 - **Einrichten:** „Mein Konto“ → „Jetzt einrichten“, QR-Code scannen, Code eingeben. Danach
   erscheinen einmalig **10 Notfallcodes**. Jeder funktioniert einmal anstelle der App.
-- **Pflicht je Rolle:** in der Rolle („Einstellungen → Rollen und Rechte“) per Häkchen.
+- **Pflicht je Rolle:** in der Rolle („Einstellungen → Team → Rollen und Rechte“) per Häkchen.
   Voreingestellt: Admin, Büro und Personal.
   Wer eine Pflicht-Rolle hat, wird nach der Anmeldung direkt zur Einrichtung geleitet und kann
   bis dahin nichts anderes öffnen. Auch der erste Admin richtet sie direkt nach der
@@ -383,7 +383,7 @@ Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie
 
 ## Rollen und Rechte
 
-„Einstellungen → Rollen und Rechte“ (Admin; andere nur mit dem Recht „Rollen und Rechte“):
+„Einstellungen → Team → Rollen und Rechte“ (Admin; andere nur mit dem Recht „Rollen und Rechte“):
 
 - **Liste** aller Rollen mit Zahl der Rechte, Zahl der Konten und Pflichten.
 - **Neue Rolle** oder eine Rolle öffnen: Name, Beschreibung, Pflichten (Zwei-Faktor-Anmeldung,
@@ -407,7 +407,7 @@ Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie
 
 ### Mitarbeitende einer Ausgabestelle
 
-Unter „Verein → Team → Mitarbeitende“ lässt sich jedes Konto einer oder mehreren **Ausgabestellen**
+Unter „Verein → Team“ (Ehrenamtliche bzw. Angestellte) lässt sich jedes Konto einer oder mehreren **Ausgabestellen**
 zuordnen. Wer zugeordnet ist, ruft nur Kunden auf, deren Kundengruppe zu einer dieser
 Ausgabestellen gehört: in der Kundenliste, auf der Haushaltsseite und am Einlass. Bei einem
 anderen Kunden erklärt bintafeln, warum („Kunde 200 gehört zur Ausgabestelle „Nord“ …
@@ -419,7 +419,7 @@ Gibt eine Ausgabestelle an mehreren Tagen aus, filtert die Kundenliste nach **Au
 startet mit dem eigenen Tag (Feld „Ausgabetage“ bei den Mitarbeitenden; sonst der heutige, falls
 an dem Tag Ausgabe ist). „Anzeigen“ wählt 25 (Vorgabe), 50, 100 oder alle Haushalte je Seite. Mit dem Recht „Kundenliste als CSV-Datei exportieren“ (Vorgabe: Büro und
 Ausgabe) lädt „Als CSV exportieren (Excel)“ die gefilterte Liste herunter; die Spalten wählt der
-Admin unter „Einstellungen → Kunden → Kundenstamm“, Kontaktdaten, Kontostand und Art.-9-Felder
+Admin unter „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“, Kontaktdaten, Kontostand und Art.-9-Felder
 bleiben ohne das passende Recht leer, und jeder Export steht im Zugriffsprotokoll (ADR 0058).
 Die Kundenliste zeigt dieselben Spalten wie der Export (Einstellung „Spalten der Kundenliste und
 des Exports“); unter „Spalten wählen“ blendet jede Person einzelne für ihr Konto aus
@@ -487,7 +487,7 @@ bearbeitet nur ein Admin. Rollen, die man nicht vergeben darf, bleiben beim Bear
   - Belehrung nach § 43 IfSG und Schulungen mit Ablaufdatum
 - **Fällig:** Die Liste zeigt oben, wann ein Führerschein wieder angesehen werden muss, wann
   eine IfSG-Folgebelehrung fällig ist und welche Schulungen ablaufen. Die Startseite weist
-  darauf hin. Unter „Einstellungen → Mitarbeitende und Dokumente“ heißt 0 Monate beim
+  darauf hin. Unter „Einstellungen → Team → Fristen und Dokumente“ heißt 0 Monate beim
   Führerschein bzw. bei der Belehrung: keine Wiedervorlage dazu (Vorgabe für neue Installationen).
 - **Führerschein-Kopie** nur, wenn unter „Fristen einstellen“ erlaubt (Vorgabe: aus). Sie wird
   verschlüsselt gespeichert, und jeder Abruf wird protokolliert.
@@ -563,7 +563,7 @@ nimmt Meldungen mit `BINTAFELN_VERZEICHNIS_EMPFANG=true` an und zeigt sie unter
 
 ## E-Mail
 
-Unter „Einstellungen → E-Mail“ trägt ein Admin den Mailserver der Tafel ein: Server, Port,
+Unter „Einstellungen → Tafel → E-Mail“ trägt ein Admin den Mailserver der Tafel ein: Server, Port,
 Verschlüsselung, Benutzer, Passwort und Absender. Die Angaben gibt es beim Mail-Anbieter unter
 dem Stichwort „SMTP“ – gemeint ist der Server zum **Senden** (z. B. `smtp.strato.de`, nicht
 `imap.…`). Nach dem Speichern im Bereich **„Testen“**:
@@ -588,7 +588,7 @@ Excel- und CSV-Dateien (siehe „Daten importieren“). Nach der Prüfung wählt
 hinzufügen**, **hinzufügen und aktualisieren** (Vorgabe, löscht nichts) oder **Vollaustausch**
 (ADR 0078).
 
-1. Vorher unter „Einstellungen → Kundenstamm“ festlegen, welche Angaben erfasst werden, und
+1. Vorher unter „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“ festlegen, welche Angaben erfasst werden, und
    benötigte **Zusatzfelder** anlegen (ihre Schlüssel bestimmen die Spalten `zusatz_…`).
 2. „Kunden“ → „Neuen Stand importieren“ (führt in den Import-Assistenten, siehe „Daten
    importieren“) → „Kundenstamm“, Dateien auswählen → Zuordnung prüfen → **Prüfen und abgleichen**.
@@ -620,12 +620,12 @@ Regeln:
   Datensätze), nicht jeder einzelne Datensatz.
 - Importieren dürfen Admin und Büro.
 - Abholungen und Ausnahmen werden nur innerhalb der **Aufbewahrungsfrist** übernommen
-  („Einstellungen → Kundenstamm“, Vorgabe 3 Jahre). Ältere löscht bintafeln automatisch.
+  („Einstellungen → Kunden → Kundenstamm und Zusatzfelder“, Vorgabe 3 Jahre). Ältere löscht bintafeln automatisch.
 
 ### Kundenstamm selbst führen (Import sperren)
 
 Sobald die Tafel die Kundendaten übernommen hat und nicht mehr aus einem Altsystem importiert,
-unter „Einstellungen → Kundenstamm“ **„Kundenstamm wird in bintafeln selbst geführt“** einschalten
+unter „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“ **„Kundenstamm wird in bintafeln selbst geführt“** einschalten
 (ADR 0103). Dann verschwinden die Hinweise, dass ein Import Änderungen überschreiben kann, und der
 Kundenstamm-Import wird gesperrt (das Ziel „Kundenstamm“ wird im Import-Assistenten nicht mehr
 angeboten), damit nichts versehentlich überschrieben wird. Zum erneuten Importieren die Einstellung
@@ -633,7 +633,7 @@ wieder abschalten.
 
 ## Daten importieren (CSV, Excel)
 
-„Einstellungen → Systemsteuerung → Daten importieren“ übernimmt Daten aus anderen Programmen,
+„Einstellungen → Systemsteuerung → Daten importieren (CSV, Excel)“ übernimmt Daten aus anderen Programmen,
 ohne die Datei vorher umzubauen (ADR 0078): **Kundenstamm** (mit Angehörigen, Abholungen,
 Ausnahmen, Sperren, Anmerkungen und Kontobuchungen), **Ausgabestellen** (mit Plätzen, Helfern,
 Barrierefreiheit, WLAN, Ausgabezeiten und bis zu drei Ansprechpartnern), **Kundengruppen**,
@@ -715,7 +715,7 @@ Dokumente, Historie.
 - **Suche** nach Kundennummer oder Name; Status und Kundengruppe lassen sich filtern. Eine
   vollständige Kundennummer mit Enter (z. B. vom Scanner) öffnet den Haushalt direkt.
 - Die **Detailseite** zeigt je nach Rechten unterschiedlich viel. Vorgaben der mitgelieferten
-  Rollen (änderbar unter „Einstellungen → Rollen und Rechte“):
+  Rollen (änderbar unter „Einstellungen → Team → Rollen und Rechte“):
 
   | Rolle | sieht |
   |---|---|
@@ -741,7 +741,7 @@ Dokumente, Historie.
   „Person bearbeiten“ nach der **Behinderung (Art. 9)**: keine Angabe, keine Behinderung oder der
   Grad (GdB 20 bis 100), mit GdB dazu die Merkzeichen zum Ankreuzen wie im Antrag und
   „Schwerbehindertenausweis vorgelegt“. Wann „Schwerbehindert“ gilt, legt die Tafel unter
-  „Einstellungen → Kundenstamm“ fest (ADR 0092): ab GdB (Vorgabe 50), optional eines bestimmter
+  „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“ fest (ADR 0092): ab GdB (Vorgabe 50), optional eines bestimmter
   Merkzeichen, optional nur mit vorgelegtem Ausweis; geänderte Bedingungen bewerten alle Personen
   mit GdB neu, ohne GdB bleibt der Haken. Bl und TBl setzen „Blind“; gespeicherte Werte bei Taub und Stumm bleiben. Was auf „ja“ steht, sieht der Einlass
   unter „Merkmale“; Schwerbehindert, Taub, Stumm und Blind (Art. 9) nur mit dem Recht „besondere
@@ -749,9 +749,8 @@ Dokumente, Historie.
   bzw. ein Kürzel auf den Ausweis. Jedes Merkmal lässt sich ab- und zuschalten, aber nicht löschen;
   eigene legt die Tafel als Zusatzfeld an (Schalter „Am Einlass anzeigen“, „Auf dem Ausweis“).
   Mitgeliefert sind außerdem ausgeschaltete Zusatzfelder als Vorschlag (Ernährung, kein Schweinefleisch,
-  Allergien, Haustiere, keine Kochmöglichkeit), einzuschalten unter „Einstellungen → Kundenstamm
-  und Zusatzfelder“; die zwei mit Art.-9-Bezug sind entsprechend markiert. Kundengruppen, Ausgabestellen
-  und Einkommensarten pflegt der Admin unter „Einstellungen → Kundenstamm → Listen“.
+  Allergien, Haustiere, keine Kochmöglichkeit), einzuschalten unter „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“; die zwei mit Art.-9-Bezug sind entsprechend markiert. Kundengruppen, Ausgabestellen
+  und Einkommensarten pflegt der Admin unter „Einstellungen → Kunden“ und „Einstellungen → Ausgabe → Ausgabestellen“.
   **Achtung:** Ein Vollaustausch aus dem Altsystem ersetzt alle Änderungen; der Prüfbericht nennt
   die Zahl der geänderten Haushalte (ADR 0025). Beim Ergänzen bleiben sie, Konflikte sind je Feld
   wählbar (ADR 0078).
@@ -762,13 +761,12 @@ Dokumente, Historie.
   Klick auf „Karte anzeigen“, vorher gehen keine Daten an Google. Pflegen mit dem Recht
   „Kundengruppen, Ausgabestellen …“ („Bearbeiten“ auf der Seite).
 - **Notizen:** Ausgabe, Büro und Admin schreiben Notizen zum Haushalt, auf der Haushaltsseite
-  oder direkt am Einlass. **Notiz-Vorlagen** („Einstellungen → Kundenstamm → Listen →
-  Notiz-Vorlagen“, Admin) erscheinen abgesetzt unter den Notizen als umrandete „+“-Knöpfe (deutlich anders als Notizen): ein Klick speichert den Text als Notiz. Jede
+  oder direkt am Einlass. **Notiz-Vorlagen** („Einstellungen → Kunden → Notiz-Vorlagen“, Admin) erscheinen abgesetzt unter den Notizen als umrandete „+“-Knöpfe (deutlich anders als Notizen): ein Klick speichert den Text als Notiz. Jede
   Notiz lässt sich einzeln löschen: Büro und Admin jede, die Ausgabe ihre eigenen (auch an
   späteren Tagen), nie die anderer. Notizen hängen an der Kundennummer und
   bleiben beim Import erhalten; gibt es die Kundennummer nicht mehr, werden sie gelöscht
   (ADR 0026). Die **internen Anmerkungen** aus dem Altsystem sehen nur Büro und Admin.
-- **Krankmeldung** (ADR 0075, einschalten unter „Einstellungen → Kundenstamm“): Einlass und
+- **Krankmeldung** (ADR 0075, einschalten unter „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“): Einlass und
   Verwaltung tragen ein, dass ein Kunde von … bis … krank, in Reha oder im Krankenhaus ist (Notiz
   mit Zeitraum, Anmerkung freiwillig, auch rückwirkend). Der Einlass zeigt sie unter der Ampel; sie
   bleibt auch nach dem Ende stehen („entschuldigt“) und wird erst gelöscht, wenn der Kunde wieder
@@ -787,7 +785,7 @@ Dokumente, Historie.
   Einwilligungen usw. als PDF oder Foto hochladen (höchstens 10 MB), mit Dokumentart, Titel und
   Dokumentdatum. Sie werden verschlüsselt gespeichert, nie öffentlich ausgeliefert, und jeder
   Abruf steht im Zugriffsprotokoll und im Änderungsprotokoll. Jede **Dokumentart** hat eine
-  eigene Aufbewahrungsfrist („Einstellungen → Dokumentarten“, Admin; Vorgaben: Bescheid 24,
+  eigene Aufbewahrungsfrist („Einstellungen → Kunden → Dokumentarten“, Admin; Vorgaben: Bescheid 24,
   Datenschutzeinwilligung 36, Sonstiges 12 Monate), gezählt ab dem Dokumentdatum, ohne Datum ab
   dem Hochladen. Danach löscht bintafeln das Dokument automatisch; die Tabelle zeigt den Tag.
   Dokumente hängen an der Kundennummer und überstehen den Import; wird der Haushalt gelöscht,
@@ -796,8 +794,8 @@ Dokumente, Historie.
   Kundenstamm bzw. aufgenommen (mit Antragsnummer), Status, Kundengruppe, Ausweis verlängert,
   Personen hinzugekommen oder entfallen, jeweils mit Quelle (Import, Aufnahme, Bearbeitung) und
   wer es war. Beim Import entsteht sie aus dem Vergleich mit dem vorherigen Stand. Sie hängt an
-  der Kundennummer und wird nach 3 Jahren gelöscht (einstellbar unter „Einstellungen →
-  Kundenstamm“; ADR 0031).
+  der Kundennummer und wird nach 3 Jahren gelöscht (einstellbar unter „Einstellungen → Kunden →
+  Kundenstamm und Zusatzfelder“; ADR 0031).
 - **Nachrichten der Ausgabestellen** (ADR 0062): Gehört ein gesuchter Kunde nicht zur eigenen
   Ausgabestelle, schreibt man mit „✉ Nachricht an die Verwaltung“ (Einlass und Kundenliste) eine
   Nachricht zur Kundennummer, ohne Daten des Kunden zu sehen. Das Büro (Recht „Nachrichten der
@@ -807,8 +805,8 @@ Dokumente, Historie.
   `apps/core/auswahl.py`), die Startseite zählt die offenen je Anliegen.
 - **Ausweise zusammen verlängern** (ADR 0068): Meldet eine Ausgabestelle „Bescheid geprüft –
   Ausweis verlängern“ (Nachrichten-Fenster oder ein Notiz-Knopf mit „Meldet der Verwaltung“ unter
-  „Einstellungen → Notiz-Vorlagen“), steht der Haushalt unter „Kunden → Ausweise verlängern“ (Recht „Haushalte
-  anlegen und bearbeiten“). Jeder wird nach den Bedingungen in „Einstellungen → Kundenstamm“
+  „Einstellungen → Kunden → Notiz-Vorlagen“), steht der Haushalt unter „Kunden → Ausweise verlängern“ (Recht „Haushalte
+  anlegen und bearbeiten“). Jeder wird nach den Bedingungen in „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“
   geprüft: ohne Bedingung, jede Person oder mindestens eine Person erfüllt eine Bedingung
   (Mindestalter oder Ja/Nein-Zusatzfelder wie „Schwerbehindert“); sind Einkommensarten gewählt,
   muss der Haushalt **zusätzlich** eine davon haben (z. B. Bürgergeld, Wohngeld); gesperrte, beendete
@@ -833,11 +831,11 @@ Dokumente, Historie.
 - **Kundengruppe nur mit gültigem Ausweis** (ADR 0061): Pausierte, gesperrte, beendete Kunden
   und Kunden mit abgelaufenem Ausweis fallen automatisch aus der Kundengruppe, bei Änderungen
   sofort, sonst täglich und beim Import. Abschaltbar unter „Einstellungen → Kunden →
-  Kundenstamm“. Die Haushaltsseite zeigt unter der Historie, von wann bis wann ein Kunde in
+  Kundenstamm und Zusatzfelder“. Die Haushaltsseite zeigt unter der Historie, von wann bis wann ein Kunde in
   welcher Kundengruppe war (auch in der Auskunft; gelöscht wie die Historie).
 - Jeder Aufruf einer Detailseite steht im **Zugriffsprotokoll** („Kunden“ → „Zugriffsprotokoll“,
   nur Admin). Die Einträge werden nach 365 Tagen gelöscht, einstellbar unter
-  „Einstellungen → Kundenstamm“.
+  „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“.
 - Oben auf der Detailseite stehen die wichtigsten Knöpfe: **Zum Einlass** (öffnet den Einlass
   mit diesem Kunden), **Ausweis drucken** (Admin, Büro), **Bearbeiten** und **Löschen …**
   (Admin). Löschen zeigt erst eine Seite, die aufzählt, was mitgelöscht wird; erst „Ja, …
@@ -846,7 +844,7 @@ Dokumente, Historie.
 - Admin und Büro finden auf der Detailseite zwei PDFs:
   - **Kundenausweis drucken:** Karte im Scheckkartenformat, mit Kundennummer als Barcode für den
     Scanner am Einlass. In 100 % Größe drucken. **Gestalten** (Admin): „Einstellungen →
-    Kundenstamm → Kundenausweis gestalten“. Elemente (Ausweisname, Name der Tafel, Logo, Name,
+    Kunden → Kundenausweis“. Elemente (Ausweisname, Name der Tafel, Logo, Name,
     Kundengruppe, Ausgabestelle, Gültig bis, Kunde seit, Anzahl Personen, „Personen/Minderjährige“
     (z. B. 6/3: 6 Personen, davon 3 unter dem Alter aus „Kind bis“), freier Text mit
     Platzhaltern, farbige Fläche) einfügen, mit der Maus verschieben und in der Größe ändern;
@@ -960,7 +958,7 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   3. **Angehörige** aus Haushalt und Antrag (mit eigener Staatsangehörigkeit), ergänzen oder
      entfernen.
   4. **Bescheid und Gültigkeit:** Bescheidart (Liste „Einkommensarten“) und Gültigkeit des
-     Ausweises; Vorschlag aus „Einstellungen → Kundenstamm“ (Vorgabe 12 Monate bis Monatsende).
+     Ausweises; Vorschlag aus „Einstellungen → Kunden → Kundenstamm und Zusatzfelder“ (Vorgabe 12 Monate bis Monatsende).
   5. **Kundengruppe:** nur Gruppen mit freiem Platz (Höchstzahl Haushalte der Kundengruppe;
      beendete Haushalte zählen nicht).
   6. **Prüfen und speichern:** neuer Kunde mit der nächsten freien Kundennummer oder bestehender
@@ -1005,7 +1003,7 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    - 🟡 Ausweis läuft bald ab (Vorwarnung in Wochen, Vorgabe 5, einstellbar) oder fehlt,
      andere Ausgabestelle, Status pausiert, heute schon abgeholt, wenn mehrfaches Abholen erlaubt ist, Kundengruppe ohne Wochentage (dann lässt sich
      nicht prüfen, ob heute dran ist; für „jeden Tag“ alle Tage anhaken)
-   - Unter „Einstellungen → Ausgabe und Ampel“: **Abholungen am selben Tag** (1 = einmal,
+   - Unter „Einstellungen → Ausgabe → Ausgabe, Ampel und Beiträge“: **Abholungen am selben Tag** (1 = einmal,
      2 = zweimal, 0 = beliebig oft) und **Höchstzahl je Zeitraum** (0 = keine Grenze).
    - **Eigene Texte der Ampel:** Ebenda lässt sich jede Meldung in eigenen Worten formulieren
      (leer = Standardtext), mit Platzhaltern wie `{datum}`, `{gruppe}` oder `{tage}`; welche
@@ -1014,10 +1012,10 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    Daneben stehen Haushaltsgröße, alle Personen und Abholberechtigten mit Geburtsdatum,
    Ausgabestelle, Karte gültig bis, Kontostand, die letzten Abholungen und die **Notizen**;
    eine neue Notiz lässt sich gleich dort speichern. **Was der Einlass zeigt**, stellt der Admin
-   unter „Einstellungen → Ausgabe, Ampel und Beiträge“ ein (Haken „Einlass zeigt: …“):
+   unter „Einstellungen → Ausgabe → Ausgabe, Ampel und Beiträge“ ein (Haken „Einlass zeigt: …“):
    Haushaltsgröße, Geburtsdaten, Abholberechtigte, Anschrift (Vorgabe aus), Begründung aktiver
    Sperren, letzte Abholungen, Farbe der Kundengruppe, Kontostand. Jede **Kundengruppe** kann eine
-   **Farbe** bekommen („Einstellungen → Kundengruppen“); am Einlass erscheint dann ein farbiges
+   **Farbe** bekommen („Einstellungen → Kunden → Kundengruppen“); am Einlass erscheint dann ein farbiges
    Band mit dem Gruppennamen.
 4. **Kunde anmelden:** Solange ein Kunde angezeigt wird, ist das Suchfeld ausgeblendet. Oben
    rechts stehen Beitrag, „Gezahlt“ und die Knöpfe **„Abholung eintragen“** und **„Abbrechen“**.
@@ -1050,14 +1048,14 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
 7. Den **Kontoverlauf** mit allen Buchungen und Korrekturbuchungen gibt es auf der Haushaltsseite
    (Admin, Büro).
 
-Die Regeln stehen unter „Einstellungen → Ausgabe und Ampel“. Jeder Scan steht im
+Die Regeln stehen unter „Einstellungen → Ausgabe → Ausgabe, Ampel und Beiträge“. Jeder Scan steht im
 Zugriffsprotokoll. **Achtung:** Ein Vollaustausch des Kundenstamms ersetzt auch die am Einlass
 eingetragenen Abholungen und Ausnahmen; der Prüfbericht warnt davor (ADR 0013). Beim Ergänzen
 bleiben sie.
 
 ### Beiträge
 
-Unter „Einstellungen → Ausgabe, Ampel und Beiträge“:
+Unter „Einstellungen → Ausgabe → Ausgabe, Ampel und Beiträge“:
 
 - **Beitrag je zahlender Person** (Vorgabe 1,50 €) und **ab welchem Alter** gezahlt wird
   (Vorgabe 18). Personen ohne Geburtsdatum zahlen mit. Beispiel: 2 Erwachsene und 3 Kinder
@@ -1065,7 +1063,7 @@ Unter „Einstellungen → Ausgabe, Ampel und Beiträge“:
 - **Zusatzbeiträge** (je Abholung, je Erwachsenem, je Kind) gelten nur, wenn eingeschaltet
   (Vorgabe aus). Nach dem Update behalten Installationen mit bisher eingestellten Beträgen ihre
   Berechnung: Zusatzbeiträge sind dort eingeschaltet, der Beitrag je Person ist 0.
-- **Beitragsfreie Zeiträume** („Einstellungen → Beitragsfreie Zeiträume“, z. B. vor
+- **Beitragsfreie Zeiträume** („Einstellungen → Ausgabe → Beitragsfreie Zeiträume“, z. B. vor
   Weihnachten): Der Einlass schlägt dann 0 € vor und zeigt „Heute beitragsfrei“; Vorschläge
   für Vorauszahlungen zählen diese Tage nicht.
 - **Sonderausgaben** (ADR 0072, „Einstellungen → Ausgabe → Sonderausgaben“): außerplanmäßige
@@ -1148,7 +1146,7 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   zum nächsten „Weiter“ leer, niemand wird nachgerufen).
 - **Steuern** (Recht „Kunden aufrufen“, Vorgabe Büro und Ausgabe): Menü
   „Aufruf ↗“ im Kasten unter dem Menü (öffnet die Handy-Steuerung der Ausgabestelle in einem
-  neuen Tab); die ganze Steuerung am PC ist unter „Einstellungen → Aufruf, Monitor und Kiosk“
+  neuen Tab); die ganze Steuerung am PC ist unter „Einstellungen → Monitore → Aufruf, Monitor und Kiosk“
   verlinkt. Weiter, Zurück, Abfrage einer Nummer und „zu spät
   gekommen“ (so viele wartende Plätze nach hinten wie eingestellt). Reihenfolge des Tages als CSV.
 - **Unter dem Menü:** Wer aufrufen darf, sieht links unter dem Menü die laufende Kundengruppe
@@ -1171,7 +1169,7 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
 - **Geräte im Wartebereich:** Monitor (Nummern, Infos im Wechsel, Ton, Layout per Zahnrad),
   Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur
   Staatsangehörigkeit) und Abfrage. Sie brauchen keine Anmeldung, sondern den geheimen Link aus
-  „Einstellungen → Aufruf, Monitor und Kiosk“. „Links der Geräte ungültig machen“ sperrt die alten
+  „Einstellungen → Monitore → Aufruf, Monitor und Kiosk“. „Links der Geräte ungültig machen“ sperrt die alten
   Links; weil danach jedes Gerät neu eingerichtet werden muss, geht das nur auf einer eigenen
   Seite nach Bestätigung mit dem eigenen Passwort. Auch die Links der Steuerung (PC und Handy)
   enthalten einen zufälligen Schlüssel statt der Nummer der Ausgabestelle; sie brauchen
@@ -1377,13 +1375,12 @@ Führt die Fahrer am Handy durch ihre Abholtour (ADR 0147, 0148): Stationen – 
 Lieferanten, Lager … – in einer eigenen Liste, Touren als Stationsfolge, Navigation in Google
 Maps. Lieferscheine bauen darauf auf.
 
-- **Unterwegs** („Dienstpläne → Touren → Touren heute“, Recht „Touren sehen und fahren“, Vorgabe
+- **Unterwegs** („Touren → Touren heute“, Recht „Touren sehen und fahren“, Vorgabe
   Büro, Fahrer, Beifahrer): die Touren des Tages, die eigene oben und zusätzlich auf der
   Startseite. In der Tour je Station eine Karte mit Anschrift, Abholzeit, Anfahrt, Telefon und
   dem Knopf „Navigation starten“. „Ganze Tour in Google Maps“ öffnet alle Stationen als Route
   (höchstens zehn je Link, längere Touren in Abschnitten).
-- **Touren planen** („Einstellungen → Dienstpläne → Touren: Stationsfolgen und kurzfristige
-  Touren“, Recht „Touren planen“, Vorgabe Büro): Stationen anhängen, mit ↑/↓ ordnen, je Station
+- **Touren planen** („Touren → Touren planen“, Recht „Touren planen“, Vorgabe Büro): Stationen anhängen, mit ↑/↓ ordnen, je Station
   auf Wochentage beschränken. Eine Tour nimmt Fahrtage und Besetzung **aus dem Fahrerplan**
   (mit Ersatz und Ausfällen) oder ist eine **eigene Tour** mit eigenen Fahrtagen und Personen.
 - **Kurzfristige Tour** für einen Tag: Personen (Fahrer, Beifahrer, Angestellte) und Stationen
@@ -1394,13 +1391,13 @@ Maps. Lieferscheine bauen darauf auf.
   in Kisten oder kg, Anmerkung, Unterschrift mit dem Finger. Der Lieferschein bekommt eine
   fortlaufende Nummer, liegt als PDF verschlüsselt in bintafeln und geht per E-Mail nur an die
   Station. Ohne E-Mail-Adresse oder bei einem Versandfehler bleibt er gespeichert und „nicht
-  verschickt“; das Büro sendet unter „Dienstpläne → Touren → Lieferscheine“ nach. Warengruppen,
-  Mailtext, Aufbewahrung (Vorgabe 10 Jahre) und der Hauptschalter unter „Einstellungen →
-  Dienstpläne → Touren: Lieferscheine und Warengruppen“ (Admin); je Station abschaltbar.
+  verschickt“; das Büro sendet unter „Touren → Lieferscheine“ nach. Warengruppen,
+  Mailtext, Aufbewahrung (Vorgabe 10 Jahre) und der Hauptschalter unter „Touren → Einrichten“ und „Einstellungen → Touren →
+  Mailversand, Karte und Aufbewahrung“ (Admin); je Station abschaltbar.
 - **Stationsfolgen importieren:** `tourstationen.csv` nach
   [docs/importformat-touren.md](docs/importformat-touren.md); je Tour ersetzt die Datei die
   Stationsfolge.
-- **Stationen** („Dienstpläne → Touren → Stationen“, Recht „Stationen sehen und hinnavigieren“,
+- **Stationen** („Touren → Stationen“, Recht „Stationen sehen und hinnavigieren“,
   Vorgabe Büro, Fahrer, Beifahrer): Name, Art, Kette, Anschrift mit Ortsteil, Telefon,
   Ansprechpartner, Öffnungszeiten, Abholtage und -zeit, Anfahrt für die Fahrer. Filter nach Art
   und Stand, Suche, auch über die Suche im Seitenkopf.
@@ -1465,7 +1462,7 @@ abgelegt). Zuschaltbares Modul (ADR 0087).
 ### Aushang-Monitore
 
 Zeigt Dienstplan und Fahrerplan ganzseitig auf einem Monitor, ohne Menü und ohne Anmeldung
-(ADR 0080). Zuschaltbares Modul, Einstellungen unter „Einstellungen → Ausgabe →
+(ADR 0080). Zuschaltbares Modul, Einstellungen unter „Einstellungen → Monitore →
 Aushang-Monitore“ (Recht „Aushang-Monitore einrichten“, Vorgabe Büro).
 
 - **Ein Aushang je Monitor** mit eigenem geheimen Link; „Neuen Link erzeugen“ sperrt den alten,
@@ -1571,11 +1568,11 @@ Lieferanten, Partner, Presse, Behörden, Mitglieder und ehrenamtliche Helfer (Ka
 Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
 
 - **Adresse**: Organisation (mit Ansprechperson) oder Person, Anschrift, Telefon, Mobil, E-Mail,
-  Webseite, Kategorien (Mehrfachauswahl, gepflegt unter „Einstellungen → Adresskategorien“),
+  Webseite, Kategorien (Mehrfachauswahl, gepflegt unter „Einstellungen → Verein → Adresskategorien“),
   Notiz.
 - **Nummern** (ADR 0133): Mitglieder haben ihre Mitgliedsnummer, alle anderen Adressen bekommen
   automatisch eine Adressnummer aus einem eigenen Bereich ab 2000 (einstellbar unter
-  „Einstellungen → Mitglieder“). Spalte „Nr.“ in der Liste, sortier- und durchsuchbar. Beim Update
+  „Einstellungen → Verein → Mitglieder“). Spalte „Nr.“ in der Liste, sortier- und durchsuchbar. Beim Update
   bekommen alle vorhandenen Adressen ohne Mitgliedschaft einmal eine Nummer.
 - **Kategorie „Spender“ automatisch** (ADR 0132): Wer eine Spende hat (von Hand, Import oder
   WISO MeinVerein; reine Mitgliedsbeiträge zählen nicht), bekommt die Kategorie „Spender“
@@ -1617,7 +1614,7 @@ Mitgliedern „Mitglied Nr.“ mit Link, beide Listen verweisen aufeinander.
   CSV-Export. Beitragszahlungen sind Spenden mit dem Häkchen „Mitgliedsbeitrag“ („Zahlung
   erfassen“ auf der Seite des Mitglieds belegt alles vor) und lassen sich daher auch mit
   Zuwendungsbestätigungen bestätigen.
-- **Einstellungen → Mitglieder** (nur Admin): „Mitglieder zahlen Beiträge“ (Vorgabe aus, weil
+- **Einstellungen → Verein → Mitglieder** (nur Admin): „Mitglieder zahlen Beiträge“ (Vorgabe aus, weil
   die meisten Tafeln keine Beiträge erheben), nächste Nummer; bei Beiträgen zusätzlich Vorgabe
   Jahresbeitrag und Beitrag im Ein-/Austrittsjahr anteilig oder voll. Ist „Mitglieder zahlen
   Beiträge“ aus, erscheint nirgends etwas zu Beiträgen: kein Jahresbeitrag im Formular, kein
@@ -1701,11 +1698,11 @@ Adresse im Adressbuch (ADR 0045).
   kann dieselbe Bestätigung mit ihrer eigenen Unterschrift neu ausfertigen. Ob das Finanzamt
   eingescannte Unterschriften anerkennt, hängt davon ab, ob das Verfahren dort angezeigt wurde
   (R 10b.1 Abs. 4 EStR) – bitte mit der Steuerberatung klären.
-- **Stempel der Tafel (ADR 0137):** unter „Einstellungen → Spenden und Zuwendungsbestätigungen“
+- **Stempel der Tafel (ADR 0137):** unter „Einstellungen → Verein → Spenden und Zuwendungsbestätigungen“
   als Bild hinterlegen; er steht leicht schräg rechts neben der Unterschrift auf jeder
   Bestätigung. Bei Stempel und Unterschrift macht bintafeln den weißen Hintergrund durchsichtig,
   damit kein Text der Bestätigung verdeckt wird.
-- **Einrichten** (nur Admin) unter „Einstellungen → Spenden und Zuwendungsbestätigungen“: Name
+- **Einrichten** (nur Admin) unter „Einstellungen → Verein → Spenden und Zuwendungsbestätigungen“: Name
   und Anschrift der Körperschaft, steuerbegünstigte Zwecke, Art des Bescheids
   (Freistellungsbescheid, Anlage zum KSt-Bescheid, Feststellung nach § 60a AO), Finanzamt,
   Steuernummer, Datum, Veranlagungszeitraum, Startnummer, „Maschinelle Erstellung
@@ -1804,7 +1801,7 @@ Daten der Module (Selbstabholer, Links, Termine der Warteliste, eigene Listen, S
 
 ## Datensicherung in der Oberfläche (Export und Zurücklesen)
 
-„Einstellungen → Export und Zurücklesen“ (Rechte „Alle Daten exportieren“ und „Daten zurücklesen“,
+„Einstellungen → Systemsteuerung → Export und Zurücklesen“ (Rechte „Alle Daten exportieren“ und „Daten zurücklesen“,
 Vorgabe: nur Admin). Ergänzt die tägliche Server-Sicherung (siehe „Betrieb“) um eine Datei, die
 man selbst extern aufbewahrt.
 
@@ -1875,7 +1872,7 @@ docker compose down               # anhalten (Daten bleiben erhalten)
 ### Sicherung einrichten
 
 Der Dienst `backup` sichert die Datenbank und die hochgeladenen Dateien nach den
-**Sicherungsaufträgen**, die man in bintafeln unter „Einstellungen → Sicherungen“ einstellt
+**Sicherungsaufträgen**, die man in bintafeln unter „Einstellungen → Systemsteuerung → Sicherungen“ einstellt
 (siehe [Sicherungsaufträge](#sicherungsaufträge)). Die Sicherungen werden mit
 [age](https://age-encryption.org) verschlüsselt. Auf dem Server liegt nur der **öffentliche**
 Schlüssel. Wer den Server oder die Sicherungen stiehlt, kann sie also nicht lesen. Ohne
@@ -1903,7 +1900,7 @@ Aufbewahrung des Auftrags.
 
 ### Sicherungsaufträge
 
-Unter „Einstellungen → Sicherungen“ (Recht „Sicherungen starten, Sicherungsaufträge
+Unter „Einstellungen → Systemsteuerung → Sicherungen“ (Recht „Sicherungen starten, Sicherungsaufträge
 einstellen“, Vorgabe nur Admin) gibt es:
 
 - **„Jetzt sichern“** bei jedem Auftrag, immer möglich, auch bei ausgeschaltetem Zeitplan. Der
@@ -2009,7 +2006,7 @@ IP-Adresse und ein Passwort bzw. hinterlegst einen SSH-Schlüssel. Dann vom eige
    Danach ist der komplette Bestand auf dem neuen Server.
 7. **Sicherungen für die Zukunft:** `./betrieb schluessel` erzeugt ein **neues** Schlüsselpaar für
    den neuen Server (den privaten Schlüssel wieder getrennt aufbewahren). Dann unter
-   [„Einstellungen → Sicherungen“](#sicherungsaufträge) den Zeitplan einstellen und die
+   [„Einstellungen → Systemsteuerung → Sicherungen“](#sicherungsaufträge) den Zeitplan einstellen und die
    verschlüsselten Sicherungen regelmäßig
    [auf einen anderen Rechner kopieren](#sicherungen-auf-einen-anderen-rechner-kopieren).
 
@@ -2037,7 +2034,7 @@ ausgeführt, ersetzt er die Musterdaten wieder. Nie auf einer Installation mit e
 
 ### Aktualisieren
 
-**Am einfachsten in bintafeln selbst:** „Einstellungen → Update“ (Recht „Programm aktualisieren“,
+**Am einfachsten in bintafeln selbst:** „Einstellungen → Systemsteuerung → Update“ (Recht „Programm aktualisieren“,
 Vorgabe nur Admin). Die Seite zeigt die installierte Version, die verfügbaren Versionen mit ihren
 Änderungen („Was ist neu?“: je Pull Request der Titel und darunter die Stichpunkte „- …“ aus den
 Commit-Beschreibungen; bleibt während und nach dem Update stehen, gemerkt in `vorher.txt`) und

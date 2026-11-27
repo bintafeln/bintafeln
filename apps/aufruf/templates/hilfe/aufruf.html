@@ -21,7 +21,7 @@
 <ol>
   <li>Im blauen Kasten <strong>„Aufruf ↗“</strong> oben im Menü auf die Überschrift klicken (öffnet die
     Handy-Steuerung in einem neuen Tab), bei mehreren Ausgabestellen die eigene wählen. Die ganze Steuerung am PC
-    ist unter „Einstellungen → Aufruf, Monitor und Kiosk“ verlinkt.</li>
+    ist unter „Einstellungen → Monitore → Aufruf, Monitor und Kiosk“ verlinkt.</li>
   <li><strong>Ausgabe starten</strong>. Ab jetzt zeigt der Monitor „Bitte eintreten“ mit den ersten Nummern.</li>
   <li>Mit <strong>Weiter</strong> (oder Leertaste/Enter) sind diese erledigt, die nächsten erscheinen.
     <strong>↩ Zurück</strong> (oder Taste U) nimmt das letzte Weiter zurück.</li>
@@ -35,7 +35,7 @@
     Die zweite Zahl ist dieselbe wie oben rechts in der Kopfzeile; dort steht, wie viele am Einlass schon angenommen wurden), wer eintreten soll
     und wer danach kommt – so ruft niemand aus Versehen weiter. Sind alle Nummern aufgerufen, steht dort „Ausgabe beendet“ mit
     „neu starten“ (alles neu gemischt, von vorn) und „letzten Schritt zurück“. Die Anzeige folgt alle 5 Sekunden den anderen Geräten; wer am Einlass eingetragen wird, verschwindet sofort.</li>
-  <li><strong>Automatisches Ende.</strong> Passiert eine Weile nichts mehr – kein „Weiter“, kein Aufruf, kein Kiosk-Scan –, gilt die Ausgabe von selbst als beendet und verschwindet aus Monitor und Menü; so bleibt sie nicht bis Mitternacht stehen. Wie lange, stellt man je Ausgabestelle unter „Einstellungen → Aufruf, Monitor und Kiosk“ ein (Vorgabe 90 Minuten; 0 = nie automatisch beenden). War es doch nur eine Pause, holt ein Klick auf <strong>„Fortsetzen“</strong> die Ausgabe genau dort zurück, wo sie war – der Fortschritt bleibt erhalten.
+  <li><strong>Automatisches Ende.</strong> Passiert eine Weile nichts mehr – kein „Weiter“, kein Aufruf, kein Kiosk-Scan –, gilt die Ausgabe von selbst als beendet und verschwindet aus Monitor und Menü; so bleibt sie nicht bis Mitternacht stehen. Wie lange, stellt man je Ausgabestelle unter „Einstellungen → Monitore → Aufruf, Monitor und Kiosk“ ein (Vorgabe 90 Minuten; 0 = nie automatisch beenden). War es doch nur eine Pause, holt ein Klick auf <strong>„Fortsetzen“</strong> die Ausgabe genau dort zurück, wo sie war – der Fortschritt bleibt erhalten.
     Ist an Ihrer Ausgabestelle heute keine Ausgabe, erscheint der Kasten gar nicht. Ebenso fehlt er, wenn Ihre
     Ausgabestelle beim Aufruf nicht mitmacht (Einstellungen → Monitore → Aufruf, Monitor und Kiosk → Ausgabestelle: Haken „Aufruf an dieser
     Ausgabestelle“ entfernt) – auch dann, wenn oben im Menü gerade keine Ausgabestelle gewählt ist.</li>
@@ -57,7 +57,7 @@
   <li><strong>rot</strong> „Zu spät: aufgerufen um 10:12 Uhr (vor 35 Minuten)“ – ab wie vielen Minuten, steht in den
     Einstellungen (Vorgabe 15). Darunter der Knopf <strong>„15 Nummern verschieben“</strong>: Er sortiert den Kunden
     so viele wartende Nummern hinter den gerade aufgerufenen neu ein (Maus darüber zeigt die genaue Erklärung).
-    Die Zahl stellen Sie je Ausgabestelle unter „Einstellungen → Aufruf, Monitor und Kiosk“ ein („Zu spät
+    Die Zahl stellen Sie je Ausgabestelle unter „Einstellungen → Monitore → Aufruf, Monitor und Kiosk“ ein („Zu spät
     Gekommene: Plätze nach hinten“).</li>
   <li><strong>gelb</strong> „Noch nicht aufgerufen: 12 Nummern zu früh“ oder „Kam zu spät, neu einsortiert …“,</li>
   <li>„Nicht in der heutigen Aufruf-Liste“, wenn die Kundengruppe heute nicht dran ist.</li>
@@ -98,7 +98,7 @@
 {% if "einstellungen.aufruf" in rechte %}
 <h3>Monitor, Nummern-Anzeige und Kiosk einrichten</h3>
 <ul>
-  <li><strong>Einstellungen → Aufruf, Monitor und Kiosk</strong> zeigt je Ausgabestelle die Links für die Geräte.
+  <li><strong>Einstellungen → Monitore → Aufruf, Monitor und Kiosk</strong> zeigt je Ausgabestelle die Links für die Geräte.
     Unter „ändern“ legen Sie fest, ob an der Ausgabestelle überhaupt aufgerufen wird („Aufruf an dieser
     Ausgabestelle“); ohne Aufruf gibt es dort keinen Kasten unter dem Menü und am Einlass nichts vom Aufruf (kein „zu
     früh“, „zu spät“, kein Blinken, kein „Nummern verschieben“) – auch nicht für Kunden anderer Ausgabestellen.
@@ -126,7 +126,7 @@
 </ul>
 <h3>Aufgerufene Nummern auf der eigenen Homepage</h3>
 <p>Kunden können auf der Homepage der Tafel sehen, welche Nummern gerade aufgerufen werden. Unter „Einstellungen →
-  Aufruf, Monitor und Kiosk“ bei der Ausgabestelle auf „ändern“ und <strong>„Aufgerufene Nummern auf der Homepage
+  Monitore → Aufruf, Monitor und Kiosk“ bei der Ausgabestelle auf „ändern“ und <strong>„Aufgerufene Nummern auf der Homepage
   zeigen“</strong> anhaken. Danach steht bei den Links der Ausgabestelle ein weiterer: „Für die Homepage“.</p>
 <ul>
   <li>Die Seite hinter diesem Link zeigt <strong>nur</strong> die gerade aufgerufenen Kundennummern unter „Jetzt
@@ -151,7 +151,7 @@
 {% hilfe_bild "aufruf-homepage" "So sieht die Anzeige für die Homepage aus: ① die gerade aufgerufenen Kundennummern – sonst nichts." %}
 <h3>Wartezeit aufs Handy</h3>
 <p>Kunden sehen auf ihrem eigenen Handy, wie viele noch vor ihnen sind und ungefähr wie lange es dauert. Ein- und ausschalten
-  zentral unter „Einstellungen → Aufruf, Monitor und Kiosk“ im Abschnitt „Wartezeit aufs Handy“: <em>aus</em>, <em>an
+  zentral unter „Einstellungen → Monitore → Aufruf, Monitor und Kiosk“ im Abschnitt „Wartezeit aufs Handy“: <em>aus</em>, <em>an
   allen Ausgabestellen mit Aufruf</em> oder <em>nur an ausgewählten Ausgabestellen</em> (dann erscheint gleich darunter
   „Ausgabestellen“ zum Ankreuzen). Dort steht auch „Handys je Haushalt“ (Vorgabe 2), gültig für alle.</p>
 {% hilfe_bild "warten-einstellungen" "① aus, an allen oder nur an ausgewählten Ausgabestellen, ② bei „ausgewählten“ gleich darunter die Ausgabestellen ankreuzen; alles speichert sofort." %}
@@ -173,7 +173,7 @@
     „Gleich sind Sie dran – noch … vor Ihnen, bitte kommen Sie zum Eingang“, sobald nur noch wenige Nummern aufgerufen
     werden, bevor die eigene auf dem Monitor steht, und „Sie sind dran! Bitte jetzt eintreten“ beim Aufruf. Jede
     Nachricht kommt einmal am Tag, auf Deutsch und in der zweiten Sprache der Seite. Wie früh „Gleich sind Sie dran“ kommt, steht unter
-    „Einstellungen → Aufruf, Monitor und Kiosk“ bei „Push-Nachricht, wenn noch … vor dem Kunden sind“ (Vorgabe 3,
+    „Einstellungen → Monitore → Aufruf, Monitor und Kiosk“ bei „Push-Nachricht, wenn noch … vor dem Kunden sind“ (Vorgabe 3,
     0 = nur beim Aufruf). <strong>Android</strong> (Chrome, Firefox, Samsung) geht sofort. Auf dem <strong>iPhone</strong>
     (ab iOS 16.4) muss die Seite zuerst über „Teilen → Zum Home-Bildschirm“ abgelegt und von dort geöffnet werden; die
     Seite erklärt das. Die Nachricht ist verschlüsselt; der Push-Dienst des Handy-Herstellers sieht ihren Inhalt nicht.

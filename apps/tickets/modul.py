@@ -88,7 +88,7 @@ MODUL = Modul(
             wann="Sobald jemand ein Ticket anlegt.",
             wahl=Empfaengerwahl(
                 _berechtigte, "die Zuständigen der Kategorie (Personen und Rollen, einstellbar "
-                "unter Einstellungen → Ticket-Kategorien)", fest=False)),
+                "unter Einstellungen → Tafel → Ticket-Kategorien)", fest=False)),
         Art("ticket_antwort", "Antwort oder neuer Status zu meinem Ticket",
             wann="Sobald jemand auf ein Ticket antwortet oder den Status ändert.",
             wahl=Empfaengerwahl(None, "wer das Ticket gemeldet hat und wer dafür zuständig ist",

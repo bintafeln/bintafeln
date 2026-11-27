@@ -17,7 +17,8 @@ from apps.statistik import diagramme as dg
 from apps.statistik import jahresbericht as jb
 from apps.statistik.models import StatistikEinstellungen
 
-# Einzelne Diagramme, die eine Tafel unter „Einstellungen → Statistik" ab-/zuschalten kann
+# Einzelne Diagramme, die eine Tafel unter „Einstellungen → Auswertungen → Statistik" ab- oder
+# zuschalten kann
 # (Schlüssel = ``id`` des Abschnitts; „tag" steht für alle „Je Ausgabetag"-Diagramme zusammen).
 # Reihenfolge wie auf der Seite. Spenden/Mitglieder erscheinen nur mit dem jeweiligen Recht.
 DIAGRAMME = [

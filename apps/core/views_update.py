@@ -1,4 +1,4 @@
-"""Seite „Einstellungen → Update“ (ADR 0043)."""
+"""Seite „Einstellungen → Systemsteuerung → Update“ (ADR 0043)."""
 
 import datetime as dt
 

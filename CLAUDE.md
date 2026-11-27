@@ -290,7 +290,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   das nächste Speichern neue Zeilen doppelt an.
 - Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt
   Links in die Seiten zu setzen). Alles Einstellungsartige unter „Einstellungen“, jede Adresse
-  nur einmal (`tests/test_menue.py`); auch das laufende Verwalten der Ausgabe (Sonderaktionen,
+  nur einmal (`tests/test_menue.py`). Klick-Folgen in Texten immer vollständig, wie man sie
+  klickt: „Einstellungen → Verein → Adresskategorien“, nie „Einstellungen → Adresskategorien“
+  (derselbe Test prüft Vorlagen, Handbuch und Meldungen gegen das Menü); auch das laufende Verwalten der Ausgabe (Sonderaktionen,
   Korrekturwünsche, Post an Ausgabestellen) steht unter „Einstellungen → Ausgabe“, nicht unter „Ausgabestelle“; Fahrdienst und Dienstplan unter „Dienstpläne“.
   Ein Modul kann einen eigenen Hauptbereich mitbringen (er steht nach den Dienstplänen): „Touren“
   mit allem zur Tourenplanung, auch „Einrichten“ (Warengruppen, Fahrzeuge, Zentrale – Recht

@@ -54,8 +54,8 @@ KATALOG = [
     # Kunden
     Recht("kunden.liste", KUNDEN, "Kundenliste und Suche"),
     Recht("kunden.exportieren", KUNDEN, "Kundenliste als CSV-Datei exportieren",
-          "Nur die eigenen Ausgabestellen; Spalten unter „Einstellungen → Kunden → Kundenstamm“. "
-          "Jeder Export steht im Zugriffsprotokoll."),
+          "Nur die eigenen Ausgabestellen; Spalten unter „Einstellungen → Kunden → Kundenstamm "
+          "und Zusatzfelder“. Jeder Export steht im Zugriffsprotokoll."),
     Recht("kunden.alle_ausgabestellen", KUNDEN, "Kunden aller Ausgabestellen aufrufen",
           "Ohne dieses Recht sieht, wer einer Ausgabestelle zugeordnet ist, nur deren Kunden."),
     Recht("kunden.ansehen", KUNDEN, "Seite eines Haushalts ansehen (Grundangaben)",

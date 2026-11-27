@@ -202,7 +202,8 @@ def bewerten(haushalt, heute: dt.date, ausgabestelle, einstellungen) -> Bewertun
         elif not tage:
             terminregel(
                 t("keine_wochentage", f"Kundengruppe {gruppe.name} hat keine Wochentage – nicht "
-                  "prüfbar, ob heute dran (Einstellungen → Kundengruppen)", gruppe=gruppe.name),
+                  "prüfbar, ob heute dran (Einstellungen → Kunden → Kundengruppen)",
+                  gruppe=gruppe.name),
                 GELB,
             )  # fmt: skip
         elif not ist_dran:

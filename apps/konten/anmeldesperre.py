@@ -1,7 +1,8 @@
 """Vorübergehende Sperre nach zu vielen falschen Passwörtern (ADR 0093, ADR 0120).
 
 Gezählt wird je Benutzername im gemeinsamen Cache. Wie viele Fehlversuche erlaubt sind und wie
-lange die Sperre dauert, stellt die Tafel unter „Einstellungen → Anmeldung“ ein
+lange die Sperre dauert, stellt die Tafel unter „Einstellungen → Systemsteuerung → Anmeldung und
+Zwei-Faktor“ ein
 (``AnmeldeEinstellungen.fehlversuche`` / ``sperre_minuten``). Ein Admin kann die Sperre einer
 Person sofort aufheben.
 """

@@ -280,8 +280,8 @@ def fragen(jahr: int, monat_nr: int = 6, stellen=None) -> tuple[Monat, Monat, li
         for f in liste:
             if f.vergleich:
                 f.hinweis = (f"Abholungen aus dem {v} sind nach der Löschfrist schon gelöscht "
-                             "(Einstellungen → Kundenstamm); ein Vergleich ist nicht "
-                             "möglich.")  # fmt: skip
+                             "(Einstellungen → Kunden → Kundenstamm und Zusatzfelder); ein "
+                             "Vergleich ist nicht möglich.")  # fmt: skip
     kind_bis = KundenEinstellungen.laden().kind_bis_alter
     if kind_bis != KIND_BIS:
         liste[1].hinweis += (f" (Der Verband fragt nach unter 18 Jahren; sonst zählt bintafeln "
