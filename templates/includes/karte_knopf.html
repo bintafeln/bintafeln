@@ -1,0 +1,2 @@
+{# Kleiner Knopf neben einer Anschrift: Route von der Tafel in Google Maps (apps/core/karten.py). Ohne Anschrift der Tafel nur die Anschrift selbst. #}
+{% if karte %}<a class="anschrift-karte" href="{{ karte_route|default:karte }}" target="_blank" rel="noopener noreferrer" title="{% if karte_route %}Route und Entfernung von der Tafel in Google Maps{% else %}Öffnet die Anschrift in Google Maps{% endif %}"><span aria-hidden="true">🗺️</span> Karte</a>{% endif %}

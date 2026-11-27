@@ -2261,3 +2261,25 @@ def test_pflicht_nachweise_mit_stern_und_fehler_am_feld(client, offen):
     client.post(FORMULAR, daten(vorname="", anhaenge=[pdf()]))
     ablage = client.get(FORMULAR).content.decode().split("data-ablage")[1].split("</fieldset>")[0]
     assert "data-pflicht" not in ablage
+
+
+def test_antrag_hat_den_knopf_karte_neben_der_anschrift(admin_client, antrag):
+    """Wie auf der Kundenseite: ein Knopf „Karte“ neben der Anschrift, der die Route von der
+    Tafel in Google Maps öffnet – ohne Anschrift der Tafel nur die Anschrift, ohne Straße nichts."""
+    from apps.core.models import TafelEinstellungen
+
+    url = reverse("antraege:antrag", args=[antrag.pk])
+    Antrag.objects.filter(pk=antrag.pk).update(strasse="Musterweg 5", plz="12345",
+                                               ort="Musterstadt")  # fmt: skip
+    seite = admin_client.get(url).content.decode()
+    assert seite.count('class="anschrift-karte"') == 1 and "</span> Karte</a>" in seite
+    assert "maps/search/" in seite and "origin=" not in seite
+    t = TafelEinstellungen.laden()
+    t.strasse, t.plz, t.ort = "Hauptstraße 1", "12345", "Musterstadt"
+    t.save()
+    seite = admin_client.get(url).content.decode()
+    assert seite.count('class="anschrift-karte"') == 1
+    assert "origin=Hauptstra%C3%9Fe+1%2C+12345+Musterstadt" in seite and "destination=" in seite
+    assert 'rel="noopener noreferrer"' in seite
+    Antrag.objects.filter(pk=antrag.pk).update(strasse="")
+    assert "anschrift-karte" not in admin_client.get(url).content.decode()
