@@ -43,7 +43,7 @@
 
   {% if krankmeldung %}
   <details class="krank-melden abwesend-melden">
-    <summary class="knopf knopf-vorlage"><span aria-hidden="true">🤒 </span>Abwesend melden …</summary>
+    <summary class="knopf knopf-vorlage"><span aria-hidden="true">🤒 </span>Abwesend melden</summary>
     {% if notiz_htmx %}
     <form method="post" action="{% url 'ausgabe:krank' h.kundennummer %}" hx-post="{% url 'ausgabe:krank' h.kundennummer %}" hx-target="#einlass">
     {% else %}
@@ -67,7 +67,7 @@
 
   {% if foto_arten %}
   <details class="krank-melden foto-aufnehmen"{% if request.GET.foto %} open{% endif %}>
-    <summary class="knopf knopf-vorlage"><span aria-hidden="true">📷 </span>Foto aufnehmen …</summary>
+    <summary class="knopf knopf-vorlage"><span aria-hidden="true">📷 </span>Foto aufnehmen</summary>
     <form method="post" action="{% url 'kunden:dokument_foto' h.kundennummer %}" enctype="multipart/form-data">
       {% csrf_token %}
       <input type="hidden" name="zurueck" value="{% if notiz_htmx %}{% url 'ausgabe:empfang' %}?nummer={{ h.kundennummer|urlencode }}{% else %}{% url 'kunden:haushalt' h.kundennummer %}{% endif %}">
@@ -86,7 +86,7 @@
   <script src="{% static 'js/foto_sofort.js' %}" defer></script>
   {% endif %}
 
-  {% if "kunden.notizen" in rechte %}<p class="wechsel-knopf"><a href="{% url 'kunden:wechselwunsch' h.kundennummer %}{% if notiz_htmx %}?von=einlass{% endif %}">will wechseln …</a>
+  {% if "kunden.notizen" in rechte %}<p class="wechsel-knopf"><a href="{% url 'kunden:wechselwunsch' h.kundennummer %}{% if notiz_htmx %}?von=einlass{% endif %}">will wechseln</a>
     <small class="leise">(andere Uhrzeit, anderer Tag oder andere Ausgabestelle)</small></p>{% endif %}
 
   {% if notiz_htmx %}

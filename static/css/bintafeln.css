@@ -1536,7 +1536,12 @@ a.fd-ich { font-weight: 600; text-decoration: underline dotted; }
 .notiz-krank { border-left: 4px solid var(--akzent); padding-left: .5rem; }
 .krank-hinweis { margin: 0 0 1rem; padding: .6rem .9rem; border-left: 4px solid var(--akzent); }
 /* Knopf oben rechts in einer Karte, z. B. „Kunden herausnehmen“ (ADR 0177) */
-.karte-knopf-rechts { float: right; margin: 0 0 .5rem .75rem; }
+/* Überschrift einer Karte mit einem Knopf rechts daneben. Kein float: Das drückte die Angaben
+   darunter auf eine schmale Spalte zusammen. */
+.karte-kopfzeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: .4rem .75rem; margin-bottom: .5rem; }
+.karte-kopfzeile h2 { margin: 0; }
+.karte-kopfzeile form { margin: 0; }
 /* „Will wechseln“ bei den Notizen und die Seiten dazu (ADR 0173) */
 /* bewusst zurückhaltend: ein kleiner Link unter den Knöpfen, kein Knopf */
 .wechsel-knopf { margin: .9rem 0 .5rem; font-size: .9rem; }

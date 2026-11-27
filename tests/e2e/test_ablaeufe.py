@@ -113,7 +113,7 @@ def test_kundenliste_auswahl_und_export(angemeldet, admin):
     alle.uncheck()
     expect(seite.locator("tbody input[type=checkbox]:checked")).to_have_count(0)
     # Export nimmt nur die angehakten Haushalte; „Als CSV-Datei“ liegt im Aufklapper
-    # „⬇ Herunterladen …“, der erst geöffnet werden muss.
+    # „⬇ Herunterladen“, der erst geöffnet werden muss.
     zeilen.nth(1).check()
     seite.locator("summary", has_text="Herunterladen").click()
     with seite.expect_download() as laden:
@@ -129,7 +129,7 @@ def test_kundenliste_auswahl_und_export(angemeldet, admin):
 
 
 def test_ehrenamtliche_liste_herunterladen(angemeldet, admin, benutzer_mit_rolle):
-    """„Herunterladen …“ in der Liste der Ehrenamtlichen: CSV kommt als Datei."""
+    """„Herunterladen“ in der Liste der Ehrenamtlichen: CSV kommt als Datei."""
     benutzer_mit_rolle("erna", rollen.AUSGABE)
     seite = angemeldet(admin)
     seite.goto(reverse("konten:ehrenamtliche"))
@@ -1533,7 +1533,7 @@ def test_abwesend_melden_bis_springt_mit_und_heute_morgen(angemeldet, admin):
     morgen = heute + dt.timedelta(days=1)
     seite = angemeldet(admin)
     seite.goto(reverse("kunden:haushalt", args=["04711"]))
-    seite.get_by_text("Abwesend melden …").click()
+    seite.get_by_text("Abwesend melden").click()
     von, bis = seite.locator("#krank-von"), seite.locator("#krank-bis")
     expect(von).to_have_value(f"{heute:%d.%m.%Y}")
     felder = seite.locator(".krank-felder .feld")

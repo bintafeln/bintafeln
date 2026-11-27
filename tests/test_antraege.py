@@ -488,7 +488,7 @@ def test_liste_und_detail(admin_client, antrag):
     Antrag.objects.create(vorname="Zweite", nachname="Person")
     seite = admin_client.get(reverse("antraege:liste")).content.decode()
     assert antrag.nummer in seite and "(2 offen)" in seite
-    # „Herunterladen …“ bündelt CSV/PDF/Mail und teilt sich mit „Importieren & prüfen …“
+    # „Herunterladen“ bündelt CSV/PDF/Mail und teilt sich mit „Importieren & prüfen“
     # einen name, damit sich beim Aufklappen des einen das andere schließt.
     assert "Herunterladen" in seite and 'name="antraege-werkzeuge"' in seite
     assert seite.count('name="antraege-werkzeuge"') == 2 and 'value="csv"' in seite

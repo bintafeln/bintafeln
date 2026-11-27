@@ -214,7 +214,7 @@ def test_haushalt_loeschen_mit_bestaetigungsseite(admin_client, h):
 
     Notiz.objects.create(kundennummer="2001", text="x")
     seite = admin_client.get(url("haushalt", "2001")).content.decode()
-    assert "Zum Einlass</a>" in seite and "Ausweis drucken</a>" in seite and "Löschen …" in seite
+    assert "Zum Einlass</a>" in seite and "Ausweis drucken</a>" in seite and "Löschen" in seite
     assert "/ausgabe/?nummer=2001" in seite
     frage = admin_client.get(url("haushalt_loeschen", "2001")).content.decode()
     assert "Papierkorb" in frage and "30 Tage" in frage and "Erika Test" in frage
@@ -240,7 +240,7 @@ def test_kundenseite_fuer_ausgabe(client, admin, benutzer_mit_rolle, anmelden, h
     recht_nehmen(rollen.AUSGABE, "einlass.nutzen")  # mit Einlass geht es gleich dorthin
     anmelden(client, benutzer_mit_rolle("kim", rollen.AUSGABE))
     seite = client.get(url("haushalt", "2001")).content.decode()
-    assert "Zum Einlass</a>" in seite and "Löschen …" not in seite
+    assert "Zum Einlass</a>" in seite and "Löschen" not in seite
     assert "Ausweis drucken</a>" not in seite
     assert client.get(url("haushalt_loeschen", "2001")).status_code == 403
 

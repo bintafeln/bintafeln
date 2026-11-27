@@ -21,7 +21,7 @@ dafür eigene Knöpfe hat (Adress-Maske).
       {% csrf_token %}{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
       <button type="submit" class="knopf">Online-Zugang freigeben</button>
     </form>
-    <a class="knopf knopf-zweitrangig" href="{% url 'konten:zugaenge_freigeben' %}">Alle offenen Zugänge …</a>
+    <a class="knopf knopf-zweitrangig" href="{% url 'konten:zugaenge_freigeben' %}">Alle offenen Zugänge</a>
   </div>
   {% endif %}
   <div class="aktionen">

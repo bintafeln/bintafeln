@@ -125,7 +125,7 @@ def einlass(haushalt, heute: dt.date, stelle=None) -> list[dict]:
             hinweis["knopf"] = {
                 "recht": "angebote.eintragen",
                 "url": reverse("angebote:eintragen", args=[angebot.pk, haushalt.kundennummer]),
-                "text": "Interesse eintragen …" if kann and not da else "Eintrag ändern …",
+                "text": "Interesse eintragen" if kann and not da else "Eintrag ändern",
                 "erklaerung": (angebot.beschreibung or "Trägt eine Person dieses Haushalts als "
                                "interessiert ein.")[:300],
             }  # fmt: skip

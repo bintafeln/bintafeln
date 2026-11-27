@@ -30,7 +30,7 @@
           {% endwith %}
         </td>
         <td>
-<a class="leise" href="{% url 'aufruf:schluessel_neu' s.pk %}">Links der Geräte ungültig machen …</a>
+<a class="leise" href="{% url 'aufruf:schluessel_neu' s.pk %}">Links der Geräte ungültig machen</a>
 {% if e.homepage %}<form method="post" action="{% url 'aufruf:homepage_schluessel_neu' s.pk %}" class="inline" onsubmit="return confirm('Neuen Link für die Homepage erzeugen? Der alte zeigt danach nichts mehr.')">{% csrf_token %}<button type="submit" class="link-knopf">Neuer Link für die Homepage</button></form>{% endif %}
         </td>
       </tr>

@@ -51,7 +51,7 @@ def an():
 
 def test_ausgeschaltet_kein_formular(h, admin_client):
     seite = admin_client.get(reverse("kunden:haushalt", args=["00042"])).content.decode()
-    assert "Abwesend melden …" not in seite
+    assert "Abwesend melden" not in seite
     daten = {"krank_grund": "krank", "krank_von": HEUTE.isoformat()}
     antwort = admin_client.post(reverse("kunden:krank_neu", args=["00042"]), daten)
     assert antwort.status_code == 403 and not Notiz.objects.exists()
@@ -60,7 +60,7 @@ def test_ausgeschaltet_kein_formular(h, admin_client):
 def test_melden_in_der_verwaltung(h, an, admin_client):
     url = reverse("kunden:haushalt", args=["00042"])
     seite = admin_client.get(url).content.decode()
-    assert "Abwesend melden …" in seite and 'summary class="knopf knopf-vorlage"' in seite
+    assert "Abwesend melden" in seite and 'summary class="knopf knopf-vorlage"' in seite
     # Von und Bis sind mit dem heutigen Datum vorbelegt (beide überschreibbar).
     heute_iso = HEUTE.isoformat()
     assert f'name="krank_von" id="krank-von" value="{heute_iso}"' in seite

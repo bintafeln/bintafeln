@@ -143,7 +143,7 @@ def test_liste_suche(admin_client):
 
 
 def test_herunterladen_hat_sein_formular(admin_client):
-    """Die Knöpfe hinter „Herunterladen …“ schicken das Formular „auswahl“ ab. Fehlt es auf der
+    """Die Knöpfe hinter „Herunterladen“ schicken das Formular „auswahl“ ab. Fehlt es auf der
     Seite, passiert beim Klicken nichts – deshalb für jede Liste mit diesem Aufklapper prüfen."""
     import re
     from pathlib import Path
@@ -266,7 +266,7 @@ def test_personalnummer_automatisch_eigener_kreis(admin_client):
     # Die Nummer erscheint in der Liste
     inhalt = admin_client.get(reverse("konten:ehrenamtliche")).content.decode()
     assert f'<td data-titel="Nummer">{erste}</td>' in inhalt
-    assert "⬇ Herunterladen …" in inhalt  # Export-Aufklapper oben rechts (einheitlich)
+    assert "⬇ Herunterladen" in inhalt  # Export-Aufklapper oben rechts (einheitlich)
 
 
 def test_personalnummer_unabhaengig_von_mitgliedsnummer(admin_client):

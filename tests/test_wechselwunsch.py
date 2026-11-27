@@ -101,7 +101,7 @@ def test_eintragen_schritt_fuer_schritt_mit_kontaktpruefung(admin_client, admin,
     ziel = reverse("kunden:wechselwunsch", args=[h.kundennummer])
     # am Kunden steht der Knopf
     seite = admin_client.get(reverse("kunden:haushalt", args=[h.kundennummer])).content.decode()
-    assert "will wechseln …" in seite and ziel in seite
+    assert "will wechseln" in seite and ziel in seite
     # Schritt 1: nur die erste Frage
     seite = admin_client.get(ziel).content.decode()
     assert "1. Was soll sich ändern?" in seite and 'wechsel-frage" id="weiter' not in seite
@@ -388,7 +388,7 @@ def test_am_einlass_ueber_die_notizen(admin_client, lage):
     einlass = reverse("ausgabe:empfang")
     weg = reverse("kunden:wechselwunsch", args=["100"])
     seite = admin_client.get(einlass, {"nummer": "100"}, HTTP_HX_REQUEST="true").content.decode()
-    assert f'href="{weg}?von=einlass"' in seite and "will wechseln …" in seite
+    assert f'href="{weg}?von=einlass"' in seite and "will wechseln" in seite
 
     seite = admin_client.get(weg, {"von": "einlass", "was": "uhrzeit", "richtung": "frueher"})
     assert f'href="{einlass}?nummer=100"' in seite.content.decode()  # „zurück zum Kunden“
