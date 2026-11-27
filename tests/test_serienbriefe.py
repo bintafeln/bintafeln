@@ -165,6 +165,10 @@ def test_ehrenamtliche_und_ehemalige_als_empfaenger(daten, admin, django_user_mo
         "Eva Ehemals", "Gerd Gesperrt", "Otto Ohnekonto",
     ]  # fmt: skip
     assert dict(emp.QUELLEN)["ehrenamtliche"] == "Ehrenamtliche"
+    # Angestellte als eigener Kreis; gesperrte Konten zählen nicht
+    _helfer(django_user_model, "Greta", "Gegangen", art="fest", aktiv=False)
+    assert [e.name for e in emp.suchen("angestellte", d)] == ["Fritz Fest"]
+    assert dict(emp.QUELLEN)["angestellte"] == "Angestellte"
 
 
 def test_einzelne_empfaenger_abhaken(admin_client, daten, pdf_text):
