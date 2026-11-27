@@ -573,3 +573,36 @@ def druckliste(request):
         "ausrichtung": "hoch" if request.GET.get("ausrichtung") == "hoch" else "quer",
         "leer": request.GET.get("leer", "0"), "leer_titel": request.GET.get("leer_titel", ""),
     })  # fmt: skip
+
+
+@rollen.recht_erforderlich("einstellungen.listen")
+def kategorien_zusammenfuehren(request):
+    """Zwei Adresskategorien zu einer machen: erst ansehen, wie viele Adressen es betrifft, dann
+    zusammenführen. Die wegfallende Kategorie geht in den Papierkorb."""
+    from apps.adressen import kategorien
+
+    daten = request.POST if request.method == "POST" else request.GET
+    alle = {str(k.pk): k for k in AdressKategorie.objects.all()}
+    weg, bleibt = alle.get(daten.get("weg", "")), alle.get(daten.get("bleibt", ""))
+    fehler, zahlen = "", None
+    if weg and bleibt:
+        try:
+            kategorien.pruefen(weg, bleibt)
+            if request.method == "POST":
+                anzahl = kategorien.zusammenfuehren(request.user, weg, bleibt)
+                messages.success(
+                    request,
+                    f"„{weg.name}“ ist mit „{bleibt.name}“ zusammengeführt ({anzahl} "
+                    f"Adresse{'' if anzahl == 1 else 'n'}). "
+                    "Die alte Kategorie liegt im Papierkorb.",
+                )
+                return redirect("kunden:liste", art="adresskategorien")
+            zahlen = kategorien.betroffen(weg, bleibt)
+        except kategorien.Fehler as e:
+            fehler = str(e)
+    elif daten.get("weg") or daten.get("bleibt"):
+        fehler = "Bitte beide Kategorien wählen."
+    return render(request, "adressen/kategorien_zusammenfuehren.html", {
+        "kategorien": list(alle.values()), "feste": kategorien.feste(), "weg": weg,
+        "bleibt": bleibt, "fehler": fehler, "zahlen": zahlen,
+    })  # fmt: skip

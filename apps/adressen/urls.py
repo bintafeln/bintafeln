@@ -9,6 +9,11 @@ urlpatterns = [
     path("druckliste/", views.druckliste, name="druckliste"),
     path("sammel-bearbeiten/", views.sammel_bearbeiten, name="sammel_bearbeiten"),
     path("spalten/", views.spalten, name="spalten"),
+    path(
+        "kategorien-zusammenfuehren/",
+        views.kategorien_zusammenfuehren,
+        name="kategorien_zusammenfuehren",
+    ),  # fmt: skip
     path("neu/", views.bearbeiten, name="neu"),
     path("importieren/", views.importieren_ansicht, name="importieren"),
     path("<int:pk>/", views.adresse, name="adresse"),

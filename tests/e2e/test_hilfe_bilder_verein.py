@@ -218,6 +218,27 @@ def test_hilfe_bild_adressbuch(angemeldet, admin, muster):
               Marke(seite.get_by_role("link", name="+ Neue Adresse"), "rahmen", 4))  # fmt: skip
 
 
+def test_hilfe_bild_kategorien_zusammenfuehren(angemeldet, admin, muster):
+    weg = AdressKategorie.objects.get(name="Lieferant/Markt")
+    bleibt = AdressKategorie.objects.create(name="Markt")
+    for name in ("Frischmarkt Muster", "Bäckerei Probe"):
+        Adresse.objects.create(organisation=name, plz="12345", ort="Musterstadt").kategorien.add(
+            weg
+        )
+    url = reverse("adressen:kategorien_zusammenfuehren")
+    seite = oeffnen(angemeldet, admin, f"{url}?weg={weg.pk}&bleibt={bleibt.pk}")
+    knopf = seite.get_by_role("button", name=re.compile("zusammenführen"))
+    aufnehmen(
+        seite,
+        "adressbuch-kategorien-zusammenfuehren",
+        seite.locator("section.karte"),
+        Marke(seite.locator("#weg"), nummer=1, von="rechts"),
+        Marke(seite.locator("#bleibt"), nummer=2, von="rechts"),
+        Marke(seite.get_by_role("button", name="Ansehen"), nummer=3, von="rechts"),
+        Marke(knopf, nummer=4, von="rechts"),
+    )
+
+
 def test_hilfe_bild_mitglied_aufnehmen(angemeldet, admin, muster):
     seite = oeffnen(angemeldet, admin, reverse("adressen:neu") + "?mitglied=1")
     _ohne_menue(seite)

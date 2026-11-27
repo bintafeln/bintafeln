@@ -1151,3 +1151,60 @@ def test_druckliste_mehrfach_filtern_und_kategorie(admin_client, admin, client, 
     assert 'name="kategorie"' in inhalt and 'name="rolle"' not in inhalt
     assert namen(client, kategorie=[spender_pk]) & alle == {"Spenderin"}
     assert alle <= namen(client, mitarbeit=["angestellt"])  # wird ohne Recht nicht angewandt
+
+
+# ── Kategorien zusammenführen ────────────────────────────────────────────────
+
+
+def test_kategorien_zusammenfuehren(admin_client, admin, markt):
+    from apps.core.models import PapierkorbEintrag
+
+    weg = AdressKategorie.objects.get(name="Lieferant/Markt")
+    bleibt = AdressKategorie.objects.create(name="Markt")
+    beide = Adresse.objects.create(organisation="Bäckerei Probe", plz="12345", ort="Musterstadt")
+    beide.kategorien.set([weg, bleibt])
+    url = reverse("adressen:kategorien_zusammenfuehren")
+    liste = admin_client.get(reverse("kunden:liste", args=["adresskategorien"])).content.decode()
+    assert url in liste
+    # Erst ansehen: wie viele Adressen es betrifft
+    seite = admin_client.get(url, {"weg": weg.pk, "bleibt": bleibt.pk}).content.decode()
+    assert "<strong>2</strong> Adressen" in seite and "1 davon hat sie schon" in seite
+    assert AdressKategorie.objects.filter(pk=weg.pk).exists()  # Ansehen ändert nichts
+    antwort = admin_client.post(url, {"weg": weg.pk, "bleibt": bleibt.pk}, follow=True)
+    assert "zusammengeführt (2 Adressen)" in antwort.content.decode()
+    assert not AdressKategorie.objects.filter(pk=weg.pk).exists()
+    assert list(markt.kategorien.values_list("name", flat=True)) == ["Markt"]
+    assert list(beide.kategorien.values_list("name", flat=True)) == ["Markt"]
+    # Aus dem Papierkorb kommt die alte Kategorie samt ihren Adressen zurück
+    from apps.core import papierkorb
+
+    eintrag = PapierkorbEintrag.objects.get(art="Adresskategorie")
+    assert eintrag.recht == "einstellungen.listen"
+    papierkorb.wiederherstellen(eintrag, admin)
+    assert set(markt.kategorien.values_list("name", flat=True)) == {"Markt", "Lieferant/Markt"}
+
+
+def test_kategorien_zusammenfuehren_schutz(admin_client, client, anmelden, benutzer_mit_rolle):
+    spender = AdressKategorie.objects.get(name="Spender")
+    partner = AdressKategorie.objects.get(name="Partner")
+    url = reverse("adressen:kategorien_zusammenfuehren")
+    # Was bintafeln selbst setzt, kann nicht wegfallen – auch nicht mit einer gebauten Anfrage
+    antwort = admin_client.post(url, {"weg": spender.pk, "bleibt": partner.pk})
+    assert "setzt bintafeln selbst" in antwort.content.decode()
+    assert AdressKategorie.objects.filter(pk=spender.pk).exists()
+    seite = admin_client.get(url).content.decode()
+    wahl_weg = seite.split('id="weg"')[1].split("</select>")[0]
+    assert "Partner" in wahl_weg and "Spender" not in wahl_weg and "Helfer" not in wahl_weg
+    # dieselbe zweimal, nur eine gewählt
+    antwort = admin_client.post(url, {"weg": partner.pk, "bleibt": partner.pk})
+    assert "zwei verschiedene Kategorien" in antwort.content.decode()
+    assert (
+        "Bitte beide Kategorien wählen"
+        in admin_client.get(url, {"weg": partner.pk}).content.decode()
+    )
+    assert AdressKategorie.objects.filter(pk=partner.pk).exists()
+    # ohne das Recht für die Listen nicht erreichbar
+    anmelden(client, benutzer_mit_rolle("buero-ohne", rollen.BUERO))
+    assert client.get(url).status_code == 403
+    assert client.post(url, {"weg": partner.pk, "bleibt": spender.pk}).status_code == 403
+    assert AdressKategorie.objects.filter(pk=partner.pk).exists()
