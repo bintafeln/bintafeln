@@ -3,6 +3,7 @@
 from django.contrib import messages
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_GET, require_POST
 
@@ -19,10 +20,19 @@ def anzeige(request, schluessel):
     if e is None:
         raise Http404
     teil = request.GET.get("teil") == "1"  # nur der Kasten, zum Nachladen
+    stand = homepage.stand(e)
+    naechste = stand["naechste"]
+    jetzt = timezone.now()
     antwort = render(
         request,
         "aufruf/_homepage_stand.html" if teil else "aufruf/homepage.html",
-        {"stand": homepage.stand(e), "stelle": e.ausgabestelle, "neu_laden": homepage.NEU_LADEN},
+        {
+            "stand": stand,
+            "stelle": e.ausgabestelle,
+            "neu_laden": homepage.NEU_LADEN,
+            "heute": naechste is not None and naechste["tag"] == timezone.localdate(),
+            "bis_dahin": homepage.countdown(naechste and naechste["ziel"], jetzt),
+        },
     )
     # Einbetten nur von der eingetragenen Homepage; diese Angabe geht in Browsern vor
     # X-Frame-Options, das der Proxy sonst auf DENY setzt.

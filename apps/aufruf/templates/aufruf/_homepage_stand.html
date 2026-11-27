@@ -1,11 +1,17 @@
 {% if stand.art == "nummern" %}
-  <p class="titel">Bitte eintreten</p>
+  <p class="titel">Jetzt sind dran</p>
   <p class="nummern">{% for n in stand.nummern %}<span>{{ n }}</span>{% endfor %}</p>
+  <p class="text">Bitte kommen Sie mit Ihrem Tafelausweis zur Ausgabe.</p>
 {% elif stand.art == "gleich" %}
   <p class="titel">Die Ausgabe läuft</p>
-  <p class="ruhe">Gleich werden die nächsten Nummern aufgerufen.</p>
-{% elif stand.art == "beendet" %}
-  <p class="titel">Ausgabe für heute beendet</p>
+  <p class="text">Gleich werden die nächsten Nummern aufgerufen. Bitte halten Sie Ihren Ausweis bereit.</p>
 {% else %}
-  <p class="titel">Zurzeit keine Ausgabe</p>
+  <p class="titel">{% if stand.art == "beendet" %}Ausgabe für heute beendet{% else %}Zurzeit keine Ausgabe{% endif %}</p>
+  {% with n=stand.naechste %}{% if n %}
+    <p class="text">{% if heute %}Die Ausgabe beginnt heute{% if n.beginn %} um {{ n.beginn|time:"H:i" }} Uhr{% endif %}.{% else %}Nächste Ausgabe: <strong>{{ n.tag|date:"l, j. F" }}{% if n.beginn %}, {{ n.beginn|time:"H:i" }} Uhr{% endif %}</strong>{% endif %}</p>
+    {% if n.ziel %}<p class="countdown" data-ziel="{{ n.ziel|date:"c" }}">{{ bis_dahin }}</p>{% endif %}
+  {% elif stand.art == "beendet" %}
+    <p class="text">Vielen Dank für Ihren Besuch.</p>
+  {% endif %}{% endwith %}
 {% endif %}
+<p class="stand">Stand {{ stand.stand|time:"H:i" }} Uhr</p>

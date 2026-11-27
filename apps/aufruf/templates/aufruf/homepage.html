@@ -10,8 +10,12 @@
     html, body { margin: 0; background: transparent; }
     body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #1f2933;
            text-align: center; padding: 1rem; }
-    .titel { font-size: 1.5rem; font-weight: 700; margin: 0 0 .75rem; }
-    .ruhe { margin: 0; font-size: 1.1rem; }
+    .titel { font-size: clamp(2rem, 9vw, 3.5rem); line-height: 1.1; font-weight: 800; margin: .25rem 0 1rem; }
+    .text { margin: .75rem auto 0; max-width: 32rem; font-size: clamp(1.1rem, 4.5vw, 1.35rem); line-height: 1.4; }
+    .countdown { display: inline-block; margin: 1rem 0 0; padding: .5rem 1.25rem; border-radius: 999px;
+                 background: var(--akzent, #1f5fa8); color: var(--auf-akzent, #fff);
+                 font-size: clamp(1.2rem, 5vw, 1.6rem); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .stand { margin: 1.25rem 0 0; font-size: .85rem; opacity: .65; }
     .nummern { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; margin: 0; }
     .nummern span { background: var(--akzent, #1f5fa8); color: var(--auf-akzent, #fff); border-radius: .6rem;
                     padding: .4rem 1.1rem; font-size: clamp(2rem, 9vw, 4rem); font-weight: 800;
