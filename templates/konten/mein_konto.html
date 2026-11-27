@@ -22,7 +22,7 @@
         <p class="sicherung sicherung-ok">Eingeschaltet (Code aus der Authenticator-App).</p>
         <p>Noch {{ notfallcodes_uebrig }} unbenutzte Notfallcode{{ notfallcodes_uebrig|pluralize:"s" }}.</p>
         {% if zwei_faktor_pflicht %}
-        <p class="hinweis">Pflicht für Ihre Rolle, kann nicht abgeschaltet werden. Neues Handy? Ein Admin setzt sie zurück.</p>
+        <p class="hinweis">Pflicht für Ihre Rolle, kann nicht abgeschaltet werden. Neues Handy? Unten „Zwei-Faktor neu einrichten“.</p>
         {% endif %}
         <form method="post" action="{% url 'konten:notfallcodes_neu' %}">
           {% csrf_token %}
@@ -113,6 +113,16 @@
 
   {% if zwei_faktor_erlaubt and zwei_faktor_aktiv %}
   <div class="konto-unten">
+  <h2 id="zwei-faktor-neu">Zwei-Faktor neu einrichten</h2>
+  <p class="hinweis">Für ein neues Handy oder eine andere Authenticator-App. Geben Sie zur Sicherheit einen aktuellen
+    Code ein – aus der bisherigen App oder einen Notfallcode. Danach scannen Sie einen neuen QR-Code. Die bisherige App
+    und die alten Notfallcodes gelten erst dann nicht mehr, wenn die neue Einrichtung bestätigt ist.</p>
+  <form method="post" action="{% url 'konten:zwei_faktor_neu' %}">
+    {% csrf_token %}
+    <div class="feld"><label for="neu-code">Code aus der App oder Notfallcode *</label>
+      <input type="text" name="code" id="neu-code" autocomplete="one-time-code" inputmode="text" required></div>
+    <button type="submit" class="knopf knopf-zweitrangig">Zwei-Faktor neu einrichten …</button>
+  </form>
   {% if not zwei_faktor_pflicht %}
   <h2>Zwei-Faktor abschalten</h2>
   <form method="post" action="{% url 'konten:zwei_faktor_abschalten' %}">

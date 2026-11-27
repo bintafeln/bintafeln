@@ -81,6 +81,7 @@ ALLE_ANGEMELDETEN = {
     "konten:passwort_aendern",
     "konten:meine_auskunft",
     "konten:zwei_faktor_einrichten",
+    "konten:zwei_faktor_neu",  # nur fürs eigene Konto, nur mit gültigem Code
     "konten:notfallcodes_neu",
     "konten:zwei_faktor_abschalten",
     "konten:geraete_entfernen",

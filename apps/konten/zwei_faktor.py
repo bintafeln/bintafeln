@@ -116,12 +116,36 @@ def notfallcodes_uebrig(benutzer) -> int:
 
 @transaction.atomic
 def einrichtung_bestaetigen(geraet: TOTPDevice, code: str) -> bool:
+    """Bestätigt das neue Gerät mit seinem ersten Code. Ein bisheriges Gerät (beim neu Einrichten)
+    gilt ab dann nicht mehr – erst jetzt, damit niemand ohne Zwei-Faktor dasteht, der mittendrin
+    abbricht."""
     if not geraet.verify_token(code_bereinigen(code)):
         return False
     geraet.confirmed = True
     geraet.save()
-    TOTPDevice.objects.filter(user=geraet.user, confirmed=False).delete()
+    TOTPDevice.objects.filter(user=geraet.user).exclude(pk=geraet.pk).delete()
     return True
+
+
+# ── Neu einrichten (neues Handy, andere App): erst mit einem gültigen Code freigeben ─────────
+
+NEU_SITZUNG = "zwei_faktor_neu"
+NEU_MINUTEN = 15
+
+
+def neu_freigeben(request) -> None:
+    """Merkt in der Sitzung, dass sich die Person gerade mit einem Code ausgewiesen hat und die
+    Zwei-Faktor-Anmeldung neu einrichten darf."""
+    request.session[NEU_SITZUNG] = timezone.now().timestamp()
+
+
+def neu_freigegeben(request) -> bool:
+    seit = request.session.get(NEU_SITZUNG)
+    return bool(seit) and timezone.now().timestamp() - seit < NEU_MINUTEN * 60
+
+
+def neu_erledigt(request) -> None:
+    request.session.pop(NEU_SITZUNG, None)
 
 
 @transaction.atomic

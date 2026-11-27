@@ -1,9 +1,12 @@
 {% extends "base.html" %}
-{% block titel %}Zwei-Faktor einrichten{% endblock %}
+{% block titel %}Zwei-Faktor {% if neu %}neu {% endif %}einrichten{% endblock %}
 {% block inhalt %}
 <section class="karte schmal">
-  <h1>Zwei-Faktor einrichten</h1>
-  {% if pflicht %}
+  <h1>Zwei-Faktor {% if neu %}neu {% endif %}einrichten</h1>
+  {% if neu %}
+    <p class="hinweis">Die bisherige App gilt noch, bis Sie hier den Code aus der neuen bestätigt haben. Danach
+      bekommen Sie auch neue Notfallcodes. In der alten App können Sie den Eintrag anschließend löschen.</p>
+  {% elif pflicht %}
     <p class="sicherung">Für Ihre Rolle ist die Zwei-Faktor-Anmeldung Pflicht. Bitte richten Sie sie
       jetzt ein.</p>
   {% endif %}
@@ -26,9 +29,12 @@
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Bestätigen</button>
   </form>
+  {% if neu %}<p class="abseits"><a href="{% url 'konten:mein_konto' %}">Abbrechen – es bleibt bei der bisherigen App</a></p>
+  {% else %}
   <form method="post" action="{% url 'konten:abmelden' %}" class="abseits">
     {% csrf_token %}
     <button type="submit" class="link">Abbrechen und abmelden</button>
   </form>
+  {% endif %}
 </section>
 {% endblock %}

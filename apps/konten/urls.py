@@ -138,6 +138,7 @@ urlpatterns = [
         name="zwei_faktor_zuruecksetzen",
     ),
     path("zwei-faktor/einrichten/", views.zwei_faktor_einrichten, name="zwei_faktor_einrichten"),
+    path("zwei-faktor/neu/", views.zwei_faktor_neu, name="zwei_faktor_neu"),
     path("zwei-faktor/notfallcodes/", views.notfallcodes_neu, name="notfallcodes_neu"),
     path("zwei-faktor/abschalten/", views.zwei_faktor_abschalten, name="zwei_faktor_abschalten"),
     path("geraete/entfernen/", views.geraet_entfernen, name="geraete_entfernen"),
