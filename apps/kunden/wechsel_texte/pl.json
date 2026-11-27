@@ -1,6 +1,7 @@
 {
   "gruss": "Dzień dobry,",
   "angebot": "Możemy zaproponować Państwu miejsce",
+  "genehmigt": "Państwa prośba o zmianę została zaakceptowana",
   "ab": "Zmiana obowiązuje od {ab}.",
   "bitte": "Prosimy o odpowiedź do {bis}. Zmiana obowiązuje dopiero po Państwa potwierdzeniu; do tego czasu wszystko zostaje bez zmian.",
   "ja": "Tak, chcę zmienić",

@@ -1,6 +1,7 @@
 {
   "gruss": "Bună ziua,",
   "angebot": "Vă putem oferi un loc",
+  "genehmigt": "Cererea dumneavoastră de schimbare a fost aprobată",
   "ab": "Schimbarea este valabilă din {ab}.",
   "bitte": "Vă rugăm să răspundeți până la {bis}. Schimbarea este valabilă doar după confirmarea dumneavoastră; până atunci totul rămâne cum este.",
   "ja": "Da, vreau să schimb",

@@ -187,6 +187,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Auf der Kundenseite unter „Angaben“: `wechsel.angebot_am_kunden()` (läuft / bis 14 Tage nach
   Antwort oder Ablauf); Zusage auf anderem Weg trägt die Verwaltung über
   `angebot_zusage_eintragen()` ein (Recht `kunden.wechsel_entscheiden`).
+  „Genehmigen“ fragt den Kunden (ADR 0182): `genehmigen_und_fragen()` – derselbe Link wie beim
+  Angebot (`Wechselwunsch.angebot_genehmigt`), umgezogen wird erst mit seinem „Ja“; ohne
+  E-Mail-Adresse oder mit „Ohne Bestätigung genehmigen“ gleich (`genehmigen()`). Gilt der Wechsel,
+  meldet `an_stelle.ausweis_melden()` den neuen Ausweis (bei späterem Datum am Stichtag über
+  `GeplanterWechsel.ausweis_melden`).
   Status nach Sperre und Ausweis (ADR 0176): `apps/kunden/status.py` – laufende `Sperre` → „gesperrt“
   (geht vor), Ausweis abgelaufen → „pausiert“, sonst „aktiv“; nur für Aktive und vom Programm
   Umgestellte (`Haushalt.status_automatisch`), Schalter

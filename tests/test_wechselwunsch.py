@@ -11,13 +11,14 @@ from django.utils import timezone
 
 from apps.core import geheimnis
 from apps.core.models import MailEinstellungen
-from apps.kunden import wechsel
+from apps.kunden import an_stelle, wechsel
 from apps.kunden.models import (
     Ausgabestelle,
     GeplanterWechsel,
     Haushalt,
     HaushaltEreignis,
     Kundengruppe,
+    Nachricht,
     Notiz,
     Person,
     Wechselwunsch,
@@ -198,11 +199,14 @@ def test_genehmigen_sofort_spaeter_und_ablehnen(admin_client, admin, lage):
     gestern = (timezone.localdate() - dt.timedelta(days=1)).isoformat()
     vergangen = admin_client.post(ziel, {"gruppe": lage["mi10"].pk, "ab": gestern}, follow=True)
     assert "nicht in der Vergangenheit" in vergangen.content.decode()
-    # sofort genehmigen: Gruppe gewechselt, Mail an den Kunden, Notizen
+    # „Ohne Bestätigung genehmigen“: Gruppe gleich gewechselt, Mail an den Kunden, Notizen
     antwort = admin_client.post(
-        ziel, {"gruppe": lage["mi10"].pk, "antwort": "Bitte pünktlich sein."}, follow=True
+        ziel,
+        {"sofort": "1", "gruppe": lage["mi10"].pk, "antwort": "Bitte pünktlich sein."},
+        follow=True,
     )
     assert "genehmigt" in antwort.content.decode() and "gesendet am" in antwort.content.decode()
+    assert "steht bei den gemeldeten Ausweisen." in antwort.content.decode()
     h.refresh_from_db()
     w.refresh_from_db()
     assert h.kundengruppe == lage["mi10"] and w.status == "genehmigt"
@@ -213,6 +217,11 @@ def test_genehmigen_sofort_spaeter_und_ablehnen(admin_client, admin, lage):
     texte = list(Notiz.objects.filter(kundennummer="100").values_list("text", flat=True))
     assert any(t.startswith("Wechselwunsch genehmigt: ab sofort") for t in texte)
     assert any(t.startswith("Ausweis drucken") for t in texte)
+    # der neue Ausweis steht von selbst bei den gemeldeten Ausweisen (ADR 0182)
+    meldung = Nachricht.objects.get(kundennummer="100", anliegen="ausweis")
+    assert meldung.erledigt_am is None and meldung.text == "Wechsel zu Mi 10:00"
+    assert meldung.stelle == lage["st_zentrale"]
+    assert list(an_stelle.gemeldete(admin)[0]) == [h]
     assert "Zuletzt entschieden" in admin_client.get(LISTE).content.decode()
     # zweimal entscheiden geht nicht
     assert (
@@ -227,6 +236,16 @@ def test_genehmigen_sofort_spaeter_und_ablehnen(admin_client, admin, lage):
     plan = GeplanterWechsel.objects.get(haushalt=h, erledigt_am__isnull=True)
     assert h.kundengruppe == lage["mi10"] and (plan.ziel_gruppe, plan.ab) == (lage["do12"], spaeter)
     assert f"Ab dem {spaeter:%d.%m.%Y} gilt für Sie" in django_mail.outbox[-1].body
+    # der Ausweis wird erst am Stichtag gemeldet – vorher zeigte er noch die alte Gruppe
+    from apps.kunden import verlegung
+
+    Nachricht.objects.all().delete()
+    assert plan.ausweis_melden and verlegung.anwenden(spaeter - dt.timedelta(days=1)) == 0
+    assert not Nachricht.objects.exists()
+    assert verlegung.anwenden(spaeter) == 1
+    assert Nachricht.objects.get().text == "Wechsel zu Do 12:00"
+    assert verlegung.anwenden(spaeter) == 0 and Nachricht.objects.count() == 1
+    Haushalt.objects.filter(pk=h.pk).update(kundengruppe=lage["mi10"])  # wie vor dem Stichtag
     # ablehnen: nichts ändert sich, Mail und Notiz
     w3 = wechsel.eintragen(h, admin, "stelle", stelle=lage["st_nord"], gruppe=lage["nord"])
     admin_client.post(reverse("kunden:wechsel_entscheiden", args=[w3.pk]),
@@ -237,6 +256,94 @@ def test_genehmigen_sofort_spaeter_und_ablehnen(admin_client, admin, lage):
     assert "leider nicht" in django_mail.outbox[-1].body
     assert "Dort ist es zu voll." in django_mail.outbox[-1].body
     assert Notiz.objects.filter(text__startswith="Wechselwunsch abgelehnt").exists()
+
+
+def test_genehmigen_wartet_auf_die_bestaetigung_des_kunden(admin_client, admin, lage):
+    """„Genehmigen“ (ADR 0182): Der Kunde bekommt die Mail mit dem Link und zieht erst um, wenn er
+    dort bestätigt. Danach steht sein neuer Ausweis bei den gemeldeten."""
+    import re
+
+    from apps.kunden import gruppen
+
+    h = lage["h"]
+    Haushalt.objects.filter(pk=h.pk).update(email="erika@example.org")
+    h.refresh_from_db()
+    w = wechsel.eintragen(h, admin, "uhrzeit", "frueher", gruppe=lage["mi10"])
+    ziel = reverse("kunden:wechsel_entscheiden", args=[w.pk])
+    antwort = admin_client.post(
+        ziel, {"gruppe": lage["mi10"].pk, "antwort": "Bitte pünktlich sein."}, follow=True
+    ).content.decode()
+    assert "Genehmigt (Zentrale – Mi 10:00" in antwort and "erst dann zieht er um" in antwort
+    h.refresh_from_db()
+    w.refresh_from_db()
+    # noch nichts geändert: der Wunsch bleibt offen, der Platz ist reserviert
+    assert h.kundengruppe == lage["mi12"] and w.status == "offen"
+    assert w.angebot_laeuft and w.angebot_genehmigt
+    assert gruppen.reservierte_zugaenge()[lage["mi10"].pk] == 1
+    assert not Nachricht.objects.exists()
+    (post,) = django_mail.outbox
+    assert post.to == ["erika@example.org"]
+    assert post.subject.startswith("Ihr Wechselwunsch ist genehmigt – bitte bestätigen")
+    assert "Ihr Wunsch zu wechseln ist genehmigt: Zentrale – Mi 10:00" in post.body
+    assert "Bitte pünktlich sein." in post.body and "Erst mit Ihrer Bestätigung" in post.body
+    assert "Wir können Ihnen einen Platz anbieten" not in post.body
+    schluessel = re.search(r"/kunden/wechsel/([\w-]+)/\?antwort=ja", post.body).group(1)
+    assert Notiz.objects.filter(
+        kundennummer="100", text__startswith="Wechselwunsch genehmigt: Zentrale – Mi 10:00"
+    ).exists()
+    # in der Liste: wartet auf Bestätigung, nur „Ohne Bestätigung genehmigen“ steht noch da
+    liste = admin_client.get(LISTE).content.decode()
+    assert "wartet auf Bestätigung" in liste and "Ohne Bestätigung genehmigen" in liste
+    assert 'name="genehmigen"' not in liste
+    kundenseite = admin_client.get(reverse("kunden:haushalt", args=["100"])).content.decode()
+    assert "Genehmigter Wechsel" in kundenseite and "genehmigt am" in kundenseite
+    # zweimal genehmigen schickt keine zweite Mail
+    doppelt = admin_client.post(ziel, {"gruppe": lage["mi10"].pk}, follow=True).content.decode()
+    assert "läuft schon ein Angebot" in doppelt and len(django_mail.outbox) == 1
+    # der Kunde: Aufruf ändert nichts, erst der Knopf
+    seite = reverse("kunden:wechsel_angebot", args=[schluessel])
+    kunde = Client()
+    offen = kunde.get(seite).content.decode()
+    assert "Ihr Wunsch zu wechseln ist genehmigt" in offen and "Muster100" not in offen
+    h.refresh_from_db()
+    assert h.kundengruppe == lage["mi12"]
+    kunde.post(seite, {"antwort": "ja"})
+    h.refresh_from_db()
+    w.refresh_from_db()
+    assert h.kundengruppe == lage["mi10"] and w.status == "genehmigt"
+    assert "vom Kunden bestätigt" in w.entschieden_von
+    assert "der Wechsel ist eingetragen" in kunde.get(seite).content.decode()
+    # … und sein neuer Ausweis ist gemeldet; der Link taugt nur einmal
+    assert Nachricht.objects.get(kundennummer="100", anliegen="ausweis").erledigt_am is None
+    kunde.post(seite, {"antwort": "nein"})
+    w.refresh_from_db()
+    assert w.status == "genehmigt" and w.angebot_antwort == "ja"
+
+
+def test_genehmigen_ohne_email_gilt_sofort_und_voll_geht(admin_client, admin, lage):
+    """Ohne E-Mail-Adresse kann niemand bestätigen: Der Wechsel gilt wie bisher gleich. Und die
+    Verwaltung darf auch in eine volle Gruppe genehmigen (mit Bestätigung des Kunden)."""
+    h = lage["h"]
+    w = wechsel.eintragen(h, admin, "uhrzeit", "frueher", gruppe=lage["mi10"], ohne_email=True)
+    liste = admin_client.get(LISTE).content.decode()
+    assert "Genehmigen (gilt sofort)" in liste
+    admin_client.post(reverse("kunden:wechsel_entscheiden", args=[w.pk]),
+                      {"gruppe": lage["mi10"].pk})  # fmt: skip
+    h.refresh_from_db()
+    w.refresh_from_db()
+    assert h.kundengruppe == lage["mi10"] and w.status == "genehmigt" and not django_mail.outbox
+    assert Nachricht.objects.filter(kundennummer="100", anliegen="ausweis").count() == 1
+    # volle Gruppe „Mi 14:00“: anbieten geht nicht, genehmigen schon
+    Haushalt.objects.filter(pk=h.pk).update(email="erika@example.org")
+    h.refresh_from_db()
+    w2 = wechsel.eintragen(h, admin, "uhrzeit", "spaeter")  # ohne Gruppe: dort ist nichts frei
+    with pytest.raises(wechsel.WechselFehler, match="ist voll"):
+        wechsel.anbieten(w2, admin, lage["mi14"], None, "", lambda s: f"https://x.example/{s}/")
+    w2 = wechsel.genehmigen_und_fragen(w2, admin, lage["mi14"], None, "",
+                                       lambda s: f"https://x.example/{s}/")  # fmt: skip
+    assert w2.status == "offen" and w2.angebot_laeuft and w2.angebot_genehmigt
+    # dieselbe Meldung wird nicht doppelt angelegt
+    assert an_stelle.ausweis_melden(h, "chefin", "noch einmal") is False
 
 
 def test_ohne_email_keine_mail_und_frist(admin, lage):

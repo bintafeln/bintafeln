@@ -262,6 +262,10 @@ def _umziehen(h: Haushalt, gruppe: Kundengruppe, von: str) -> None:
     )  # fmt: skip
     Notiz.objects.create(kundennummer=h.kundennummer, verfasst_von=von[:100],
                          text=f"Ausweis drucken (Wechsel zu {gruppe.name})"[:1000])  # fmt: skip
+    # … und gleich bei den Ausweisen, die zu drucken sind (ADR 0182)
+    from apps.kunden import an_stelle
+
+    an_stelle.ausweis_melden(h, von, f"Wechsel zu {gruppe.name}")
 
 
 @transaction.atomic
@@ -283,7 +287,7 @@ def genehmigen(wunsch: Wechselwunsch, benutzer, gruppe: Kundengruppe, ab: dt.dat
         raise WechselFehler("Der Wechsel kann nicht in der Vergangenheit liegen.")
     von = von or _name(benutzer)
     if ab > heute:
-        verlegung.planen(h, gruppe, ab, von)
+        verlegung.planen(h, gruppe, ab, von, ausweis_melden=True)
     else:
         verlegung.entfernen(h)  # ein älterer Plan wäre jetzt überholt
         _umziehen(h, gruppe, von)
@@ -365,17 +369,19 @@ def zweitsprache(h: Haushalt | None):
 
 
 def _angebot_mail(tafel: str, ziel: str, ab: dt.date, bis: dt.date, zusatz: str,
-                  link: str, zweite=None) -> tuple[str, str]:  # fmt: skip
+                  link: str, zweite=None, genehmigt: bool = False) -> tuple[str, str]:  # fmt: skip
     """Text- und HTML-Fassung der Mail mit dem Angebot: immer Deutsch, darunter – wenn bekannt –
     dasselbe in der Sprache des Kunden (``zweite``). Kundengruppe und Zusatz bleiben, wie sie
-    sind."""
+    sind. ``genehmigt``: Der Kunde hat selbst gefragt, die Mail beginnt mit „Ihr Wunsch zu
+    wechseln ist genehmigt“ statt mit dem Angebot."""
     knopf = ("display:inline-block;padding:12px 22px;margin:6px 8px 6px 0;border-radius:8px;"
              "font-weight:bold;text-decoration:none;")  # fmt: skip
     adresse = escape(link)
     teile_text, teile_html = [], []
     for sprache in [None, zweite] if zweite else [None]:
         t = texte(sprache.code if sprache else "de")
-        kopf = f"{t['angebot']}: {ziel}. {t['ab'].format(ab=f'{ab:%d.%m.%Y}')}"
+        anfang = t["genehmigt" if genehmigt else "angebot"]
+        kopf = f"{anfang}: {ziel}. {t['ab'].format(ab=f'{ab:%d.%m.%Y}')}"
         bitte = t["bitte"].format(bis=f"{bis:%d.%m.%Y}")
         gruss = t["gruss_ende"] + (f"\n{tafel}" if tafel else "")
         teile_text.append("\n\n".join(x for x in (
@@ -396,10 +402,13 @@ def _angebot_mail(tafel: str, ziel: str, ab: dt.date, bis: dt.date, zusatz: str,
     return ("\n\n" + "–" * 20 + "\n\n").join(teile_text), "<hr>".join(teile_html)
 
 
-def angebot_pruefen(h: Haushalt | None, gruppe: Kundengruppe, ab: dt.date | None,
-                    wunsch: Wechselwunsch | None = None) -> dt.date:  # fmt: skip
+def angebot_pruefen(
+    h: Haushalt | None, gruppe: Kundengruppe, ab: dt.date | None,
+    wunsch: Wechselwunsch | None = None, auch_voll: bool = False,
+) -> dt.date:  # fmt: skip
     """Ob sich ``gruppe`` dem Kunden anbieten lässt; liefert das Datum des Wechsels. Angeboten
-    wird nur ein freier Platz – für eine volle Gruppe bleibt das Vormerken (``vormerken()``)."""
+    wird nur ein freier Platz – für eine volle Gruppe bleibt das Vormerken (``vormerken()``).
+    ``auch_voll``: beim Genehmigen entscheidet die Verwaltung, auch über die Höchstzahl hinaus."""
     from apps.antraege.aufnahme import freie_gruppen
 
     if wunsch is not None:
@@ -416,7 +425,7 @@ def angebot_pruefen(h: Haushalt | None, gruppe: Kundengruppe, ab: dt.date | None
         raise WechselFehler("Diese Kundengruppe gibt es nicht mehr.")
     if h.kundengruppe_id == gruppe.pk:
         raise WechselFehler("In dieser Kundengruppe ist der Kunde schon.")
-    if all(e["gruppe"].pk != gruppe.pk for e in freie_gruppen(h)):
+    if not auch_voll and all(e["gruppe"].pk != gruppe.pk for e in freie_gruppen(h)):
         raise WechselFehler(f"„{gruppe.name}“ ist voll – ein Platz lässt sich dort nicht "
                             "anbieten, nur vormerken.")  # fmt: skip
     heute = timezone.localdate()
@@ -427,7 +436,7 @@ def angebot_pruefen(h: Haushalt | None, gruppe: Kundengruppe, ab: dt.date | None
 
 
 def angebot_vorschau(h: Haushalt, gruppe: Kundengruppe, ab: dt.date, zusatz: str,
-                     link: str = "") -> dict:  # fmt: skip
+                     link: str = "", genehmigt: bool = False) -> dict:  # fmt: skip
     """Die Mail mit dem Angebot, wie der Kunde sie bekommt – zum Ansehen vor dem Senden (ohne
     ``link`` mit einem Platzhalter statt des echten Schlüssels) und zum Senden selbst."""
     from apps.core.models import TafelEinstellungen
@@ -437,8 +446,9 @@ def angebot_vorschau(h: Haushalt, gruppe: Kundengruppe, ab: dt.date, zusatz: str
     zusatz = " ".join(zusatz.split())[:500]
     zweite = zweitsprache(h)
     text, html = _angebot_mail(tafel, gruppe_text(gruppe), ab, bis, zusatz,
-                               link or "https://…/bestaetigen", zweite)  # fmt: skip
-    betreff = "Wir können Ihnen einen Platz anbieten"
+                               link or "https://…/bestaetigen", zweite, genehmigt)  # fmt: skip
+    betreff = ("Ihr Wechselwunsch ist genehmigt – bitte bestätigen" if genehmigt
+               else "Wir können Ihnen einen Platz anbieten")  # fmt: skip
     return {"betreff": f"{betreff} – {tafel}" if tafel else betreff, "text": text, "html": html,
             "an": h.email.strip(), "bis": bis, "zusatz": zusatz, "sprache": zweite,
             "ziel": gruppe_text(gruppe)}  # fmt: skip
@@ -446,15 +456,15 @@ def angebot_vorschau(h: Haushalt, gruppe: Kundengruppe, ab: dt.date, zusatz: str
 
 @transaction.atomic
 def anbieten(wunsch: Wechselwunsch, benutzer, gruppe: Kundengruppe, ab: dt.date | None,
-             zusatz: str, link_bauen) -> Wechselwunsch:  # fmt: skip
+             zusatz: str, link_bauen, genehmigt: bool = False) -> Wechselwunsch:  # fmt: skip
     """Bietet dem Kunden per E-Mail einen Platz in ``gruppe`` an. ``link_bauen(schluessel)``
     liefert die vollständige Adresse der Bestätigungsseite. Der Platz ist reserviert, solange
     das Angebot läuft (``gruppen.reservierte_zugaenge``). Geht die Mail nicht hinaus, bleibt
-    alles, wie es war."""
+    alles, wie es war. ``genehmigt``: siehe ``genehmigen_und_fragen()``."""
     h = Haushalt.objects.filter(kundennummer=wunsch.kundennummer).first()
-    ab = angebot_pruefen(h, gruppe, ab, wunsch)
+    ab = angebot_pruefen(h, gruppe, ab, wunsch, auch_voll=genehmigt)
     schluessel = secrets.token_urlsafe(32)
-    post = angebot_vorschau(h, gruppe, ab, zusatz, link_bauen(schluessel))
+    post = angebot_vorschau(h, gruppe, ab, zusatz, link_bauen(schluessel), genehmigt)
     von, ziel, bis, zusatz = _name(benutzer), post["ziel"], post["bis"], post["zusatz"]
     try:
         # vertraulich: Der Link in der Mail ist der Schlüssel, er gehört nicht ins Mail-Archiv
@@ -466,13 +476,29 @@ def anbieten(wunsch: Wechselwunsch, benutzer, gruppe: Kundengruppe, ab: dt.date 
     wunsch.angebot_am, wunsch.angebot_von, wunsch.angebot_bis = timezone.now(), von, bis
     wunsch.angebot_zusatz, wunsch.angebot_schluessel = zusatz, _pruefsumme(schluessel)
     wunsch.angebot_antwort, wunsch.angebot_antwort_am = "", None
+    wunsch.angebot_genehmigt = genehmigt
     wunsch.save()
+    anfang = "Wechselwunsch genehmigt" if genehmigt else "Platz angeboten"
     Notiz.objects.create(
         kundennummer=h.kundennummer, benutzer=benutzer, verfasst_von=von[:100],
-        text=(f"Platz angeboten: {ziel}, ab {ab:%d.%m.%Y}. Der Kunde soll bis "
+        text=(f"{anfang}: {ziel}, ab {ab:%d.%m.%Y}. Der Kunde soll bis "
               f"{bis:%d.%m.%Y} per E-Mail bestätigen.")[:1000],
     )  # fmt: skip
     return wunsch
+
+
+def genehmigen_und_fragen(
+    wunsch: Wechselwunsch, benutzer, gruppe: Kundengruppe, ab: dt.date | None, zusatz: str,
+    link_bauen,
+) -> Wechselwunsch:  # fmt: skip
+    """„Genehmigen“ in der Liste (ADR 0182): Der Kunde bekommt die Mail „Ihr Wunsch zu wechseln
+    ist genehmigt“ mit dem Link zum Bestätigen und zieht erst um, wenn er dort „Ja“ drückt – wie
+    beim Angebot, der Platz ist so lange reserviert. Steht keine E-Mail-Adresse am Kunden, kann
+    er nicht bestätigen: Dann gilt der Wechsel wie bisher sofort (``genehmigen()``)."""
+    h = Haushalt.objects.filter(kundennummer=wunsch.kundennummer).first()
+    if h is None or not h.email.strip():
+        return genehmigen(wunsch, benutzer, gruppe, ab, zusatz)
+    return anbieten(wunsch, benutzer, gruppe, ab, zusatz, link_bauen, genehmigt=True)
 
 
 def angebot_finden(schluessel: str) -> Wechselwunsch | None:

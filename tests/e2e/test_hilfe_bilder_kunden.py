@@ -535,14 +535,18 @@ def test_hilfe_bild_wechselwunsch(angemeldet, admin, muster):
 
     seite.goto(reverse("kunden:wechselwuensche"))
     karte = seite.locator("section.karte").first
-    genehmigen = seite.get_by_role("button", name="Genehmigen")
+    genehmigen = seite.get_by_role("button", name="✓ Genehmigen", exact=True)
+    sofort = seite.get_by_role("button", name="Ohne Bestätigung genehmigen")
     aufnehmen(seite, "wechselwuensche", karte,
               Marke(seite.locator('select[name="gruppe"]'), "rahmen", 1),
               Marke(seite.locator(".filter-feld", has_text="Wechsel ab"), "rahmen", 2),
               Marke(genehmigen, "rahmen", 3),
-              Marke(seite.get_by_role("button", name="Platz anbieten"), nummer=4,
+              Marke(sofort, nummer=4, von="unten", laenge=40),
+              Marke(seite.get_by_role("button", name="Platz anbieten"), nummer=5,
                     von="unten", laenge=40))  # fmt: skip
-    genehmigen.click()
+    seite.once("dialog", lambda dialog: dialog.accept())
+    sofort.click()
+    expect(seite.get_by_text("Zuletzt entschieden")).to_be_visible()
     wunsch.refresh_from_db()
     h.refresh_from_db()
     assert wunsch.status == "genehmigt"

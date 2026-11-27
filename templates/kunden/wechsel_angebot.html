@@ -30,7 +30,7 @@
       <p>Die Frist ist abgelaufen oder es wurde inzwischen anders entschieden. Es bleibt alles, wie es ist.
         Wenn Sie weiterhin wechseln möchten, sprechen Sie uns bitte bei der nächsten Ausgabe an.{% if s2 %}<span class="zweitsprache" lang="{{ s2.code }}" dir="{% if s2.rtl %}rtl{% else %}ltr{% endif %}">{{ t2.abgelaufen }}</span>{% endif %}</p>
       {% else %}
-      <h1>Wir können Ihnen einen Platz anbieten{% if s2 %}<span class="zweitsprache" lang="{{ s2.code }}" dir="{% if s2.rtl %}rtl{% else %}ltr{% endif %}">{{ t2.angebot }}</span>{% endif %}</h1>
+      <h1>{% if w.angebot_genehmigt %}Ihr Wunsch zu wechseln ist genehmigt{% else %}Wir können Ihnen einen Platz anbieten{% endif %}{% if s2 %}<span class="zweitsprache" lang="{{ s2.code }}" dir="{% if s2.rtl %}rtl{% else %}ltr{% endif %}">{% if w.angebot_genehmigt %}{{ t2.genehmigt }}{% else %}{{ t2.angebot }}{% endif %}</span>{% endif %}</h1>
       <p class="angebot-was">{{ w.angebot_text }}</p>
       <p>Der Wechsel gilt ab dem <strong>{{ w.angebot_ab|date:"d.m.Y" }}</strong>. Bitte antworten Sie bis zum
         <strong>{{ w.angebot_bis|date:"d.m.Y" }}</strong>.{% if s2 %}<span class="zweitsprache" lang="{{ s2.code }}" dir="{% if s2.rtl %}rtl{% else %}ltr{% endif %}">{{ t2.ab }} {{ t2.bitte }}</span>{% endif %}</p>
