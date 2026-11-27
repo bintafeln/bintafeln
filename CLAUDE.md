@@ -226,7 +226,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   geben. Rolle Admin hat immer alle Rechte. In Tests: Fixture `recht_geben`.
   `tests/test_zugriffsschutz.py` prüft alle Adressen (ADR 0065): öffentliche Seiten und Seiten
   für alle Angemeldeten dort eintragen; Rechte immer vor der Suche nach dem Datensatz prüfen.
-- Anschrift in Google Maps (Kundenseite: „Karte“, „Entfernung von der Tafel“): nur Links über
+- Anschrift in Google Maps (Kundenseite: ein Knopf „Karte“ = Route von der Tafel, ohne deren
+  Anschrift nur die Anschrift des Kunden): nur Links über
   `apps/core/karten.py` (`zeigen()`, `route()` ab der Anschrift aus den Tafel-Einstellungen), kein
   API-Schlüssel, nichts eingebettet; nur mit `kunden.kontakt`.
 - Einzelne Haushalte nur über `apps.kunden.zugang.haushalt(request.user, kundennummer)` laden

@@ -558,8 +558,9 @@ def test_kontostand_ohne_buchung_zeigt_null(admin_client):
 
 
 def test_anschrift_in_google_maps_und_entfernung_von_der_tafel(admin_client):
-    """Neben der Anschrift: Link zur Karte und – wenn die Tafel ihre Anschrift eingetragen hat –
-    zur Route von dort (Google Maps nennt die Entfernung). Nur Links, erst beim Antippen."""
+    """Neben der Anschrift ein kleiner Knopf „Karte“: Er öffnet – wenn die Tafel ihre Anschrift
+    eingetragen hat – die Route von dort (Google Maps nennt die Entfernung), sonst nur die
+    Anschrift. Nur ein Link, erst beim Antippen."""
     from apps.core import karten
     from apps.core.models import TafelEinstellungen
 
@@ -568,18 +569,21 @@ def test_anschrift_in_google_maps_und_entfernung_von_der_tafel(admin_client):
     Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Alex", nachname="Probe")
     ohne = Haushalt.objects.create(kundennummer="2002", ort="Musterstadt")
     Person.objects.create(haushalt=ohne, ist_hauptperson=True, vorname="Kim", nachname="Probe")
-    # ohne Anschrift der Tafel: nur die Karte
+    # ohne Anschrift der Tafel: der Knopf zeigt nur die Anschrift
     inhalt = admin_client.get(detail("2001")).content.decode()
-    assert "📍 Karte" in inhalt and "Entfernung von der Tafel" not in inhalt
-    assert "query=Musterweg+5%2C+12345+Musterstadt" in inhalt
+    assert inhalt.count('class="anschrift-karte"') == 1 and "</span> Karte</a>" in inhalt
+    assert "Entfernung von der Tafel" not in inhalt and "📍" not in inhalt
+    assert "query=Musterweg+5%2C+12345+Musterstadt" in inhalt and "origin=" not in inhalt
     t = TafelEinstellungen.laden()
     t.strasse, t.plz, t.ort = "Hauptstraße 1", "12345", "Musterstadt"
     t.save()
+    # mit Anschrift der Tafel: derselbe eine Knopf öffnet die Route von dort
     inhalt = admin_client.get(detail("2001")).content.decode()
-    assert "Entfernung von der Tafel" in inhalt
+    assert inhalt.count('class="anschrift-karte"') == 1 and "</span> Karte</a>" in inhalt
+    assert "Route und Entfernung von der Tafel" in inhalt and "query=Musterweg" not in inhalt
     assert "origin=Hauptstra%C3%9Fe+1%2C+12345+Musterstadt" in inhalt
     assert "destination=Musterweg+5%2C+12345+Musterstadt" in inhalt
     assert 'rel="noopener noreferrer"' in inhalt
     # ohne Straße gibt es nichts zu zeigen
-    assert "📍 Karte" not in admin_client.get(detail("2002")).content.decode()
+    assert "anschrift-karte" not in admin_client.get(detail("2002")).content.decode()
     assert karten.zeigen("") == "" and karten.route("", "x") == "" and karten.route("x", "") == ""
