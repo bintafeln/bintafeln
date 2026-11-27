@@ -16,6 +16,7 @@ QUELLEN = [
     ("adressen", "Adressen nach Kategorie"),
     ("mitglieder", "Mitglieder"),
     ("ehrenamtliche", "Ehrenamtliche"),
+    ("angestellte", "Angestellte"),
     ("ehemalige", "Ehemalige Ehrenamtliche"),
     ("spender", "Spender eines Jahres"),
     ("kunden", "Kunden (Haushalte)"),
@@ -167,6 +168,11 @@ def suchen(quelle: str, d: dict, benutzer=None) -> list[Empfaenger]:
         ergebnis = [
             _aus_adresse(a, jahr) for a in adressen.distinct().order_by("organisation", "nachname")
         ]
+    elif quelle == "angestellte":
+        # wie die Liste „Angestellte“ unter „Verein/Team“: aktive Konten mit fester Beschäftigung
+        adressen = Adresse.objects.filter(konto__is_active=True, konto__stelle__isnull=True,
+                                          konto__beschaeftigung="fest")  # fmt: skip
+        ergebnis = [_aus_adresse(a, jahr) for a in adressen.order_by("nachname", "vorname")]
     elif quelle in ("ehrenamtliche", "ehemalige"):
         # wie die Listen unter „Verein/Team“ (ADR 0098); kein Einwilligungs-Filter – wer mitmacht
         # oder mitgemacht hat, steht wie ein Mitglied in einer Beziehung zur Tafel
