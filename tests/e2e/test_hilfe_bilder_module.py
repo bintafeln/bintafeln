@@ -513,6 +513,9 @@ def test_hilfe_bild_wetter(angemeldet, admin, muster, monkeypatch):
 
 
 def test_hilfe_bild_links(angemeldet, admin, muster):
+    from django.contrib.auth.models import Group
+
+    from apps.konten import rollen
     from apps.links.models import Link, LinkGruppe
 
     _module("links")
@@ -530,14 +533,14 @@ def test_hilfe_bild_links(angemeldet, admin, muster):
     Link.objects.create(
         titel="Webseite der Tafel", adresse="https://tafel.example", symbol="🌐", gruppe=anzeigen
     )
-    Link.objects.create(
+    server = Link.objects.create(
         titel="Serververwaltung",
         adresse="https://server.tafel.example",
         symbol="🖥️",
         gruppe=werkzeuge,
         warnung="Nur für die Technik",
-        recht="einstellungen.links",
     )
+    server.rollen.add(Group.objects.get_or_create(name=rollen.ADMIN)[0])
     seite = oeffnen(angemeldet, admin, "/")
     bereich = seite.locator("section.link-bereich")
     aufnehmen(
