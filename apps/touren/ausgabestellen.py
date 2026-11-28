@@ -83,3 +83,10 @@ def abgleichen() -> dict:
             station.save()
             bericht["geaendert"] += 1
     return bericht
+
+
+def nach_speichern(sender, instance, raw=False, **kwargs):
+    """Ausgabestelle gespeichert: die Station gleich nachziehen (und über sie das Adressbuch,
+    ADR 0184), nicht erst beim täglichen Lauf."""
+    if not raw:
+        abgleichen()

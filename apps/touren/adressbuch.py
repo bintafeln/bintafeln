@@ -9,6 +9,10 @@ Abgleich danach in beide Richtungen: Wird an der Station oder im Adressbuch Name
 Anschrift, Telefon oder E-Mail geändert, übernimmt die andere Seite genau die geänderte Angabe
 (``vor_speichern()``/``nach_speichern()``, angeschlossen in ``apps.py``). Was nur die Tour
 betrifft (Abholtage, Anfahrt, E-Mail für Lieferscheine …), bleibt an der Station.
+
+Ist die Station eine Ausgabestelle der Tafel (ADR 0171), sind es drei: Eine Änderung an der
+Ausgabestelle geht sofort an die Station und von dort ins Adressbuch; eine Änderung im Adressbuch
+geht an die Ausgabestelle.
 """
 
 import re
@@ -167,8 +171,8 @@ def _uebernehmen(ziel, werte: dict, von: str) -> None:
 
 def nach_speichern(sender, instance, raw=False, **kwargs):
     """Station geändert → Adresse; Adresse geändert → Station. Nur die Angaben, die sich bei
-    diesem Speichern geändert haben. Ein leerer Name wird nie übernommen; Stationen, die eine
-    Ausgabestelle der Tafel sind, ändert das Adressbuch nicht (ADR 0171)."""
+    diesem Speichern geändert haben. Ein leerer Name wird nie übernommen. Bei Stationen, die eine
+    Ausgabestelle der Tafel sind, geht die Änderung aus dem Adressbuch an die Ausgabestelle."""
     geaendert = _geaendert(instance)
     instance._abgleich_vorher = None
     if raw:
@@ -185,7 +189,7 @@ def nach_speichern(sender, instance, raw=False, **kwargs):
         _uebernehmen(instance.adresse, werte, instance.geaendert_von)
         return
     station = geaendert and (
-        Station.objects.filter(adresse=instance, ausgabestelle__isnull=True).first()
+        Station.objects.filter(adresse=instance).select_related("ausgabestelle").first()
     )
     if not station:
         return
@@ -193,4 +197,31 @@ def nach_speichern(sender, instance, raw=False, **kwargs):
     werte = {zurueck[f]: _wert(instance, f) for f in geaendert}
     if not werte.get("name", "x"):
         del werte["name"]
+    if station.ausgabestelle_id:
+        # Name, Anschrift, Telefon, E-Mail gehören der Ausgabestelle (ADR 0171): dort ändern, die
+        # Station folgt von selbst. Nur die Ansprechperson steht an der Station.
+        eigene = {f: w for f, w in werte.items() if f == "ansprechpartner"}
+        _zur_ausgabestelle(
+            station.ausgabestelle, {f: w for f, w in werte.items() if f not in eigene}
+        )
+        werte = eigene
+        station.refresh_from_db()  # die Ausgabestelle hat sie eben schon geändert
     _uebernehmen(station, werte, instance.geaendert_von)
+
+
+def _zur_ausgabestelle(stelle, werte: dict) -> None:
+    """Schreibt im Adressbuch geänderte Angaben in die Ausgabestelle. Ein Name, den schon eine
+    andere Ausgabestelle trägt oder der dort nicht hineinpasst, wird nicht übernommen."""
+    if "name" in werte:
+        name = werte["name"].strip()
+        zu_lang = len(name) > stelle._meta.get_field("name").max_length
+        vergeben = type(stelle).objects.filter(name__iexact=name).exclude(pk=stelle.pk).exists()
+        if zu_lang or vergeben:
+            del werte["name"]
+    anders = {f: w for f, w in werte.items() if (getattr(stelle, f) or "") != w}
+    if not anders:
+        return
+    for feld, wert in anders.items():
+        laenge = stelle._meta.get_field(feld).max_length
+        setattr(stelle, feld, wert[:laenge] if laenge else wert)
+    stelle.save()  # die Station gleicht sich danach ab (ausgabestellen.nach_speichern)

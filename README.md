@@ -1418,7 +1418,8 @@ Maps. Lieferscheine bauen darauf auf.
   die Kategorie „Märkte und Lieferanten“, Einrichtungen „Soziale Einrichtung“ (Namen unter
   „Einstellungen → Touren → Mailversand, Karte und Aufbewahrung“). Danach gleichen sich Station
   und Adresse in beide Richtungen ab (ADR 0184): Name, Ansprechpartner, Anschrift, Telefon,
-  E-Mail – jeweils die gerade geänderte Angabe.
+  E-Mail – jeweils die gerade geänderte Angabe. Ist die Station eine Ausgabestelle der Tafel,
+  gleichen sich Ausgabestelle, Station und Adresse ab.
 
 ### Dienstplan der Ausgabe
 

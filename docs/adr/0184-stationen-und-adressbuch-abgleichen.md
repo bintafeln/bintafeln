@@ -21,8 +21,11 @@ Lieferanten“ weitere entstanden und ein Serienbrief nicht alle erreichte.
 - **Beim Verknüpfen** mit einer vorhandenen Adresse wird ergänzt, was auf einer Seite leer ist;
   wo beide etwas anderes haben, bleibt beides stehen.
 - Angeschlossen über `pre_save`/`post_save` im Modul Touren (`apps.py`), nicht im Kern.
-  Ein leerer Name wird nie übernommen. Stationen, die eine Ausgabestelle der Tafel sind, ändert
-  das Adressbuch nicht (ADR 0171).
+  Ein leerer Name wird nie übernommen.
+- **Ausgabestellen der Tafel** (ADR 0171) hängen mit drin: Speichern der Ausgabestelle zieht die
+  Station sofort nach (nicht erst im täglichen Lauf) und über sie das Adressbuch; eine Änderung im
+  Adressbuch geht an die Ausgabestelle, die Station folgt. An der Station bleiben diese Angaben
+  gesperrt. Ein Name, den schon eine andere Ausgabestelle trägt, wird nicht übernommen.
 
 ## Begründung
 
