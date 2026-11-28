@@ -1413,9 +1413,12 @@ Maps. Lieferscheine bauen darauf auf.
   Station neu ist oder aktualisiert wird; nur gefüllte Zellen überschreiben, gelöscht wird nie.
   Erst Prüfbericht, dann übernehmen. „CSV herunterladen“ liefert dasselbe Format.
 - **Ins Adressbuch übertragen** (zusätzlich Recht „Adressen anlegen und bearbeiten“): einzeln
-  oder alle aktiven Stationen auf einmal; legt eine Organisation mit der Art der Station als
-  Kategorie an oder verknüpft eine vorhandene mit gleichem Namen und gleicher PLZ. Einmalig –
-  danach laufen Station und Adresse getrennt.
+  oder alle aktiven Stationen auf einmal; legt eine Organisation an oder verknüpft eine
+  vorhandene mit gleichem Namen und gleicher PLZ. Märkte, Bäckereien und Lieferanten bekommen
+  die Kategorie „Märkte und Lieferanten“, Einrichtungen „Soziale Einrichtung“ (Namen unter
+  „Einstellungen → Touren → Mailversand, Karte und Aufbewahrung“). Danach gleichen sich Station
+  und Adresse in beide Richtungen ab (ADR 0184): Name, Ansprechpartner, Anschrift, Telefon,
+  E-Mail – jeweils die gerade geänderte Angabe.
 
 ### Dienstplan der Ausgabe
 

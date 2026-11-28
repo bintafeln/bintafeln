@@ -266,7 +266,8 @@ class EinstellungenForm(forms.ModelForm):
     class Meta:
         model = TourenEinstellungen
         fields = ["lieferscheine", "versand", "test_email", "aufbewahrung_jahre",
-                  "eco_plattform", "eco_adresse"]  # fmt: skip
+                  "eco_plattform", "eco_adresse", "kategorie_maerkte",
+                  "kategorie_einrichtung"]  # fmt: skip
         widgets = {"test_email": forms.EmailInput(attrs={"data-zeigen-bei": "versand=test"})}
 
     def __init__(self, *args, **kwargs):

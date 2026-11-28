@@ -165,16 +165,22 @@ def uebertragen(request, pk):
 @require_POST
 @bearbeiten_recht
 def alle_uebertragen(request):
-    """Alle aktiven Stationen ohne Eintrag im Adressbuch übertragen."""
+    """Alle aktiven Stationen ohne Eintrag im Adressbuch übertragen; schon übertragene bekommen
+    die Kategorie aus den Einstellungen, falls sie ihnen noch fehlt."""
     if not _darf_uebertragen(request.user):
         raise PermissionDenied
-    neu = verknuepft = 0
+    neu = verknuepft = kategorien = 0
+    for s in Station.objects.filter(adresse__isnull=False).select_related("adresse"):
+        kategorien += adressbuch.kategorie_setzen(s)
     for s in Station.objects.filter(aktiv=True, adresse__isnull=True).order_by("pk"):
         _, angelegt = adressbuch.uebertragen(s, request.user.get_username())
         neu += angelegt
         verknuepft += not angelegt
-    messages.success(request, f"Ins Adressbuch übertragen: {neu} neu angelegt, "
-                     f"{verknuepft} mit vorhandenen Einträgen verknüpft.")  # fmt: skip
+    text = (f"Ins Adressbuch übertragen: {neu} neu angelegt, "
+            f"{verknuepft} mit vorhandenen Einträgen verknüpft.")  # fmt: skip
+    if kategorien:
+        text += f" {kategorien} schon übertragene haben ihre Kategorie bekommen."
+    messages.success(request, text)
     return redirect("touren:stationen")
 
 
