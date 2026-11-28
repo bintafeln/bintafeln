@@ -14,7 +14,7 @@
     <tbody>
       {% for l in links %}
       <tr><td>{% if l.bild %}<img class="link-bild link-bild-klein" src="{{ l.bild.url }}" alt="">{% else %}{{ l.symbol }}{% endif %}</td><td><a href="{% url 'links:link' l.pk %}">{{ l.titel }}</a>{% if l.warnung %} <span class="marke-warnung">Warnung</span>{% endif %}</td>
-        <td>{{ l.gruppe|default:"–" }}</td><td>{{ l.adresse|truncatechars:50 }}</td><td>{{ l.recht|default:"alle" }}</td><td>{{ l.aktiv|yesno:"ja,nein" }}</td></tr>
+        <td>{{ l.gruppe|default:"–" }}</td><td>{{ l.adresse|truncatechars:50 }}</td><td>{% for g in l.rollen.all %}{{ g.name }}{% if not forloop.last %}, {% endif %}{% empty %}alle{% endfor %}</td><td>{{ l.aktiv|yesno:"ja,nein" }}</td></tr>
       {% empty %}
       <tr><td colspan="6" class="hinweis">Noch keine Links.</td></tr>
       {% endfor %}

@@ -471,7 +471,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `monat_aus_text()`, in Adressen bleibt 2026-11; Ausgaben ändern/löschen nur im Entwurf,
   `posten_aendern()`; was auf die Prüfung wartet: `ablauf.eingereichte()`). `listen` (ADR 0063, Katalog in
   `apps/listen/katalog.py`, Spalten mit Recht in `spalten.py`, Rechnen in `abfrage.py`). `links`
-  (ADR 0057, Kacheln auf der Startseite, Sichtbarkeit über ein Recht). `fahrdienst` (ADR 0074,
+  (ADR 0057, Kacheln auf der Startseite; sichtbar für die an der Kachel angehakten Rollen,
+  `Link.rollen`, leer = alle, Admin immer – ADR 0185, die Rollen wählt die Tafel, nie fest im Code). `fahrdienst` (ADR 0074,
   Regeln in `apps/fahrdienst/plan.py`, Plan aus fester Besetzung, Ausfall und Ersatz je Tag).
   `dienstplan` (ADR 0077, wie Fahrdienst je Ausgabestelle und Ausgabetag, Regeln in
   `apps/dienstplan/plan.py`, `Helfer` mit oder ohne Konto). Telegram für beide: `apps/core/telegram.py`.

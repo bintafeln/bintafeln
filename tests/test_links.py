@@ -1,6 +1,7 @@
 """Modul Links (ADR 0057): Kacheln auf der Startseite, Rechte, Pflege, Suche."""
 
 import pytest
+from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.test import Client
 from django.urls import reverse
@@ -8,7 +9,6 @@ from django.urls import reverse
 from apps.core import suche
 from apps.core.models import TafelEinstellungen
 from apps.konten import rollen
-from apps.links.forms import recht_auswahl
 from apps.links.models import Link, LinkGruppe, adresse_pruefen
 
 pytestmark = pytest.mark.django_db
@@ -28,8 +28,9 @@ def links():
     Link.objects.create(titel="Webseite", adresse="https://example.org", symbol="🌐")
     Link.objects.create(titel="Monitor", untertitel="Wartebereich", adresse="/aufruf/",
                         gruppe=anzeige, neuer_tab=False)  # fmt: skip
-    Link.objects.create(titel="Server", adresse="https://server.example.org", gruppe=werkzeuge,
-                        warnung="Nur für Admins", recht="system.update")  # fmt: skip
+    server = Link.objects.create(titel="Server", adresse="https://server.example.org",
+                                 gruppe=werkzeuge, warnung="Nur für Admins")  # fmt: skip
+    server.rollen.add(Group.objects.get_or_create(name=rollen.ADMIN)[0])
     Link.objects.create(titel="Alt", adresse="https://alt.example.org", aktiv=False)
 
 
@@ -63,25 +64,30 @@ def test_pflege(modul_an, admin_client):
                                                               "reihenfolge": 1})  # fmt: skip
     assert antwort.status_code == 302
     g = LinkGruppe.objects.get()
+    buero = Group.objects.get(name=rollen.BUERO)
+    vorstand = Group.objects.create(name="Vorstand")
+    formular = admin_client.get(reverse("links:link_neu")).content.decode()
+    assert "Vorstand" in formular
+    assert "alle Angemeldeten" in formular
     daten = {
         "titel": "Kiosk",
         "adresse": "/aufruf/",
         "symbol": "🖥️",
         "gruppe": g.pk,
-        "recht": "kunden.liste",
+        "rollen": [buero.pk, vorstand.pk],
         "neuer_tab": "on",
         "reihenfolge": 1,
         "aktiv": "on",
     }
     assert admin_client.post(reverse("links:link_neu"), daten).status_code == 302
     link = Link.objects.get()
-    assert link.recht == "kunden.liste" and link.gruppe == g
+    assert {r.name for r in link.rollen.all()} == {rollen.BUERO, "Vorstand"} and link.gruppe == g
     seite = admin_client.post(
         reverse("links:link", args=[link.pk]), daten | {"adresse": "javascript:alert(1)"}
     ).content.decode()
     assert "http:// oder https://" in seite
     seite = admin_client.get(reverse("links:liste")).content.decode()
-    assert "Kiosk" in seite and "Anzeigen" in seite
+    assert "Kiosk" in seite and "Anzeigen" in seite and "Büro, Vorstand" in seite
     assert (
         "Gruppe „Anzeigen“ ändern"
         in admin_client.get(reverse("links:gruppe", args=[g.pk])).content.decode()
@@ -94,12 +100,21 @@ def test_pflege(modul_an, admin_client):
     assert "Noch keine Links" in admin_client.get(reverse("links:liste")).content.decode()
 
 
-def test_recht_auswahl_behaelt_alten_wert():
-    auswahl = recht_auswahl()
-    assert auswahl[0] == ("", "alle Angemeldeten")
-    codes = {c for _, gruppe in auswahl[1:] for c, _ in gruppe}
-    assert "system.update" in codes
-    assert ("weg.recht", "weg.recht") in recht_auswahl("weg.recht")
+def test_sichtbar_fuer_mehrere_rollen(modul_an, client, anmelden, benutzer_mit_rolle):
+    """Ein Link ist für die angehakten Rollen sichtbar – eine davon genügt; Admins sehen alle."""
+    from apps.links.links import sichtbar
+
+    vorstand = Group.objects.create(name="Vorstand")
+    link = Link.objects.create(titel="Sitzungsprotokolle", adresse="https://example.org/protokolle")
+    Link.objects.create(titel="Für alle", adresse="https://example.org")
+    link.rollen.set([vorstand, Group.objects.get(name=rollen.BUERO)])
+    titel = lambda b: [x.titel for _, liste in sichtbar(b) for x in liste]  # noqa: E731
+    ausgabe = benutzer_mit_rolle("ausgabe", rollen.AUSGABE)
+    assert titel(ausgabe) == ["Für alle"]
+    assert titel(benutzer_mit_rolle("buero", rollen.BUERO)) == ["Für alle", "Sitzungsprotokolle"]
+    assert "Sitzungsprotokolle" in titel(benutzer_mit_rolle("leitung", rollen.ADMIN))
+    ausgabe.groups.add(vorstand)
+    assert "Sitzungsprotokolle" in titel(type(ausgabe).objects.get(pk=ausgabe.pk))
 
 
 def test_suche_findet_links(modul_an, admin, links):

@@ -49,9 +49,10 @@ class Link(models.Model):
         "Warnhinweis", max_length=200, blank=True,
         help_text="Rot hervorgehoben, z. B. „Nur für Admins – Änderungen wirken sofort“.",
     )  # fmt: skip
-    recht = models.CharField(
-        "Sichtbar für", max_length=60, blank=True,
-        help_text="Leer = alle Angemeldeten; sonst nur, wer dieses Recht hat.",
+    rollen = models.ManyToManyField(
+        "auth.Group", verbose_name="Sichtbar für", blank=True, related_name="+",
+        help_text="Nichts angehakt = alle Angemeldeten; sonst nur, wer eine der Rollen hat. "
+        "Admins sehen immer alle Links.",
     )  # fmt: skip
     neuer_tab = models.BooleanField("In neuem Tab öffnen", default=True)
     reihenfolge = models.PositiveIntegerField("Reihenfolge", default=100)
