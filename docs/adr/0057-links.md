@@ -19,7 +19,7 @@ für jeden im Netz sichtbar.
   Verweise); zusätzlich sendet Caddy für öffentliche Uploads eine Content-Security-Policy mit
   `sandbox`.
 - Sichtbarkeit über ein Recht aus dem Rechtekatalog (`Link.recht`, leer = alle Angemeldeten), nie
-  über Rollennamen (ADR 0033). Pflege mit dem neuen Recht `einstellungen.links` (Vorgabe: Admin).
+  über Rollennamen (ADR 0033). (Geändert durch ADR 0185: sichtbar für angehakte Rollen.) Pflege mit dem neuen Recht `einstellungen.links` (Vorgabe: Admin).
 - Neuer Modul-Hook `startseite(request)`: HTML unter der Begrüßung. Die Suche findet Links über
   `Modul.suchen`.
 - Erlaubt sind nur http(s)-Adressen und Pfade in bintafeln, damit keine `javascript:`-Links

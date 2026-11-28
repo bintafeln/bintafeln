@@ -110,11 +110,13 @@ def _module() -> None:
         ("Webseite der Tafel", "Beispiel", "Hier steht der Link zur eigenen Webseite",
          "https://example.org", "🌐", None, {}),
         ("Serververwaltung", "Beispiel", "Nur für Admins sichtbar", "https://example.org/server",
-         "🛠️", technik, {"warnung": "Nur für Admins – Änderungen wirken sofort",
-                         "recht": "system.update"}),
+         "🛠️", technik, {"warnung": "Nur für Admins – Änderungen wirken sofort"}),
     ]:  # fmt: skip
-        Link.objects.create(titel=titel, untertitel=untertitel, beschreibung=beschreibung,
-                            adresse=adresse, symbol=symbol, gruppe=gruppe, **mehr)  # fmt: skip
+        link = Link.objects.create(titel=titel, untertitel=untertitel,
+                                   beschreibung=beschreibung, adresse=adresse, symbol=symbol,
+                                   gruppe=gruppe, **mehr)  # fmt: skip
+        if gruppe == technik:  # nur für die Rolle Admin sichtbar
+            link.rollen.add(Group.objects.get_or_create(name=rollen.ADMIN)[0])
     frauenhaus = Selbstabholer.objects.create(name="Frauenhaus (Beispiel)", tage="Mo, Mi",
                                               personen=12, ort="Musterstadt")  # fmt: skip
     frauenhaus.kontakte.create(name="Erika Beispiel", funktion="Leitung",

@@ -6,14 +6,16 @@ from apps.links.models import Link
 
 def sichtbar(benutzer) -> list[tuple[str, list[Link]]]:
     """[(Gruppe, Links)] in fester Reihenfolge; Links ohne Gruppe zuerst."""
-    darf = rollen.rechte_von(benutzer)
+    meine = rollen.rollen_von(benutzer)
+    admin = rollen.ADMIN in meine
     gruppen: dict = {}
-    links = Link.objects.filter(aktiv=True).select_related("gruppe")
+    links = Link.objects.filter(aktiv=True).select_related("gruppe").prefetch_related("rollen")
     for link in sorted(links, key=lambda x: (x.gruppe is not None,
                                              x.gruppe.reihenfolge if x.gruppe else 0,
                                              x.gruppe.titel if x.gruppe else "",
                                              x.reihenfolge, x.titel)):  # fmt: skip
-        if link.recht and link.recht not in darf:
+        fuer = {g.name for g in link.rollen.all()}
+        if fuer and not admin and not fuer & meine:
             continue
         gruppen.setdefault(link.gruppe.titel if link.gruppe else "", []).append(link)
     return list(gruppen.items())

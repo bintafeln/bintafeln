@@ -1500,8 +1500,8 @@ Aushang-Monitore“ (Recht „Aushang-Monitore einrichten“, Vorgabe Büro).
 Ersetzt die bisherige „App-Übersicht“ (ADR 0057): Kacheln mit Symbol oder eigenem Bild (PNG,
 JPG, WebP oder SVG; SVG wird beim Hochladen von Skripten bereinigt), Titel, Untertitel,
 Beschreibung und Adresse unter der Begrüßung, in Gruppen geordnet, auf Wunsch mit rotem
-Warnhinweis. „Sichtbar für“ zeigt eine Kachel nur Personen mit einem bestimmten Recht (z. B.
-Serververwaltung nur für Admins). Pflege unter „Einstellungen → Tafel → Links auf der Startseite“
+Warnhinweis. „Sichtbar für“ zeigt eine Kachel nur den angehakten Rollen (mehrere möglich, z. B.
+Serververwaltung nur für Admins; Admins sehen immer alle). Pflege unter „Einstellungen → Tafel → Links auf der Startseite“
 (Recht „Links auf der Startseite pflegen“, Vorgabe nur Admin). Nur http(s)-Adressen und Pfade in
 bintafeln; die Suche findet die Links mit.
 
