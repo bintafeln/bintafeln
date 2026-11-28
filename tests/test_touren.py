@@ -281,19 +281,45 @@ def test_abgleich_station_und_adressbuch_in_beide_richtungen():
     assert Adresse.objects.count() == 1
 
 
-def test_adressbuch_aendert_keine_ausgabestelle():
-    """Stationen, die eine Ausgabestelle der Tafel sind, bekommen ihre Angaben von dort."""
+def test_ausgabestelle_station_und_adressbuch_bleiben_gleich():
+    """Stationen, die eine Ausgabestelle der Tafel sind: Ändert sich die Ausgabestelle, folgen
+    Station und Adressbuch sofort; eine Änderung im Adressbuch geht an die Ausgabestelle."""
     from apps.kunden.models import Ausgabestelle
 
-    stelle = Ausgabestelle.objects.create(name="Ausgabe Mitte")
-    s = station(kennung="AS-1", name="Ausgabe Mitte", art="ausgabestelle")
-    Station.objects.filter(pk=s.pk).update(ausgabestelle=stelle)
+    stelle = Ausgabestelle.objects.create(
+        name="Ausgabe Mitte", strasse="Musterstraße 1", plz="12345", ort="Musterstadt"
+    )
+    Ausgabestelle.objects.create(name="Ausgabe Nord")
+    s = Station.objects.get(ausgabestelle=stelle)  # entsteht gleich beim Speichern
     adresse, _ = adressbuch.uebertragen(s, "anton")
     assert not adresse.kategorien.exists()
-    adresse.ort = "Anderswo"
-    adresse.save()
+    # Ausgabestelle → Station → Adressbuch
+    stelle.strasse, stelle.telefon = "Nordweg 7a", "0000 333"
+    stelle.save()
     s.refresh_from_db()
-    assert s.ort == "Musterstadt"
+    adresse.refresh_from_db()
+    assert (s.strasse, s.hausnummer, s.telefon) == ("Nordweg", "7a", "0000 333")
+    assert adresse.strasse == "Nordweg 7a" and adresse.telefon == "0000 333"
+    # Adressbuch → Ausgabestelle → Station
+    adresse.ort, adresse.email, adresse.ansprechperson = (
+        "Neustadt",
+        "mitte@example.org",
+        "Frau Probe",
+    )
+    adresse.organisation = "Ausgabe Mitte am Ring"
+    adresse.save()
+    stelle.refresh_from_db()
+    s.refresh_from_db()
+    assert (stelle.ort, stelle.email, stelle.name) == (
+        "Neustadt", "mitte@example.org", "Ausgabe Mitte am Ring"
+    )  # fmt: skip
+    assert (s.ort, s.email, s.name) == ("Neustadt", "mitte@example.org", "Ausgabe Mitte am Ring")
+    assert s.ansprechpartner == "Frau Probe"  # steht nur an der Station
+    # ein Name, den eine andere Ausgabestelle trägt, wird nicht übernommen
+    adresse.organisation, adresse.plz = "ausgabe nord", "54321"
+    adresse.save()
+    stelle.refresh_from_db()
+    assert stelle.name == "Ausgabe Mitte am Ring" and stelle.plz == "54321"
 
 
 # --- Seiten ------------------------------------------------------------------------------------

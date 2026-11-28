@@ -38,8 +38,9 @@ def test_ausgabestellen_werden_stationen_und_bleiben_aktuell():
     zentrale = stelle("Zentrale")
     stelle("Ohne Anschrift", strasse="", plz="", ort="")
     stelle("Geschlossen", aktiv=False)
+    # die Station entsteht gleich beim Speichern der Ausgabestelle; der Lauf findet nichts mehr
     bericht = ausgabestellen.abgleichen()
-    assert bericht == {"neu": 1, "geaendert": 0, "ohne_anschrift": ["Ohne Anschrift"]}
+    assert bericht == {"neu": 0, "geaendert": 0, "ohne_anschrift": ["Ohne Anschrift"]}
     s = Station.objects.get()
     assert (s.kennung, s.art, s.name) == (f"AS-{zentrale.pk}", "ausgabestelle", "Zentrale")
     assert (s.strasse, s.hausnummer, s.plz, s.ort) == ("Musterweg", "12a", "12345", "Musterstadt")
@@ -55,7 +56,7 @@ def test_ausgabestellen_werden_stationen_und_bleiben_aktuell():
     zentrale.name, zentrale.strasse, zentrale.telefon = "Zentrale Mitte", "Neue Gasse 3", "0999"
     zentrale.save()
     assert ausgabestellen.abgleichen() == {
-        "neu": 0, "geaendert": 1, "ohne_anschrift": ["Ohne Anschrift"],
+        "neu": 0, "geaendert": 0, "ohne_anschrift": ["Ohne Anschrift"],
     }  # fmt: skip
     s.refresh_from_db()
     assert (s.name, s.strasse, s.hausnummer, s.telefon) == (
@@ -81,13 +82,13 @@ def test_ausgabestellen_werden_stationen_und_bleiben_aktuell():
 
 
 def test_von_hand_angelegte_station_wird_verknuepft_statt_verdoppelt():
-    nord = stelle("Ausgabestelle Nord")
     alt = Station.objects.create(
         kennung="S-7", art=Station.Art.AUSGABESTELLE, name="ausgabestelle nord",
         strasse="Alte Straße", plz="11111", ort="Altstadt", anfahrt="Hof",
     )  # fmt: skip
     Station.objects.create(kennung="S-8", art=Station.Art.MARKT, name="Ausgabestelle Nord",
                            strasse="Marktweg", plz="12345", ort="Musterstadt")  # fmt: skip
+    nord = stelle("Ausgabestelle Nord")
     assert ausgabestellen.abgleichen()["neu"] == 0
     alt.refresh_from_db()
     assert alt.ausgabestelle == nord and alt.kennung == "S-7" and alt.anfahrt == "Hof"

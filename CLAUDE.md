@@ -481,7 +481,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   leere Zellen ändern nichts, nie löschen; Übertragen ins Adressbuch in
   `apps/touren/adressbuch.py` – Kategorie nach `TourenEinstellungen.kategorie_maerkte`/
   `kategorie_einrichtung`, danach Abgleich in beide Richtungen über Signale aus `apps.py`
-  (`vor_speichern()`/`nach_speichern()`, nur die gerade geänderte Angabe, ADR 0184); Navigation nur als Link zu Google Maps über `Station.navigation`,
+  (`vor_speichern()`/`nach_speichern()`, nur die gerade geänderte Angabe, ADR 0184; bei
+  Ausgabestellen dreiseitig: Ausgabestelle ↔ Station ↔ Adresse, `ausgabestellen.nach_speichern()`); Navigation nur als Link zu Google Maps über `Station.navigation`,
   kein API-Schlüssel, keine Karte. Ausgabestellen der Tafel sind automatisch Stationen (ADR 0171):
   `apps/touren/ausgabestellen.py` (`abgleichen()`, `Station.ausgabestelle`, Kennung `AS-…`); Name,
   Anschrift, Telefon, E-Mail kommen von dort und sind an der Station gesperrt, nie löschen.
