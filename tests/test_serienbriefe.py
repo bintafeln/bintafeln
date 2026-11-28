@@ -1,6 +1,7 @@
 """Serienbriefe (ADR 0047). Alle Daten sind erfunden."""
 
 import datetime as dt
+import re
 from decimal import Decimal
 
 import pytest
@@ -107,7 +108,7 @@ def test_email(admin_client, daten):
     m.server, m.absender = "smtp.example.org", "tafel@example.org"
     m.save()
     vorlage = Vorlage.objects.get(name="Dank für Spenden")
-    form = {"vorlage": vorlage.pk, "quelle": "adressen", "versandart": "email", "jahr": JAHR,
+    form = {"vorlage": vorlage.pk, "quelle": "spender", "versandart": "email", "jahr": JAHR,
             "nur_einwilligung": "on", "schritt": "senden"}  # fmt: skip
     antwort = admin_client.post(URL, form, follow=True)
     assert "1 E-Mail gesendet" in antwort.content.decode()
@@ -214,7 +215,7 @@ def test_liste_aus_dem_adressbuch_als_empfaenger(
     assert antwort.status_code == 302 and antwort.url == URL + "?liste=1"
     seite = admin_client.get(antwort.url).content.decode()
     assert "Zusammengestellte Liste aus dem Adressbuch (2 Adressen)" in seite
-    assert '<option value="liste" selected>' in seite
+    assert re.search(r'value="liste"[^>]*checked', seite)
     form = {"vorlage": vorlage.pk, "quelle": "liste", "versandart": "brief", "jahr": JAHR}
     vorschau = admin_client.post(URL, form)
     assert [e.name for e, _ in vorschau.context["liste"]] == ["Anna Aktiv", "Fritz Fest"]
@@ -243,14 +244,44 @@ def test_liste_aus_dem_adressbuch_als_empfaenger(
     assert client.get(druckliste, {"aktion": "serienbrief"}).status_code == 403
 
 
-def test_einwilligungs_haken_wird_gemerkt(admin, admin_client, daten):
+def test_ein_feld_fuer_alle_empfaenger(admin, admin_client, daten):
+    """Gruppen und Adresskategorien stehen in einem Feld zum Anhaken; mehrere Häkchen ergeben
+    eine Liste, in der jede Person nur einmal steht."""
+    erika, baeckerei = daten
+    markt = AdressKategorie.objects.create(name="Märkte und Lieferanten")
+    laden = Adresse.objects.create(
+        organisation="Laden Beispiel", strasse="Ring 4", plz="12345", ort="Musterstadt"
+    )
+    laden.kategorien.add(markt)
+    baeckerei.kategorien.add(markt)
+    AdressKategorie.objects.create(name="Abgelegt", aktiv=False)
+    wahl = dict(emp.wahl())
+    assert wahl[f"kat:{markt.pk}"] == "Märkte und Lieferanten"
+    # „Spender“ und „Mitglieder“ gibt es schon als feste Gruppe, Kunden nur mit dem Recht dazu
+    assert list(wahl.values()).count("Spender") == 0 and "Abgelegt" not in wahl.values()
+    assert "kunden" not in wahl and "kunden" in dict(emp.wahl(kunden=True))
+    d = {"jahr": JAHR, "versandart": "brief"}
+    namen = lambda gewaehlt: [e.name for e in emp.zusammen(gewaehlt, d)]  # noqa: E731
+    assert namen([f"kat:{markt.pk}"]) == ["Bäckerei Probe", "Laden Beispiel"]
+    # die Bäckerei ist Mitglied, Spenderin und Markt – sie steht einmal da, als Mitglied
+    alle = emp.zusammen(["spender", f"kat:{markt.pk}", "mitglieder"], d)
+    assert sorted(e.name for e in alle) == ["Bäckerei Probe", "Erika Muster", "Laden Beispiel"]
+    assert alle[0].name == "Bäckerei Probe" and alle[0].werte["mitgliedsnummer"] == "7"
+    assert namen([]) == [] and namen(["kat:x"]) == []
+    # auf der Seite: ein Feld, kein zweites für Kategorien; der Einwilligungs-Haken ist aus
+    antwort = admin_client.get(URL)
+    seite = antwort.content.decode()
+    assert "Märkte und Lieferanten" in seite and 'name="kategorien"' not in seite
+    assert not antwort.context["form"]["nur_einwilligung"].value()
     vorlage = Vorlage.objects.get(name="Dank für Spenden")
-    assert admin_client.get(URL).context["form"]["nur_einwilligung"].value() is True
-    form = {"vorlage": vorlage.pk, "quelle": "adressen", "versandart": "brief", "jahr": JAHR}
-    admin_client.post(URL, form)  # Haken abgewählt
-    assert admin_client.get(URL).context["form"]["nur_einwilligung"].value() is False
-    # bei Empfängern ohne diesen Haken (Mitglieder) ändert sich nichts am Gemerkten
-    admin_client.post(URL, form | {"quelle": "mitglieder", "nur_einwilligung": "on"})
-    assert admin_client.get(URL).context["form"]["nur_einwilligung"].value() is False
-    admin_client.post(URL, form | {"nur_einwilligung": "on"})  # wieder angehakt
-    assert admin_client.get(URL).context["form"]["nur_einwilligung"].value() is True
+    form = {"vorlage": vorlage.pk, "versandart": "brief", "jahr": JAHR}
+    vorschau = admin_client.post(URL, form | {"quelle": ["spender", f"kat:{markt.pk}"]})
+    assert len(vorschau.context["liste"]) == 3
+    assert "Bitte" in admin_client.post(URL, form).content.decode()  # nichts angehakt
+    admin_client.post(URL, form | {"quelle": ["spender", f"kat:{markt.pk}"], "schritt": "pdf"})
+    assert Versand.objects.get().auswahl == (
+        f"Spender eines Jahres, Märkte und Lieferanten · {JAHR}"
+    )
+    # mit Haken nur, wer eingewilligt hat
+    mit = admin_client.post(URL, form | {"quelle": ["spender"], "nur_einwilligung": "on"})
+    assert [e.name for e, _ in mit.context["liste"]] == ["Erika Muster"]

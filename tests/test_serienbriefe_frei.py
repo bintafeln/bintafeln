@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-from apps.adressen.models import Adresse
+from apps.adressen.models import Adresse, AdressKategorie
 from apps.core.models import MailEinstellungen
 from apps.serienbriefe import frei, grafiken
 from apps.serienbriefe.brief import briefe_pdf
@@ -175,8 +175,10 @@ def test_mail_zeigt_freie_grafiken_unter_dem_text(admin_client):
     v.freie_grafiken.append({"grafik": links.pk, "x": 30, "y": 232, "breite": 40,
                              "seite": "letzte"})  # fmt: skip
     v.save()
+    partner = AdressKategorie.objects.create(name="Probe-Partner")
+    Adresse.objects.get().kategorien.add(partner)
     admin_client.post(reverse("serienbriefe:erstellen"), {
-        "vorlage": v.pk, "quelle": "adressen", "versandart": "email",
+        "vorlage": v.pk, "quelle": f"kat:{partner.pk}", "versandart": "email",
         "jahr": dt.date.today().year, "nur_einwilligung": "on", "schritt": "senden",
     })  # fmt: skip
     html = postfach.outbox[0].alternatives[0][0]

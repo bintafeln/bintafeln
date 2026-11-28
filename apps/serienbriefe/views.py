@@ -146,38 +146,13 @@ def _allgemein(jahr: int) -> dict:
     return emp.allgemein(jahr)
 
 
-EINWILLIGUNG_AUS = "serienbrief-ohne-einwilligung"  # Schlüssel in Benutzer.listen_filter
-
-
-def _einwilligung_gemerkt(benutzer) -> bool:
-    """Ob „Nur mit Einwilligung“ angehakt vorbelegt wird: ja, bis das Konto es abgewählt hat."""
-    return EINWILLIGUNG_AUS not in (benutzer.listen_filter or {})
-
-
-def _einwilligung_merken(benutzer, d: dict) -> None:
-    """Merkt am Konto, wenn der Haken abgewählt wurde (und vergisst es, wenn er wieder sitzt).
-    Nur bei Empfängern, bei denen der Haken überhaupt zur Wahl steht."""
-    if d["quelle"] not in ("adressen", "spender", "liste"):
-        return
-    gemerkt = dict(benutzer.listen_filter or {})
-    if d.get("nur_einwilligung"):
-        if gemerkt.pop(EINWILLIGUNG_AUS, None) is None:
-            return
-    elif gemerkt.get(EINWILLIGUNG_AUS):
-        return
-    else:
-        gemerkt[EINWILLIGUNG_AUS] = "1"
-    benutzer.listen_filter = gemerkt
-    benutzer.save(update_fields=["listen_filter"])
-
-
 def _auswahl_kennung(d: dict) -> str:
     """Kurze Kennung der Empfänger-Auswahl (ohne die Vorlage): Für sie gilt das An- und Abhaken
     einzelner Empfänger."""
     import hashlib
 
     teile = []
-    for name in ("quelle", "versandart", "jahr", "kategorien", "nur_einwilligung",
+    for name in ("quelle", "versandart", "jahr", "nur_einwilligung",
                  "mindestbetrag", "mitgliedsarten", "nur_offen", "kundengruppen",
                  "liste_ids"):  # fmt: skip
         wert = d.get(name)
@@ -187,11 +162,10 @@ def _auswahl_kennung(d: dict) -> str:
     return hashlib.sha256("|".join(teile).encode()).hexdigest()[:16]
 
 
-def _beschreibung(d: dict) -> str:
-    teile = [dict(emp.QUELLEN)[d["quelle"]]]
-    if d["quelle"] == "adressen" and d.get("kategorien"):
-        teile.append(", ".join(k.name for k in d["kategorien"]))
-    if d["quelle"] in ("spender",) or d.get("nur_offen"):
+def _beschreibung(d: dict, namen: dict) -> str:
+    """Für die Liste der Versände: was angehakt war, z. B. „Mitglieder, Partner · 2026“."""
+    teile = [", ".join(namen.get(w, w).split(" (")[0] for w in d["quelle"])]
+    if "spender" in d["quelle"] or d.get("nur_offen"):
         teile.append(str(d["jahr"]))
     if d.get("nur_offen"):
         teile.append("offener Beitrag")
@@ -204,20 +178,21 @@ def _beschreibung(d: dict) -> str:
 def erstellen(request):
     # Im Adressbuch zusammengestellte Liste: gilt für diese Sitzung, gespeichert wird sie nicht
     liste_ids = sorted(request.session.get(emp.LISTE_SITZUNG) or [])
-    initial = {
-        "vorlage": request.GET.get("vorlage"),
-        "nur_einwilligung": _einwilligung_gemerkt(request.user),
-    }
+    initial = {"vorlage": request.GET.get("vorlage")}
     if liste_ids and request.GET.get("liste"):
-        initial["quelle"] = "liste"
+        initial["quelle"] = ["liste"]
     form = AuswahlForm(request.POST or None, benutzer=request.user, liste=len(liste_ids),
                        initial=initial)  # fmt: skip
-    kontext = {"form": form, "liste_anzahl": len(liste_ids)}
+    namen = dict(form.fields["quelle"].choices)
+    kontext = {
+        "form": form, "liste_anzahl": len(liste_ids),
+        # Zusatzfelder erscheinen nur zu passenden Häkchen (static/js/zeigen_bei.js)
+        "kategorie_werte": " ".join(w for w in namen if w.startswith(emp.KATEGORIE)),
+    }  # fmt: skip
     if request.method == "POST" and form.is_valid():
         d = form.cleaned_data
-        d["liste_ids"] = liste_ids if d["quelle"] == "liste" else []
-        _einwilligung_merken(request.user, d)
-        alle = emp.suchen(d["quelle"], d, request.user)
+        d["liste_ids"] = liste_ids if "liste" in d["quelle"] else []
+        alle = emp.zusammen(d["quelle"], d, request.user)
         erreichbar, ohne = emp.aufteilen(alle, d["versandart"])
         # Einzelne Empfänger abgehakt? Gilt nur, solange die Auswahl darüber dieselbe ist –
         # sonst wären nach einem anderen Filter alle neu Dazugekommenen stillschweigend aus.
@@ -238,12 +213,12 @@ def erstellen(request):
                 [(e.anschrift, *gestaltung.brief(v, e, allgemein)) for e in erreichbar], v
             )
             Versand.objects.create(von=request.user.get_username(), art=Versand.Art.BRIEF,
-                                   vorlage=v.name, betreff=v.betreff, auswahl=_beschreibung(d),
-                                   anzahl=len(erreichbar),
+                                   vorlage=v.name, betreff=v.betreff,
+                                   auswahl=_beschreibung(d, namen), anzahl=len(erreichbar),
                                    empfaenger=[e.schluessel for e in erreichbar])  # fmt: skip
             return pdf_antwort(inhalt, f"serienbrief-{timezone.localdate():%Y-%m-%d}.pdf")
         if schritt == "senden" and erreichbar:
-            return _senden(request, v, d, erreichbar, allgemein)
+            return _senden(request, v, d, erreichbar, allgemein, _beschreibung(d, namen))
         kontext |= {
             "erreichbar": erreichbar, "ohne": ohne, "d": d,
             "beispiel": erreichbar[0] if erreichbar else None,
@@ -259,7 +234,7 @@ def erstellen(request):
 
 
 @nicht_in_demo
-def _senden(request, v, d, erreichbar, allgemein):
+def _senden(request, v, d, erreichbar, allgemein, auswahl):
     """Jede Mail einzeln (keine fremden Adressen im Verteiler)."""
     gesendet, fehler = [], []
     for e in erreichbar:
@@ -274,7 +249,7 @@ def _senden(request, v, d, erreichbar, allgemein):
             gesendet.append(e)
     if gesendet:
         Versand.objects.create(von=request.user.get_username(), art=Versand.Art.EMAIL,
-                               vorlage=v.name, betreff=v.betreff, auswahl=_beschreibung(d),
+                               vorlage=v.name, betreff=v.betreff, auswahl=auswahl,
                                anzahl=len(gesendet),
                                empfaenger=[e.schluessel for e in gesendet])  # fmt: skip
         messages.success(request, f"{len(gesendet)} E-Mail{'s' if len(gesendet) != 1 else ''} "

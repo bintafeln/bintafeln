@@ -269,7 +269,9 @@ def test_hilfe_bild_serienbrief(angemeldet, admin, muster):
     seite = oeffnen(angemeldet, admin, reverse("serienbriefe:erstellen"), breite=1400)
     _ohne_menue(seite)
     seite.get_by_label("Vorlage").select_option(index=1)
-    seite.get_by_label("Empfänger").select_option("spender")
+    seite.locator("#id_quelle summary").click()
+    seite.locator("#id_quelle").get_by_label("Spender eines Jahres", exact=True).check()
+    seite.keyboard.press("Escape")
     formular = seite.locator("form.serienbrief-auswahl")
     raster = formular.locator(".formular-raster")
     aufnehmen(seite, "serienbriefe-auswahl", [raster.first, raster.last],
@@ -283,7 +285,11 @@ def test_hilfe_bild_serienbrief(angemeldet, admin, muster):
         Kundengruppe.objects.create(kuerzel=kuerzel, name=f"Gruppe {kuerzel}", wochentage=tag)
     seite.reload()  # Menü bleibt eingefahren
     seite.get_by_label("Vorlage").select_option(index=1)
-    seite.get_by_label("Empfänger").select_option("kunden")
+    wahl = seite.locator("details#id_quelle")
+    wahl.locator("summary").click()
+    wahl.get_by_label("Spender eines Jahres", exact=True).uncheck()
+    wahl.get_by_label("Kunden (Haushalte)", exact=True).check()
+    seite.keyboard.press("Escape")
     menue = seite.locator("details#id_kundengruppen")
     menue.locator("summary").click()
     menue.get_by_label("Gruppe A").check()
@@ -293,7 +299,10 @@ def test_hilfe_bild_serienbrief(angemeldet, admin, muster):
               Marke(menue.locator(".mehrfach-suche"), nummer=2, von="rechts"),
               Marke(menue.locator(".mehrfach-eintrag").first, "rahmen", 3))  # fmt: skip
     seite.keyboard.press("Escape")
-    seite.get_by_label("Empfänger").select_option("spender")
+    wahl.locator("summary").click()
+    wahl.get_by_label("Kunden (Haushalte)", exact=True).uncheck()
+    wahl.get_by_label("Spender eines Jahres", exact=True).check()
+    seite.keyboard.press("Escape")
     seite.get_by_role("button", name="Vorschau").click()
     pdf = seite.get_by_role("button", name="PDF mit Briefen erzeugen (2)")
     # einzelne Empfänger abhaken: die Zahl im Knopf läuft mit, „Alle anhaken“ holt sie zurück

@@ -11,7 +11,7 @@ from PIL import Image
 from pypdf import PdfReader
 from reportlab.lib.units import mm
 
-from apps.adressen.models import Adresse
+from apps.adressen.models import Adresse, AdressKategorie
 from apps.core.models import MailEinstellungen, PapierkorbEintrag
 from apps.konten import rollen
 from apps.serienbriefe import gestaltung, grafiken
@@ -142,8 +142,10 @@ def test_mail_bettet_grafik_im_text_ein(admin_client):
     text = (f'<p>{{anrede}}</p><p><img src="{grafiken.adresse(g)}" width="50%">'
             '<img src="https://example.org/fremd.png"></p>')  # fmt: skip
     v = Vorlage.objects.create(name="Mit Bild", betreff="Hallo", text=text)
+    partner = AdressKategorie.objects.create(name="Probe-Partner")
+    Adresse.objects.get().kategorien.add(partner)
     admin_client.post(reverse("serienbriefe:erstellen"), {
-        "vorlage": v.pk, "quelle": "adressen", "versandart": "email",
+        "vorlage": v.pk, "quelle": f"kat:{partner.pk}", "versandart": "email",
         "jahr": dt.date.today().year, "nur_einwilligung": "on", "schritt": "senden",
     })  # fmt: skip
     nachricht = postfach.outbox[0]

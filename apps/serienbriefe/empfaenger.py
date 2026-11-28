@@ -1,7 +1,10 @@
 """Empfänger für Serienbriefe (ADR 0047) und Platzhalter.
 
-Quellen: Adressen nach Kategorie, Mitglieder, Spender eines Jahres, Kunden (eigenes Recht).
-Für Adressen und Spender zählt die Einwilligung (Post bzw. E-Mail) aus dem Adressbuch; Mitglieder
+Empfänger wählt man in einem Feld mit Häkchen (``wahl()``): feste Gruppen (Mitglieder,
+Ehrenamtliche, Angestellte, ehemalige Ehrenamtliche, Spender eines Jahres, Kunden mit eigenem
+Recht) und darunter die Kategorien des Adressbuchs. Mehrere zusammen ergeben eine Liste, jeder
+steht darin nur einmal (``zusammen()``). Auf Wunsch zählt für Adresskategorien, Spender und die
+zusammengestellte Liste nur, wer eingewilligt hat (Post bzw. E-Mail); Mitglieder, Mitarbeitende
 und Kunden stehen in einem Vertrags- bzw. Betreuungsverhältnis mit der Tafel.
 """
 
@@ -27,6 +30,56 @@ QUELLEN = [
 # Sitzung – für diesen einen Brief, nichts wird dauerhaft gespeichert.
 LISTE_SITZUNG = "serienbrief_liste"
 LISTE_HOECHSTENS = 2000
+# Feste Gruppen im Feld „Empfänger“, in dieser Reihenfolge; „adressen“ steht dort nicht, an
+# seiner Stelle jede Adresskategorie einzeln als „kat:<pk>“.
+GRUPPEN = ("mitglieder", "ehrenamtliche", "angestellte", "ehemalige", "spender", "kunden")
+KATEGORIE = "kat:"
+# Adresskategorien, die genauso heißen wie eine feste Gruppe, stehen nicht noch einmal zur Wahl
+DOPPELT = {"mitglieder", "spender"}
+
+
+def wahl(kunden: bool = False, liste: int = 0) -> list[tuple[str, str]]:
+    """Was im Feld „Empfänger“ zum Anhaken steht: die festen Gruppen (Kunden nur mit dem Recht
+    dazu), eine mitgebrachte Liste aus dem Adressbuch (``liste`` = Zahl der Adressen) und alle
+    aktiven Adresskategorien."""
+    from apps.adressen.models import AdressKategorie
+
+    namen = dict(QUELLEN)
+    erg = [(g, namen[g]) for g in GRUPPEN if g != "kunden" or kunden]
+    if liste:
+        erg.append(("liste", f"{namen['liste']} ({liste} Adresse{'' if liste == 1 else 'n'})"))
+    erg += [
+        (f"{KATEGORIE}{k.pk}", k.name)
+        for k in AdressKategorie.objects.filter(aktiv=True)
+        if k.name.strip().lower() not in DOPPELT
+    ]
+    return erg
+
+
+def zusammen(gewaehlt: list[str], d: dict, benutzer=None) -> list["Empfaenger"]:
+    """Die Empfänger aller angehakten Gruppen und Kategorien als eine Liste. Wer mehrfach
+    vorkommt, steht einmal darin – mit den Angaben der zuerst genannten Gruppe (so behält ein
+    Mitglied Mitgliedsnummer und Beitrag, auch wenn es zusätzlich Spender ist)."""
+    from apps.adressen.models import AdressKategorie
+
+    erg, gesehen = [], set()
+
+    def dazu(liste):
+        for e in liste:
+            if e.schluessel not in gesehen:
+                gesehen.add(e.schluessel)
+                erg.append(e)
+
+    for g in (*GRUPPEN, "liste"):
+        if g in gewaehlt:
+            dazu(suchen(g, d, benutzer))
+    pks = [w[len(KATEGORIE) :] for w in gewaehlt if w.startswith(KATEGORIE)]
+    kategorien = AdressKategorie.objects.filter(pk__in=[p for p in pks if p.isdigit()])
+    if kategorien:  # ohne Kategorie hieße die Suche „alle Adressen“
+        dazu(suchen("adressen", d | {"kategorien": kategorien}, benutzer))
+    return erg
+
+
 PLATZHALTER = [
     ("anrede", "Briefanrede, z. B. „Sehr geehrte Frau Muster,“"),
     ("anrede_du", "persönliche Anrede mit Vornamen: „Liebe Erika,“ bzw. „Lieber Max,“"),
@@ -155,7 +208,7 @@ def suchen(quelle: str, d: dict, benutzer=None) -> list[Empfaenger]:
 
     jahr = d.get("jahr") or timezone.localdate().year
     email = d.get("versandart") == "email"
-    einwilligung = d.get("nur_einwilligung", True)
+    einwilligung = d.get("nur_einwilligung", False)
     ergebnis = []
     if quelle in ("adressen", "spender", "liste"):
         adressen = Adresse.objects.prefetch_related("kategorien")
