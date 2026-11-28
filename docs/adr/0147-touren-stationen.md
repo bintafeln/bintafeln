@@ -20,6 +20,7 @@ ersten: die Stationen.
   oder für alle aktiven Stationen. Angelegt wird eine Organisation; als Kategorie die Art der
   Station. Gibt es schon eine Organisation mit gleichem Namen und gleicher PLZ, wird sie
   verknüpft. `Station.adresse` merkt den Eintrag; danach laufen beide getrennt weiter.
+  (Geändert durch ADR 0184: Kategorie aus den Einstellungen, Abgleich in beide Richtungen.)
 - **Import** (`apps/touren/importieren.py`, Format in `docs/importformat-touren.md`): Die
   `kennung` entscheidet zwischen neu und aktualisieren. Nur gefüllte Zellen überschreiben, nichts
   wird gelöscht. Prüfbericht vor dem Übernehmen wie beim Adressbuch (ADR 0044); der Import steht

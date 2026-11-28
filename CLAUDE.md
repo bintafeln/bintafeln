@@ -478,8 +478,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `touren` (ADR 0147, Stationen der Abholtouren als eigene Liste `Station`, nicht das Adressbuch;
   Import nach `docs/importformat-touren.md` in `apps/touren/importieren.py` – Kennung entscheidet;
   Marktliste/Lieferadressen im Exportformat der ECO-Plattform schreibt `listen_einlesen.py` vorher um,
-  leere Zellen ändern nichts, nie löschen; einmaliges Übertragen ins Adressbuch in
-  `apps/touren/adressbuch.py`; Navigation nur als Link zu Google Maps über `Station.navigation`,
+  leere Zellen ändern nichts, nie löschen; Übertragen ins Adressbuch in
+  `apps/touren/adressbuch.py` – Kategorie nach `TourenEinstellungen.kategorie_maerkte`/
+  `kategorie_einrichtung`, danach Abgleich in beide Richtungen über Signale aus `apps.py`
+  (`vor_speichern()`/`nach_speichern()`, nur die gerade geänderte Angabe, ADR 0184); Navigation nur als Link zu Google Maps über `Station.navigation`,
   kein API-Schlüssel, keine Karte. Ausgabestellen der Tafel sind automatisch Stationen (ADR 0171):
   `apps/touren/ausgabestellen.py` (`abgleichen()`, `Station.ausgabestelle`, Kennung `AS-…`); Name,
   Anschrift, Telefon, E-Mail kommen von dort und sind an der Station gesperrt, nie löschen.

@@ -177,7 +177,7 @@ def test_uebertragen_legt_organisation_an():
     assert adresse.organisation == "Beispielmarkt Mitte"
     assert adresse.strasse == "Musterstraße 1" and adresse.plz == "12345"
     assert adresse.email == "ls@example.org" and adresse.ansprechperson == "Frau Muster"
-    assert [k.name for k in adresse.kategorien.all()] == ["Markt"]
+    assert [k.name for k in adresse.kategorien.all()] == ["Märkte und Lieferanten"]
     s.refresh_from_db()
     assert s.adresse == adresse
     # zweites Mal: nichts Neues
@@ -187,18 +187,113 @@ def test_uebertragen_legt_organisation_an():
 
 def test_uebertragen_verknuepft_vorhandene():
     vorhanden = Adresse.objects.create(
-        art=Adresse.Art.ORGANISATION, organisation="beispielmarkt mitte", plz="12345"
+        art=Adresse.Art.ORGANISATION,
+        organisation="beispielmarkt mitte",
+        plz="12345",
+        telefon="0000 111",
+        ort="Altdorf",
     )
-    adresse, neu = adressbuch.uebertragen(station(), "anton")
+    adresse, neu = adressbuch.uebertragen(station(email="markt@example.org"), "anton")
     assert not neu and adresse == vorhanden
+    assert Adresse.objects.count() == 1
+    # was auf einer Seite fehlte, kommt von der anderen; Abweichendes bleibt stehen
+    adresse.refresh_from_db()
+    s = Station.objects.get()
+    assert adresse.email == "markt@example.org" and adresse.strasse == "Musterstraße 1"
+    assert s.telefon == "0000 111"
+    assert (s.ort, adresse.ort) == ("Musterstadt", "Altdorf")
+    assert (s.name, adresse.organisation) == ("Beispielmarkt Mitte", "beispielmarkt mitte")
+    assert [k.name for k in adresse.kategorien.all()] == ["Märkte und Lieferanten"]
+
+
+def test_kategorien_aus_den_einstellungen():
+    """Märkte, Bäckereien und Lieferanten in eine Kategorie, Einrichtungen in eine andere; die
+    Namen stehen in den Einstellungen."""
+    from apps.touren.models import TourenEinstellungen
+
+    AdressKategorie.objects.create(
+        name="märkte und lieferanten"
+    )  # gibt es schon, anders geschrieben
+    namen = lambda a: [k.name for k in a.kategorien.all()]  # noqa: E731
+    a, _ = adressbuch.uebertragen(station(art="baeckerei"), "anton")
+    b, _ = adressbuch.uebertragen(station(kennung="L-1", name="Hof", art="lieferant"), "anton")
+    c, _ = adressbuch.uebertragen(station(kennung="E-1", name="Heim", art="einrichtung"), "anton")
+    d, _ = adressbuch.uebertragen(station(kennung="S-9", name="Etwas", art="sonstiges"), "anton")
+    assert namen(a) == namen(b) == ["märkte und lieferanten"]
+    assert namen(c) == ["Soziale Einrichtung"] and namen(d) == []
+    assert AdressKategorie.objects.filter(name__iexact="Märkte und Lieferanten").count() == 1
+    # andere Namen, leer = keine, abgeschaltete Kategorie wird nicht vergeben
+    e = TourenEinstellungen.laden()
+    e.kategorie_maerkte, e.kategorie_einrichtung = "", "Partner"
+    e.save()
+    AdressKategorie.objects.update_or_create(name="Partner", defaults={"aktiv": False})
+    f, _ = adressbuch.uebertragen(station(kennung="M-7", name="Markt Sieben"), "anton")
+    g, _ = adressbuch.uebertragen(station(kennung="E-2", name="Haus", art="einrichtung"), "anton")
+    assert namen(f) == [] and namen(g) == []
+    # wird aus dem Sonstigen später eine Einrichtung, kommt die Kategorie beim Speichern dazu
+    AdressKategorie.objects.filter(name="Partner").update(aktiv=True)
+    s = Station.objects.get(kennung="S-9")
+    s.art = "einrichtung"
+    s.save()
+    assert namen(d) == ["Partner"]
+
+
+def test_abgleich_station_und_adressbuch_in_beide_richtungen():
+    s = station(telefon="0000 222", ansprechpartner="Frau Muster", email="markt@example.org")
+    adresse, _ = adressbuch.uebertragen(s, "anton")
+    # Station geändert → Adressbuch
+    s = Station.objects.get()
+    s.name, s.strasse, s.hausnummer, s.geaendert_von = (
+        "Beispielmarkt Nord",
+        "Nordweg",
+        "7a",
+        "berta",
+    )
+    s.anfahrt = "Rampe hinten"  # betrifft nur die Tour
+    s.save()
+    adresse.refresh_from_db()
+    assert adresse.organisation == "Beispielmarkt Nord" and adresse.strasse == "Nordweg 7a"
+    assert adresse.telefon == "0000 222" and adresse.geaendert_von == "berta"
+    # Adressbuch geändert → Station; die Hausnummer wird wieder abgetrennt
+    adresse.strasse, adresse.ort, adresse.telefon = "Am Ring 12-14", "Neustadt", ""
+    adresse.ansprechperson, adresse.email, adresse.geaendert_von = "Herr Probe", "", "clara"
+    adresse.save()
+    s.refresh_from_db()
+    assert (s.strasse, s.hausnummer, s.ort) == ("Am Ring", "12-14", "Neustadt")
+    assert s.telefon == "" and s.ansprechpartner == "Herr Probe" and s.email == ""
+    assert s.geaendert_von == "clara" and s.anfahrt == "Rampe hinten"
+    assert s.name == "Beispielmarkt Nord"
+    # Straße ohne Hausnummer; ein leerer Name wird nicht übernommen
+    adresse.strasse, adresse.organisation = "Marktplatz", ""
+    adresse.save()
+    s.refresh_from_db()
+    assert (s.strasse, s.hausnummer, s.name) == ("Marktplatz", "", "Beispielmarkt Nord")
+    # nur was sich ändert, wandert: eine Abweichung von vorher bleibt, bis jemand sie anfasst
+    Station.objects.filter(pk=s.pk).update(ort="Altdorf")
+    adresse.notiz = "Rückruf erbeten"
+    adresse.save()
+    s.refresh_from_db()
+    assert s.ort == "Altdorf"
+    # ohne Verknüpfung passiert nichts
+    lose = station(kennung="M-2", name="Zweiter Markt")
+    lose.name = "Zweiter Markt Süd"
+    lose.save()
     assert Adresse.objects.count() == 1
 
 
-def test_uebertragen_ohne_kategorie_bei_sonstiges_und_abgeschalteter():
-    AdressKategorie.objects.create(name="Bäckerei", aktiv=False)
-    a, _ = adressbuch.uebertragen(station(art="baeckerei"), "anton")
-    b, _ = adressbuch.uebertragen(station(kennung="S-9", name="Etwas", art="sonstiges"), "anton")
-    assert not a.kategorien.exists() and not b.kategorien.exists()
+def test_adressbuch_aendert_keine_ausgabestelle():
+    """Stationen, die eine Ausgabestelle der Tafel sind, bekommen ihre Angaben von dort."""
+    from apps.kunden.models import Ausgabestelle
+
+    stelle = Ausgabestelle.objects.create(name="Ausgabe Mitte")
+    s = station(kennung="AS-1", name="Ausgabe Mitte", art="ausgabestelle")
+    Station.objects.filter(pk=s.pk).update(ausgabestelle=stelle)
+    adresse, _ = adressbuch.uebertragen(s, "anton")
+    assert not adresse.kategorien.exists()
+    adresse.ort = "Anderswo"
+    adresse.save()
+    s.refresh_from_db()
+    assert s.ort == "Musterstadt"
 
 
 # --- Seiten ------------------------------------------------------------------------------------
@@ -294,6 +389,13 @@ def test_alle_ins_adressbuch(buero):
     buero.post(reverse("touren:alle_uebertragen"))
     assert Adresse.objects.count() == 2
     assert not Station.objects.get(kennung="M-3").adresse
+    # schon Übertragene bekommen die Kategorie nach, wenn sie fehlt
+    eins = Station.objects.get(kennung="M-1").adresse
+    eins.kategorien.clear()
+    station(kennung="M-4", name="Vierter Markt")
+    antwort = buero.post(reverse("touren:alle_uebertragen"), follow=True)
+    assert "1 schon übertragene haben ihre Kategorie bekommen" in antwort.content.decode()
+    assert eins.kategorien.count() == 1
 
 
 def test_loeschen_in_den_papierkorb(buero):

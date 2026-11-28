@@ -649,6 +649,17 @@ class TourenEinstellungen(models.Model):
         help_text="Dann rechnet die Route nur von Station zu Station.",
     )  # fmt: skip
     karten_schluessel_verschluesselt = models.TextField(blank=True, editable=False)
+    kategorie_maerkte = models.CharField(
+        "Adresskategorie für Märkte, Bäckereien und Lieferanten", max_length=80, blank=True,
+        default="Märkte und Lieferanten",
+        help_text="Diese Kategorie bekommen solche Stationen im Adressbuch, z. B. für einen "
+        "Serienbrief an alle Märkte. Leer = keine Kategorie.",
+    )  # fmt: skip
+    kategorie_einrichtung = models.CharField(
+        "Adresskategorie für Einrichtungen", max_length=80, blank=True,
+        default="Soziale Einrichtung",
+        help_text="Für Stationen der Art „Einrichtung“. Leer = keine Kategorie.",
+    )  # fmt: skip
     kiste_kg = models.DecimalField(
         "Durchschnittsgewicht einer Kiste (kg)", max_digits=5, decimal_places=1, default=10,
         validators=[MinValueValidator(0)],
