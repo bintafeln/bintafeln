@@ -265,7 +265,7 @@ def test_email_als_html_und_klartext(admin_client, erika):
     Adresse.objects.filter(pk=erika.pk).update(nachname="<b>Muster</b>")
     v = Vorlage.objects.create(name="Mail", betreff="Hallo", fusszeile="<p>Bank: Musterbank</p>",
                                text="<p>{anrede}</p><ul><li><b>Punkt</b></li></ul>")  # fmt: skip
-    _absenden(admin_client, v, versandart="email", quelle="adressen", schritt="senden")
+    _absenden(admin_client, v, versandart="email", schritt="senden")
     nachricht = postfach.outbox[0]
     assert "Sehr geehrte Frau <b>Muster</b>," in nachricht.body and "• Punkt" in nachricht.body
     assert "Bank: Musterbank" in nachricht.body and "<li>" not in nachricht.body

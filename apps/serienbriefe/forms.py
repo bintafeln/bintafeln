@@ -4,12 +4,11 @@ from django import forms
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.adressen.models import AdressKategorie
 from apps.core.auswahl import MITGLIEDSARTEN
 from apps.core.forms import Mehrfachauswahl
 from apps.konten import rollen
-from apps.serienbriefe import frei, gestaltung
-from apps.serienbriefe.empfaenger import QUELLEN, karten
+from apps.serienbriefe import empfaenger, frei, gestaltung
+from apps.serienbriefe.empfaenger import karten
 from apps.serienbriefe.models import Versand, Vorlage
 
 
@@ -59,20 +58,21 @@ class VorlageForm(forms.ModelForm):
 
 class AuswahlForm(forms.Form):
     vorlage = forms.ModelChoiceField(label="Vorlage", queryset=Vorlage.objects.all())
-    quelle = forms.ChoiceField(label="Empfänger")
+    quelle = forms.MultipleChoiceField(
+        label="Empfänger", widget=Mehrfachauswahl(leer="– bitte anhaken –"),
+        help_text="Mehrere Haken ergeben eine gemeinsame Liste; jeder bekommt den Brief nur "
+        "einmal.",
+        error_messages={"required": "Bitte mindestens eine Gruppe oder Kategorie anhaken."},
+    )  # fmt: skip
     versandart = forms.ChoiceField(label="Versand", choices=Versand.Art.choices,
                                    widget=forms.RadioSelect, initial=Versand.Art.BRIEF)  # fmt: skip
     jahr = forms.TypedChoiceField(
         label="Jahr", coerce=int,
         help_text="Für Spender, offene Beiträge und die Platzhalter {spendensumme}, {jahr}.",
     )  # fmt: skip
-    kategorien = forms.ModelMultipleChoiceField(
-        label="Kategorien", required=False, widget=Mehrfachauswahl(leer="alle Kategorien"),
-        queryset=AdressKategorie.objects.filter(aktiv=True),
-    )  # fmt: skip
     nur_einwilligung = forms.BooleanField(
         label="Nur mit Einwilligung (Post bzw. E-Mail)", required=False,
-        initial=True,
+        help_text="Gilt für Adresskategorien, Spender und die zusammengestellte Liste.",
     )  # fmt: skip
     mindestbetrag = forms.DecimalField(label="Mindestsumme im Jahr (Euro)",
                                        required=False, localize=True)  # fmt: skip
@@ -92,13 +92,8 @@ class AuswahlForm(forms.Form):
         super().__init__(*args, **kwargs)
         from apps.kunden.models import Kundengruppe
 
-        kunden = rollen.hat_recht(benutzer, "serienbriefe.kunden")
-        quellen = [q for q in QUELLEN if q[0] != "liste" and (q[0] != "kunden" or kunden)]
-        if liste:
-            name = dict(QUELLEN)["liste"]
-            quellen.append(("liste", f"{name} ({liste} Adresse{'' if liste == 1 else 'n'})"))
+        quellen = empfaenger.wahl(rollen.hat_recht(benutzer, "serienbriefe.kunden"), liste)
         self.fields["quelle"].choices = quellen
-        self.fields["quelle"].initial = quellen[0][0]
         heute = timezone.localdate().year
         self.fields["jahr"].choices = [(j, j) for j in range(heute, heute - 6, -1)]
         if "kunden" in dict(quellen):

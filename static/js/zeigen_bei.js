@@ -1,6 +1,7 @@
 // Felder nur zeigen, wenn ein anderes Feld desselben Formulars passt:
 // <div data-zeigen-bei="quelle=adressen spender"> erscheint nur bei quelle „adressen“ oder
-// „spender“. Ohne JavaScript bleibt alles sichtbar. Genauso macht
+// „spender“. Bei mehreren Häkchen desselben Namens genügt eines davon. Ohne JavaScript bleibt
+// alles sichtbar. Genauso macht
 // <div data-pflicht-bei="wahl=verlaengern"> die Eingabefelder darin zur Pflicht (sonst nicht).
 (function () {
   "use strict";
@@ -10,14 +11,15 @@
     if (!formular || teile.length !== 2) return;
     var werte = teile[1].split(" ");
     var felder = formular.querySelectorAll('[name="' + teile[0] + '"]');
-    function wert() {
+    function passt() {
       for (var i = 0; i < felder.length; i++) {
         var f = felder[i];
-        if ((f.type !== "radio" && f.type !== "checkbox") || f.checked) return f.value;
+        var gilt = (f.type !== "radio" && f.type !== "checkbox") || f.checked;
+        if (gilt && werte.indexOf(f.value) >= 0) return true;
       }
-      return "";
+      return false;
     }
-    function pruefen() { anwenden(werte.indexOf(wert()) >= 0); }
+    function pruefen() { anwenden(passt()); }
     felder.forEach(function (f) { f.addEventListener("change", pruefen); });
     pruefen();
   }

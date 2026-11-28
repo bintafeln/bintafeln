@@ -1649,9 +1649,11 @@ auch an Kunden“, nur Admin) schreibt viele Empfänger auf einmal an (ADR 0047)
   jeder E-Mail). **Vorschau (PDF)** zeigt den Brief mit einem erfundenen Empfänger, ohne zu
   speichern. Auf breiten Bildschirmen steht rechts neben dem Text eine **Live-Vorschau** der
   ersten Seite (das echte PDF als Bild), die sich kurz nach jeder Änderung selbst erneuert. Ältere Vorlagen aus reinem Text werden beim Update zu Absätzen.
-- **Empfänger**: Adressen nach Kategorie, Mitglieder (Arten, nur offener Beitrag), Spender eines
-  Jahres (Mindestsumme), Kunden (aktive Haushalte, Kundengruppen). Für Adressen und Spender ist
-  „nur mit Einwilligung“ (Post bzw. E-Mail) vorgewählt.
+- **Empfänger** in einem Feld zum Anhaken, auch mehrere zugleich (jede Person nur einmal):
+  Mitglieder (Arten, nur offener Beitrag), Ehrenamtliche, Angestellte, Ehemalige, Spender eines
+  Jahres (Mindestsumme), Kunden (aktive Haushalte, Kundengruppen) und jede Kategorie aus dem
+  Adressbuch. „Nur mit Einwilligung“ (Post bzw. E-Mail) gibt es für Spender, Adresskategorien
+  und zusammengestellte Listen; der Haken ist zunächst aus.
 - **Vorschau** mit Empfängerliste, Übersprungenen (ohne Anschrift/E-Mail) und Beispielbrief.
 - **Briefe** als ein PDF (Anschrift für Fensterumschlag DIN lang, Faltmarken, mit der Gestaltung
   der Vorlage) oder **E-Mails** einzeln über den eingerichteten Mailserver (gestaltet als HTML,

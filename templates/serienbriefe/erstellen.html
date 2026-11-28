@@ -19,13 +19,12 @@
     <h2 class="abschnitt-titel">2. Empfänger</h2>
     <div class="formular-raster">
       {% with feld=form.quelle %}{% include "includes/feld.html" %}{% endwith %}
-      <div data-zeigen-bei="quelle=adressen">{% with feld=form.kategorien %}{% include "includes/feld.html" %}{% endwith %}</div>
       <div data-zeigen-bei="quelle=spender">{% with feld=form.mindestbetrag %}{% include "includes/feld.html" %}{% endwith %}</div>
       <div data-zeigen-bei="quelle=mitglieder">{% with feld=form.mitgliedsarten %}{% include "includes/feld.html" %}{% endwith %}</div>
       {% if form.nur_offen %}<div data-zeigen-bei="quelle=mitglieder">{% with feld=form.nur_offen %}{% include "includes/feld.html" %}{% endwith %}</div>{% endif %}
       {% if form.kundengruppen %}<div data-zeigen-bei="quelle=kunden">{% with feld=form.kundengruppen %}{% include "includes/feld.html" %}{% endwith %}</div>{% endif %}
       {% if liste_anzahl %}<div data-zeigen-bei="quelle=liste"><p class="hinweis">Die Liste haben Sie im Adressbuch unter „Liste zusammenstellen“ gewählt. Sie gilt, bis Sie sich abmelden oder dort eine neue Liste schicken; gespeichert wird sie nicht.</p></div>{% endif %}
-      <div data-zeigen-bei="quelle=adressen spender liste">{% with feld=form.nur_einwilligung %}{% include "includes/feld.html" %}{% endwith %}</div>
+      <div data-zeigen-bei="quelle=spender liste {{ kategorie_werte }}">{% with feld=form.nur_einwilligung %}{% include "includes/feld.html" %}{% endwith %}</div>
     </div>
     <div class="aktionsleiste">
       <button type="submit" name="schritt" value="vorschau" class="knopf" data-ziel="ergebnis-vorschau">Vorschau</button>
