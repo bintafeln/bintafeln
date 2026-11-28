@@ -1213,8 +1213,10 @@ def test_nach_dem_absenden_bleibt_die_position(angemeldet, admin, muster):
     seite.set_viewport_size({"width": 1100, "height": 600})
     seite.goto(reverse("serienbriefe:erstellen"))
     seite.get_by_label("Vorlage").select_option(index=1)
-    seite.locator("#id_quelle summary").click()
-    seite.locator("#id_quelle").get_by_label("Mitglieder", exact=True).check()
+    # ohne das Menü aufzuklappen: offen läge es über dem Knopf (das Menü prüft ein eigener Test)
+    seite.locator("#id_quelle input[value=mitglieder]").evaluate(
+        "e => { e.checked = true; e.dispatchEvent(new Event('change', { bubbles: true })); }"
+    )
     seite.get_by_role("button", name="Vorschau").click()
     expect(seite.locator("#ergebnis-vorschau")).to_be_in_viewport()
     assert seite.evaluate("window.scrollY") > 200
