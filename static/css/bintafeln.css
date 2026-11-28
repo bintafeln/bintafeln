@@ -787,6 +787,8 @@ h1 small.leise { font-size: .6em; font-weight: 400; color: var(--leise); white-s
   padding: 0 .5rem; background: var(--flaeche); color: var(--text); }
 .aktionsleiste { display: flex; flex-wrap: wrap; gap: .5rem; }
 .aktionsleiste .knopf { width: auto; }
+/* Luft zwischen zwei Knopfreihen und vor der Liste der Angaben darunter */
+.aktionsleiste + .aktionsleiste, .aktionsleiste + dl.angaben, .aktionsleiste + .notiz { margin-top: .9rem; }
 .kopf-meldung { flex-basis: 100%; margin: 0; }
 a.knopf-gefahr { color: #fff; }
 
